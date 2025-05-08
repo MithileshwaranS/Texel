@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {FaWeight, FaMoneyBillWave, FaCalculator, FaIndustry, FaToolbox } from "react-icons/fa";
+import { FaWeight, FaMoneyBillWave, FaCalculator, FaIndustry, FaToolbox, FaFileAlt } from "react-icons/fa";
 
 // Modular Input Components
 const TextInput = ({ label, value, onChange, icon: Icon, ...props }) => (
@@ -81,10 +81,16 @@ function Costing() {
   const [transport, setTransport] = useState("");
   const [finaltotal, setFinalTotal] = useState("");
   const [activeTab, setActiveTab] = useState("inputs");
+  const [yarnCount, setYarnCount] = useState([]);
 
   // Constants
-  const warpCountOptions = ["16s", "20s", "30s", "40s", "60s", "84s"];
-  const weftCountOptions = ["56KH"];
+  const warpCountOptions = yarnCount?.map(y => y?.yarn_count) || [];
+  const weftCountOptions = yarnCount?.map(y => y.yarn_count) || [];
+  
+  const getHanksWt = (count) => {
+    const found = yarnCount.find(y => y.yarn_count === count);
+    return found ? found.hanks_wt : 0;
+  };
 
   // Helper function
   const toNum = (val) => parseFloat(val || 0);
@@ -95,30 +101,38 @@ function Costing() {
   }, [designName]);
 
   useEffect(() => {
-    if (width && reed) {
-      const weight = ((toNum(width) * toNum(reed) * 1.5) / 840) * 0.0056;
-      setWarpWeight(weight.toFixed(3));
-    }
-  }, [width, reed]);
+    // Fetch data from API
+    fetch(`http://localhost:3000/api/yarnCounts`)
+      .then(response => response.json())
+      .then(data => setYarnCount(data))
+      .catch(error => console.error('Error fetching data:', error));
+  }, []);
 
   useEffect(() => {
-    if (width && pick) {
-      const weight = ((toNum(width) * toNum(pick) * 1.45) / 840) * 0.0151;
+    if (width && reed && warpCount) {
+      const weight = ((toNum(width) * toNum(reed) * 1.35) / 840) * getHanksWt(warpCount);
+      setWarpWeight(weight.toFixed(3));
+    }
+  }, [width, reed, warpCount]);
+
+  useEffect(() => {
+    if (width && pick && weftCount) {
+      const weight = ((toNum(width) * toNum(pick) * 1.35) / 840) * getHanksWt(weftCount);
       setWeftWeight(weight.toFixed(3));
     }
-  }, [width, pick]);
+  }, [width, pick, weftCount]);
 
   useEffect(() => {
     if (initWarpCost && warpDyeing && warpweight) {
       const cost = (toNum(initWarpCost) + toNum(warpDyeing)) * toNum(warpweight);
-      setWarpCost(cost.toFixed(2));
+      setWarpCost(cost.toFixed(3));
     }
   }, [initWarpCost, warpDyeing, warpweight]);
 
   useEffect(() => {
     if (initWeftCost && weftDyeing && weftweight) {
       const cost = (toNum(initWeftCost) + toNum(weftDyeing)) * toNum(weftweight);
-      setWeftCost(cost.toFixed(2));
+      setWeftCost(cost.toFixed(3));
     }
   }, [initWeftCost, weftDyeing, weftweight]);
 
@@ -139,8 +153,8 @@ function Costing() {
 
   useEffect(() => {
     if (totalCost) {
-      const gst = totalCost * 0.05;
-      setGst(gst.toFixed(3));
+      const gstVal = toNum(totalCost) * 0.05;
+      setGst(gstVal.toFixed(3));
     }
   }, [totalCost]);
 
@@ -150,6 +164,313 @@ function Costing() {
       setFinalTotal(sum.toFixed(3));
     }
   }, [totalCost, gst, transport]);
+
+  const renderInputs = () => (
+    <div className="space-y-8">
+      {/* Fabric Specifications */}
+      <div className="bg-blue-50 p-4 rounded-xl">
+        <h2 className="text-lg font-semibold text-blue-800 mb-4 flex items-center">
+          <FaToolbox className="mr-2" />
+          Fabric Specifications
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <TextInput
+            label="Width (inches)"
+            value={width}
+            onChange={(e) => setWidth(e.target.value)}
+            type="number"
+          />
+          <DropdownField
+            label="Warp Count"
+            value={warpCount}
+            onChange={(e) => setWarpCount(e.target.value)}
+            options={warpCountOptions}
+          />
+          <TextInput
+            label="Reed"
+            value={reed}
+            onChange={(e) => setReed(e.target.value)}
+            type="number"
+          />
+          <DropdownField
+            label="Weft Count"
+            value={weftCount}
+            onChange={(e) => setWeftCount(e.target.value)}
+            options={weftCountOptions}
+          />
+          <TextInput
+            label="Pick"
+            value={pick}
+            onChange={(e) => setPick(e.target.value)}
+            type="number"
+          />
+        </div>
+      </div>
+
+      {/* Material Costs */}
+      <div className="bg-green-50 p-4 rounded-xl">
+        <h2 className="text-lg font-semibold text-green-800 mb-4 flex items-center">
+          <FaMoneyBillWave className="mr-2" />
+          Material Costs
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <TextInput
+            label="Warp Cost (per unit)"
+            value={initWarpCost}
+            onChange={(e) => setInitWarpCost(e.target.value)}
+            type="number"
+          />
+          <TextInput
+            label="Weft Cost (per unit)"
+            value={initWeftCost}
+            onChange={(e) => setInitWeftCost(e.target.value)}
+            type="number"
+          />
+          <TextInput
+            label="Warp Dyeing Cost"
+            value={warpDyeing}
+            onChange={(e) => setWarpDyeing(e.target.value)}
+            type="number"
+          />
+          <TextInput
+            label="Weft Dyeing Cost"
+            value={weftDyeing}
+            onChange={(e) => setWeftDyeing(e.target.value)}
+            type="number"
+          />
+        </div>
+      </div>
+
+      {/* Processing Costs */}
+      <div className="bg-purple-50 p-4 rounded-xl">
+        <h2 className="text-lg font-semibold text-purple-800 mb-4 flex items-center">
+          <FaIndustry className="mr-2" />
+          Processing Costs
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <TextInput
+            label="Weaving Cost"
+            value={weaving}
+            onChange={(e) => setWeaving(e.target.value)}
+            type="number"
+          />
+          <TextInput
+            label="Washing Cost"
+            value={washing}
+            onChange={(e) => setWashing(e.target.value)}
+            type="number"
+          />
+          <TextInput
+            label="Transport Cost"
+            value={transport}
+            onChange={(e) => setTransport(e.target.value)}
+            type="number"
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderResults = () => (
+    <div className="space-y-6">
+      {/* Weight Calculations */}
+      <div className="bg-yellow-50 p-4 rounded-xl">
+        <h2 className="text-lg font-semibold text-yellow-800 mb-4 flex items-center">
+          <FaWeight className="mr-2" />
+          Weight Calculations
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ResultCard
+            title="Warp Weight"
+            value={warpweight}
+            icon={FaWeight}
+            color="bg-yellow-50"
+          />
+          <ResultCard
+            title="Weft Weight"
+            value={weftweight}
+            icon={FaWeight}
+            color="bg-yellow-50"
+          />
+        </div>
+      </div>
+
+      {/* Cost Breakdown */}
+      <div className="bg-blue-50 p-4 rounded-xl">
+        <h2 className="text-lg font-semibold text-blue-800 mb-4 flex items-center">
+          <FaMoneyBillWave className="mr-2" />
+          Cost Breakdown
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <ResultCard
+            title="Warp Cost"
+            value={warpCost}
+            icon={FaMoneyBillWave}
+          />
+          <ResultCard
+            title="Weft Cost"
+            value={weftCost}
+            icon={FaMoneyBillWave}
+          />
+          <ResultCard
+            title="Profit"
+            value={profit}
+            icon={FaMoneyBillWave}
+            color="bg-green-50"
+          />
+          <ResultCard
+            title="Total Cost"
+            value={totalCost}
+            icon={FaMoneyBillWave}
+            color="bg-blue-100"
+          />
+        </div>
+      </div>
+
+      {/* Final Costs */}
+      <div className="bg-green-50 p-4 rounded-xl">
+        <h2 className="text-lg font-semibold text-green-800 mb-4 flex items-center">
+          <FaCalculator className="mr-2" />
+          Final Costs
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <ResultCard
+            title="GST (5%)"
+            value={gst}
+            icon={FaCalculator}
+          />
+          <ResultCard
+            title="Transport Cost"
+            value={transport}
+            icon={FaCalculator}
+          />
+          <ResultCard
+            title="Final Total"
+            value={finaltotal}
+            icon={FaCalculator}
+            color="bg-green-100"
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderSummary = () => (
+    <div className="space-y-6">
+      {/* Design Info */}
+      <div className="bg-blue-50 p-4 rounded-xl">
+        <h2 className="text-lg font-semibold text-blue-800 mb-4">Design Information</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-gray-600">Design Name</p>
+            <p className="font-medium">{designName || "-"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Date</p>
+            <p className="font-medium">{new Date().toLocaleDateString()}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Specifications */}
+      <div className="bg-purple-50 p-4 rounded-xl">
+        <h2 className="text-lg font-semibold text-purple-800 mb-4">Fabric Specifications</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <p className="text-sm text-gray-600">Width (inches)</p>
+            <p className="font-medium">{width || "-"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Reed</p>
+            <p className="font-medium">{reed || "-"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Pick</p>
+            <p className="font-medium">{pick || "-"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Warp Count</p>
+            <p className="font-medium">{warpCount || "-"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Weft Count</p>
+            <p className="font-medium">{weftCount || "-"}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Weights */}
+      <div className="bg-yellow-50 p-4 rounded-xl">
+        <h2 className="text-lg font-semibold text-yellow-800 mb-4">Weight Calculations</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-gray-600">Warp Weight</p>
+            <p className="font-medium">{warpweight || "-"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Weft Weight</p>
+            <p className="font-medium">{weftweight || "-"}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Costs */}
+      <div className="bg-green-50 p-4 rounded-xl">
+        <h2 className="text-lg font-semibold text-green-800 mb-4">Cost Breakdown</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <p className="text-sm text-gray-600">Warp Cost</p>
+            <p className="font-medium">{warpCost || "-"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Weft Cost</p>
+            <p className="font-medium">{weftCost || "-"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Weaving Cost</p>
+            <p className="font-medium">{weaving || "-"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Washing Cost</p>
+            <p className="font-medium">{washing || "-"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Profit (12%)</p>
+            <p className="font-medium">{profit || "-"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Total Cost</p>
+            <p className="font-medium">{totalCost || "-"}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Final Costs */}
+      <div className="bg-red-50 p-4 rounded-xl">
+        <h2 className="text-lg font-semibold text-red-800 mb-4">Final Costs</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <p className="text-sm text-gray-600">GST (5%)</p>
+            <p className="font-medium">{gst || "-"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Transport</p>
+            <p className="font-medium">{transport || "-"}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Final Total</p>
+            <p className="font-medium text-red-600">{finaltotal || "-"}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const tabs = [
+    { id: "inputs", icon: FaCalculator, label: "Inputs" },
+    { id: "results", icon: FaMoneyBillWave, label: "Results" },
+    { id: "summary", icon: FaFileAlt, label: "Summary" }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
@@ -183,212 +504,27 @@ function Costing() {
 
         {/* Tabs */}
         <div className="flex border-b border-gray-200">
-          <button
-            className={`px-6 py-3 font-medium text-sm flex items-center ${activeTab === "inputs" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500"}`}
-            onClick={() => setActiveTab("inputs")}
-          >
-            <FaCalculator className="mr-2" />
-            Inputs
-          </button>
-          <button
-            className={`px-6 py-3 font-medium text-sm flex items-center ${activeTab === "results" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500"}`}
-            onClick={() => setActiveTab("results")}
-          >
-            <FaMoneyBillWave className="mr-2" />
-            Results
-          </button>
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              className={`px-6 py-3 font-medium text-sm flex items-center ${
+                activeTab === tab.id
+                  ? "text-blue-600 border-b-2 border-blue-600"
+                  : "text-gray-500"
+              }`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              <tab.icon className="mr-2" />
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {/* Content */}
         <div className="p-6">
-          {activeTab === "inputs" ? (
-            <div className="space-y-8">
-              {/* Fabric Specifications */}
-              <div className="bg-blue-50 p-4 rounded-xl">
-                <h2 className="text-lg font-semibold text-blue-800 mb-4 flex items-center">
-                  <FaToolbox className="mr-2" />
-                  Fabric Specifications
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <TextInput
-                    label="Width (inches)"
-                    value={width}
-                    onChange={(e) => setWidth(e.target.value)}
-                    type="number"
-                  />
-                  <DropdownField
-                    label="Warp Count"
-                    value={warpCount}
-                    onChange={(e) => setWarpCount(e.target.value)}
-                    options={warpCountOptions}
-                  />
-                  <TextInput
-                    label="Reed"
-                    value={reed}
-                    onChange={(e) => setReed(e.target.value)}
-                    type="number"
-                  />
-                  <DropdownField
-                    label="Weft Count"
-                    value={weftCount}
-                    onChange={(e) => setWeftCount(e.target.value)}
-                    options={weftCountOptions}
-                  />
-                  
-                  <TextInput
-                    label="Pick"
-                    value={pick}
-                    onChange={(e) => setPick(e.target.value)}
-                    type="number"
-                  />
-                </div>
-              </div>
-
-              {/* Material Costs */}
-              <div className="bg-green-50 p-4 rounded-xl">
-                <h2 className="text-lg font-semibold text-green-800 mb-4 flex items-center">
-                  <FaMoneyBillWave className="mr-2" />
-                  Material Costs
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <TextInput
-                    label="Warp Cost (per unit)"
-                    value={initWarpCost}
-                    onChange={(e) => setInitWarpCost(e.target.value)}
-                    type="number"
-                  />
-                  <TextInput
-                    label="Weft Cost (per unit)"
-                    value={initWeftCost}
-                    onChange={(e) => setInitWeftCost(e.target.value)}
-                    type="number"
-                  />
-                  <TextInput
-                    label="Warp Dyeing Cost"
-                    value={warpDyeing}
-                    onChange={(e) => setWarpDyeing(e.target.value)}
-                    type="number"
-                  />
-                  <TextInput
-                    label="Weft Dyeing Cost"
-                    value={weftDyeing}
-                    onChange={(e) => setWeftDyeing(e.target.value)}
-                    type="number"
-                  />
-                </div>
-              </div>
-
-              {/* Processing Costs */}
-              <div className="bg-purple-50 p-4 rounded-xl">
-                <h2 className="text-lg font-semibold text-purple-800 mb-4 flex items-center">
-                  <FaIndustry className="mr-2" />
-                  Processing Costs
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <TextInput
-                    label="Weaving Cost"
-                    value={weaving}
-                    onChange={(e) => setWeaving(e.target.value)}
-                    type="number"
-                  />
-                  <TextInput
-                    label="Washing Cost"
-                    value={washing}
-                    onChange={(e) => setWashing(e.target.value)}
-                    type="number"
-                  />
-                  <TextInput
-                    label="Transport Cost"
-                    value={transport}
-                    onChange={(e) => setTransport(e.target.value)}
-                    type="number"
-                  />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {/* Weight Calculations */}
-              <div className="bg-yellow-50 p-4 rounded-xl">
-                <h2 className="text-lg font-semibold text-yellow-800 mb-4 flex items-center">
-                  <FaWeight className="mr-2" />
-                  Weight Calculations
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <ResultCard
-                    title="Warp Weight"
-                    value={warpweight}
-                    icon={FaWeight}
-                    color="bg-yellow-50"
-                  />
-                  <ResultCard
-                    title="Weft Weight"
-                    value={weftweight}
-                    icon={FaWeight}
-                    color="bg-yellow-50"
-                  />
-                </div>
-              </div>
-
-              {/* Cost Breakdown */}
-              <div className="bg-blue-50 p-4 rounded-xl">
-                <h2 className="text-lg font-semibold text-blue-800 mb-4 flex items-center">
-                  <FaMoneyBillWave className="mr-2" />
-                  Cost Breakdown
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <ResultCard
-                    title="Warp Cost"
-                    value={warpCost}
-                    icon={FaMoneyBillWave}
-                  />
-                  <ResultCard
-                    title="Weft Cost"
-                    value={weftCost}
-                    icon={FaMoneyBillWave}
-                  />
-                  <ResultCard
-                    title="Profit"
-                    value={profit}
-                    icon={FaMoneyBillWave}
-                    color="bg-green-50"
-                  />
-                  <ResultCard
-                    title="Total Cost"
-                    value={totalCost}
-                    icon={FaMoneyBillWave}
-                    color="bg-blue-100"
-                  />
-                </div>
-              </div>
-
-              {/* Final Costs */}
-              <div className="bg-green-50 p-4 rounded-xl">
-                <h2 className="text-lg font-semibold text-green-800 mb-4 flex items-center">
-                  <FaCalculator className="mr-2" />
-                  Final Costs
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <ResultCard
-                    title="GST (5%)"
-                    value={gst}
-                    icon={FaCalculator}
-                  />
-                  <ResultCard
-                    title="Transport Cost"
-                    value={transport}
-                    icon={FaCalculator}
-                  />
-                  <ResultCard
-                    title="Final Total"
-                    value={finaltotal}
-                    icon={FaCalculator}
-                    color="bg-green-100"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
+          {activeTab === "inputs" && renderInputs()}
+          {activeTab === "results" && renderResults()}
+          {activeTab === "summary" && renderSummary()}
         </div>
       </div>
     </div>
