@@ -6,7 +6,7 @@ const ResultCard = ({ title, value, icon: Icon, color = "bg-blue-50" }) => (
           {title}
         </h3>
         <span className="text-lg font-semibold text-gray-800">
-          {value || "Calculating..."}
+          {value || "-"}
         </span>
       </div>
     </div>

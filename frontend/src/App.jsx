@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   FaHome,
   FaChartLine,
@@ -10,8 +10,8 @@ import {
   FaIndustry,
   FaCalculator
 } from "react-icons/fa";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
-import NavItem from "./components/common/NavItem";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import HeaderItem from "./components/common/HeaderItem";
 import Dashboard from "./pages/Dashboard";
 import Costing from "./pages/costing";
 import Inventory from "./pages/Inventory";
@@ -20,7 +20,8 @@ import Customers from "./pages/Customers";
 import Settings from "./pages/Settings";
 
 function App() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
   const navigate = useNavigate();
 
   const navItems = [
@@ -32,48 +33,72 @@ function App() {
     { id: "settings", icon: FaCog, label: "Settings", path: "/settings" }
   ];
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Mobile Sidebar Toggle */}
-      <button
-        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-blue-600 text-white"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-      >
-        {sidebarOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
-      </button>
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
+  };
 
-      {/* Sidebar */}
-      <aside
-        className={`w-64 bg-white shadow-lg transform transition-transform duration-200 ease-in-out fixed h-full z-40 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0`}
-      >
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-800 flex items-center">
-            <FaIndustry className="mr-2" />
-            Texile
-          </h2>
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location]);
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Header */}
+      <header className="bg-white shadow-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="flex items-center">
+              <FaIndustry className="text-blue-600 text-2xl mr-2" />
+              <span className="text-xl font-bold text-gray-800">Textile</span>
+            </div>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden md:block">
+              <ul className="flex space-x-2">
+                {navItems.map((item) => (
+                  <HeaderItem
+                    key={item.id}
+                    icon={item.icon}
+                    label={item.label}
+                    active={location.pathname === item.path}
+                    onClick={() => navigate(item.path)}
+                  />
+                ))}
+              </ul>
+            </nav>
+
+            {/* Mobile Menu Button */}
+            <button
+              className="md:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none"
+              onClick={toggleMobileMenu}
+            >
+              {mobileMenuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
+            </button>
+          </div>
+
+          {/* Mobile Navigation */}
+          {mobileMenuOpen && (
+            <nav className="md:hidden pb-4">
+              <ul className="grid grid-cols-3 gap-2">
+                {navItems.map((item) => (
+                  <HeaderItem
+                    key={item.id}
+                    icon={item.icon}
+                    label={item.label}
+                    active={location.pathname === item.path}
+                    onClick={() => navigate(item.path)}
+                  />
+                ))}
+              </ul>
+            </nav>
+          )}
         </div>
-        <nav className="p-4">
-          <ul className="space-y-2">
-            {navItems.map((item) => (
-              <NavItem
-                key={item.id}
-                icon={item.icon}
-                label={item.label}
-                active={window.location.pathname === item.path}
-                onClick={() => {
-                  navigate(item.path);
-                  if (window.innerWidth < 768) setSidebarOpen(false);
-                }}
-              />
-            ))}
-          </ul>
-        </nav>
-      </aside>
+      </header>
 
       {/* Main Content */}
-      <div className={`flex-1 transition-all duration-200 ${sidebarOpen ? "md:ml-64" : ""}`}>
+      <main className="flex-1 container mx-auto p-4">
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/costing" element={<Costing />} />
@@ -82,7 +107,7 @@ function App() {
           <Route path="/customers" element={<Customers />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
-      </div>
+      </main>
     </div>
   );
 }

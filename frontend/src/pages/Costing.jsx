@@ -5,20 +5,17 @@ import {
   FaCalculator, 
   FaIndustry, 
   FaToolbox, 
-  FaFileAlt,
   FaPercentage,
   FaTruck,
-  FaFileSignature
+  FaFileSignature,
+  FaNewspaper
 } from "react-icons/fa";
-import { Tab } from '@headlessui/react';
 import { motion } from 'framer-motion';
-import { Switch } from '@headlessui/react';
-import { FiMoon, FiSun } from 'react-icons/fi';
 
 // Custom Components
-const TextInput = ({ label, value, onChange, type = "text", placeholder = "", icon: Icon, className = "" }) => (
+const TextInput = ({ label, value, onChange, type = "text", placeholder = "", icon: Icon, className = "", min, step }) => (
   <div className={`flex flex-col ${className}`}>
-    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
+    <label className="text-sm font-medium text-gray-700 mb-1 flex items-center">
       {Icon && <Icon className="mr-2" size={14} />}
       {label}
     </label>
@@ -27,21 +24,23 @@ const TextInput = ({ label, value, onChange, type = "text", placeholder = "", ic
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-all"
+      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+      min={min}
+      step={step}
     />
   </div>
 );
 
 const DropdownField = ({ label, value, onChange, options, icon: Icon }) => (
   <div className="flex flex-col">
-    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
+    <label className="text-sm font-medium text-gray-700 mb-1 flex items-center">
       {Icon && <Icon className="mr-2" size={14} />}
       {label}
     </label>
     <select
       value={value}
       onChange={onChange}
-      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-all"
+      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
     >
       <option value="">Select {label}</option>
       {options.map((option, index) => (
@@ -53,32 +52,35 @@ const DropdownField = ({ label, value, onChange, options, icon: Icon }) => (
   </div>
 );
 
-const ResultCard = ({ title, value, icon: Icon, color = "bg-white dark:bg-gray-800" }) => (
+const ResultCard = ({ title, value, icon: Icon, color = "bg-white" }) => (
   <motion.div 
     whileHover={{ scale: 1.03 }}
-    className={`${color} p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-all`}
+    className={`${color} p-4 rounded-lg shadow-sm border border-gray-200 transition-all flex flex-col h-full`}
   >
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
-        <p className="text-xl font-semibold text-gray-800 dark:text-white mt-1">
-          {value || "0.000"}
-        </p>
-      </div>
+    <div className="flex items-center mb-2">
       {Icon && (
-        <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300">
-          <Icon size={18} />
+        <div className="p-2 rounded-full bg-blue-100 text-blue-600 mr-3">
+          <Icon size={16} />
         </div>
       )}
+      <p className="text-sm font-medium text-gray-500">{title}</p>
     </div>
+    <p className="text-xl font-semibold text-gray-800 mt-1">
+      {value || "0.000"}
+    </p>
   </motion.div>
 );
 
-const SectionHeader = ({ title, icon: Icon, color = "text-blue-600 dark:text-blue-400" }) => (
-  <h2 className={`text-lg font-semibold mb-4 flex items-center ${color}`}>
-    <Icon className="mr-2" />
-    {title}
-  </h2>
+const SectionCard = ({ title, icon: Icon, children, color = "text-blue-600" }) => (
+  <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+    <h2 className={`text-md font-semibold mb-4 flex items-center ${color}`}>
+      {Icon && <Icon className="mr-2" size={16} />}
+      {title}
+    </h2>
+    <div className="space-y-4">
+      {children}
+    </div>
+  </div>
 );
 
 function Costing() {
@@ -107,16 +109,8 @@ function Costing() {
   const [transport, setTransport] = useState("");
   const [finaltotal, setFinalTotal] = useState("");
   const [yarnCount, setYarnCount] = useState([]);
-  const [darkMode, setDarkMode] = useState(true);
-
-  // Toggle dark mode
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
+  const [numWarpConstant,setWarpNumConstant] = useState(1.35);
+  const [numWeftConstant,setWeftNumConstant] = useState(1.35);
 
   // Constants
   const warpCountOptions = yarnCount?.map(y => y?.yarn_count) || [];
@@ -145,17 +139,17 @@ function Costing() {
 
   useEffect(() => {
     if (width && reed && warpCount) {
-      const weight = ((toNum(width) * toNum(reed) * 1.35) / 840) * getHanksWt(warpCount);
+      const weight = ((toNum(width) * toNum(reed) * toNum(numWarpConstant)) / 840) * getHanksWt(warpCount);
       setWarpWeight(weight.toFixed(3));
     }
-  }, [width, reed, warpCount]);
+  }, [width, reed, warpCount,numWarpConstant]);
 
   useEffect(() => {
     if (width && pick && weftCount) {
-      const weight = ((toNum(width) * toNum(pick) * 1.35) / 840 * getHanksWt(weftCount));
+      const weight = ((toNum(width) * toNum(pick) * toNum(numWeftConstant)) / 840 * getHanksWt(weftCount));
       setWeftWeight(weight.toFixed(3));
     }
-  }, [width, pick, weftCount]);
+  }, [width, pick, weftCount,numWeftConstant]);
 
   useEffect(() => {
     if (initWarpCost && warpDyeing && warpweight) {
@@ -200,396 +194,258 @@ function Costing() {
     }
   }, [totalCost, gst, transport]);
 
-  const renderInputs = () => (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="space-y-8"
-    >
-      {/* Fabric Specifications */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <SectionHeader title="Fabric Specifications" icon={FaToolbox} color="text-blue-600 dark:text-blue-400" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <TextInput
-            label="Width (inches)"
-            value={width}
-            onChange={(e) => setWidth(e.target.value)}
-            type="number"
-            icon={FaToolbox}
-            min={0}
-          />
-          <DropdownField
-            label="Warp Count"
-            value={warpCount}
-            onChange={(e) => setWarpCount(e.target.value)}
-            options={warpCountOptions}
-            icon={FaWeight}
-          />
-          <TextInput
-            label="Reed"
-            value={reed}
-            onChange={(e) => setReed(e.target.value)}
-            type="number"
-            icon={FaIndustry}
-            min={0}
-          />
-          <DropdownField
-            label="Weft Count"
-            value={weftCount}
-            onChange={(e) => setWeftCount(e.target.value)}
-            options={weftCountOptions}
-            icon={FaWeight}
-          />
-          <TextInput
-            label="Pick"
-            value={pick}
-            onChange={(e) => setPick(e.target.value)}
-            type="number"
-            icon={FaIndustry}
-            min={0}
-          />
-        </div>
-      </div>
-
-      {/* Material Costs */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <SectionHeader title="Material Costs" icon={FaMoneyBillWave} color="text-green-600 dark:text-green-400" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <TextInput
-            label="Warp Cost (per unit)"
-            value={initWarpCost}
-            onChange={(e) => setInitWarpCost(e.target.value)}
-            type="number"
-            icon={FaMoneyBillWave}
-            min={0}
-          />
-          <TextInput
-            label="Weft Cost (per unit)"
-            value={initWeftCost}
-            onChange={(e) => setInitWeftCost(e.target.value)}
-            type="number"
-            icon={FaMoneyBillWave}
-            min={0}
-          />
-          <TextInput
-            label="Warp Dyeing Cost"
-            value={warpDyeing}
-            onChange={(e) => setWarpDyeing(e.target.value)}
-            type="number"
-            icon={FaIndustry}
-            min={0}
-          />
-          <TextInput
-            label="Weft Dyeing Cost"
-            value={weftDyeing}
-            onChange={(e) => setWeftDyeing(e.target.value)}
-            type="number"
-            icon={FaIndustry}
-            min={0}
-          />
-        </div>
-      </div>
-
-      {/* Processing Costs */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <SectionHeader title="Processing Costs" icon={FaIndustry} color="text-purple-600 dark:text-purple-400" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <TextInput
-            label="Weaving Cost"
-            value={weaving}
-            onChange={(e) => setWeaving(e.target.value)}
-            type="number"
-            icon={FaIndustry}
-            min={0}
-          />
-          <TextInput
-            label="Washing Cost"
-            value={washing}
-            onChange={(e) => setWashing(e.target.value)}
-            type="number"
-            icon={FaIndustry}
-            min={0}
-          />
-          <TextInput
-            label="Transport Cost"
-            value={transport}
-            onChange={(e) => setTransport(e.target.value)}
-            type="number"
-            icon={FaTruck}
-            min={0}
-          />
-        </div>
-      </div>
-    </motion.div>
-  );
-
-  const renderResults = () => (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="space-y-8"
-    >
-      {/* Weight Calculations */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <SectionHeader title="Weight Calculations" icon={FaWeight} color="text-yellow-600 dark:text-yellow-400" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <ResultCard
-            title="Warp Weight"
-            value={warpweight}
-            icon={FaWeight}
-            color="bg-yellow-50 dark:bg-yellow-900/20"
-          />
-          <ResultCard
-            title="Weft Weight"
-            value={weftweight}
-            icon={FaWeight}
-            color="bg-yellow-50 dark:bg-yellow-900/20"
-          />
-        </div>
-      </div>
-
-      {/* Cost Breakdown */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <SectionHeader title="Cost Breakdown" icon={FaMoneyBillWave} color="text-blue-600 dark:text-blue-400" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <ResultCard
-            title="Warp Cost"
-            value={warpCost}
-            icon={FaMoneyBillWave}
-            color="bg-blue-50 dark:bg-blue-900/20"
-          />
-          <ResultCard
-            title="Weft Cost"
-            value={weftCost}
-            icon={FaMoneyBillWave}
-            color="bg-blue-50 dark:bg-blue-900/20"
-          />
-          <ResultCard
-            title="Profit (12%)"
-            value={profit}
-            icon={FaPercentage}
-            color="bg-green-50 dark:bg-green-900/20"
-          />
-          <ResultCard
-            title="Total Cost"
-            value={totalCost}
-            icon={FaCalculator}
-            color="bg-purple-50 dark:bg-purple-900/20"
-          />
-        </div>
-      </div>
-
-      {/* Final Costs */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <SectionHeader title="Final Costs" icon={FaCalculator} color="text-green-600 dark:text-green-400" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <ResultCard
-            title="GST (5%)"
-            value={gst}
-            icon={FaPercentage}
-            color="bg-red-50 dark:bg-red-900/20"
-          />
-          <ResultCard
-            title="Transport Cost"
-            value={transport}
-            icon={FaTruck}
-            color="bg-indigo-50 dark:bg-indigo-900/20"
-          />
-          <ResultCard
-            title="Final Total"
-            value={finaltotal}
-            icon={FaMoneyBillWave}
-            color="bg-green-50 dark:bg-green-900/20"
-          />
-        </div>
-      </div>
-    </motion.div>
-  );
-
-  const renderSummary = () => (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="space-y-8"
-    >
-      {/* Design Info */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <SectionHeader title="Design Information" icon={FaFileSignature} />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Design Name</p>
-            <p className="font-medium text-gray-800 dark:text-white mt-1">{designName || "-"}</p>
-          </div>
-          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Date</p>
-            <p className="font-medium text-gray-800 dark:text-white mt-1">{new Date().toLocaleDateString()}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Specifications */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <SectionHeader title="Fabric Specifications" icon={FaToolbox} />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: "Width (inches)", value: width },
-            { label: "Reed", value: reed },
-            { label: "Pick", value: pick },
-            { label: "Warp Count", value: warpCount },
-            { label: "Weft Count", value: weftCount },
-          ].map((item, index) => (
-            <div key={index} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-              <p className="text-sm text-gray-500 dark:text-gray-400">{item.label}</p>
-              <p className="font-medium text-gray-800 dark:text-white mt-1">{item.value || "-"}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Weights */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <SectionHeader title="Weight Calculations" icon={FaWeight} />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[
-            { label: "Warp Weight", value: warpweight },
-            { label: "Weft Weight", value: weftweight },
-          ].map((item, index) => (
-            <div key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-              <p className="text-sm text-gray-500 dark:text-gray-400">{item.label}</p>
-              <p className="font-medium text-gray-800 dark:text-white mt-1">{item.value || "-"}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Costs */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <SectionHeader title="Cost Breakdown" icon={FaMoneyBillWave} />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[
-            { label: "Warp Cost", value: warpCost },
-            { label: "Weft Cost", value: weftCost },
-            { label: "Weaving Cost", value: weaving },
-            { label: "Washing Cost", value: washing },
-            { label: "Profit (12%)", value: profit },
-            { label: "Total Cost", value: totalCost },
-          ].map((item, index) => (
-            <div key={index} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-              <p className="text-sm text-gray-500 dark:text-gray-400">{item.label}</p>
-              <p className="font-medium text-gray-800 dark:text-white mt-1">{item.value || "-"}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Final Costs */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <SectionHeader title="Final Costs" icon={FaCalculator} />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            { label: "GST (5%)", value: gst },
-            { label: "Transport", value: transport },
-            { label: "Final Total", value: finaltotal, highlight: true },
-          ].map((item, index) => (
-            <div key={index} className={`${item.highlight ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-gray-50 dark:bg-gray-700'} p-4 rounded-lg`}>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{item.label}</p>
-              <p className={`font-medium mt-1 ${item.highlight ? 'text-blue-600 dark:text-blue-400' : 'text-gray-800 dark:text-white'}`}>
-                {item.value || "-"}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </motion.div>
-  );
-
   return (
-    <div className={`min-h-screen ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <div className="flex items-center">
-            <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 mr-4">
+            <div className="p-3 rounded-lg bg-blue-100 text-blue-600 mr-4">
               <FaCalculator size={24} />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">
-                Costing Calculator
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+                Fabric Costing Calculator
               </h1>
               {displayedName && (
-                <p className="text-blue-600 dark:text-blue-400 font-medium">
+                <p className="text-blue-600 font-medium mt-1">
                   Design: <span className="font-bold">{displayedName}</span>
                 </p>
               )}
             </div>
           </div>
           
-          <div className="flex items-center space-x-4">
-            <div className="w-64">
-              <TextInput
-                label="Design Name"
-                value={designName}
-                onChange={(e) => setDesignName(e.target.value)}
-                placeholder="Enter design name..."
-                icon={FaFileSignature}
-              />
-            </div>
-            
-            <Switch
-              checked={darkMode}
-              onChange={setDarkMode}
-              className={`${
-                darkMode ? 'bg-blue-600' : 'bg-gray-200'
-              } relative inline-flex h-6 w-11 items-center rounded-full`}
-            >
-              <span className="sr-only">Toggle dark mode</span>
-              <span
-                className={`${
-                  darkMode ? 'translate-x-6' : 'translate-x-1'
-                } inline-block h-4 w-4 transform rounded-full bg-white transition`}
-              />
-              <span className="absolute left-1 top-1">
-                <FiMoon className={`h-4 w-4 ${darkMode ? 'text-white' : 'text-gray-400'}`} />
-              </span>
-              <span className="absolute right-1 top-1">
-                <FiSun className={`h-4 w-4 ${darkMode ? 'text-gray-400' : 'text-yellow-500'}`} />
-              </span>
-            </Switch>
+          <div className="w-full md:w-64">
+            <TextInput
+              label="Design Name"
+              value={designName}
+              onChange={(e) => setDesignName(e.target.value)}
+              placeholder="Enter design name..."
+              icon={FaFileSignature}
+            />
           </div>
         </div>
 
-        {/* Tabs */}
-        <Tab.Group>
-          <Tab.List className="flex space-x-1 rounded-xl bg-blue-900/20 p-1">
-            {[
-              { id: 1, icon: FaCalculator, label: "Inputs" },
-              { id: 2, icon: FaMoneyBillWave, label: "Results" },
-              { id: 3, icon: FaFileAlt, label: "Summary" }
-            ].map((tab) => (
-              <Tab
-                key={tab.id}
-                className={({ selected }) =>
-                  `w-full py-3 text-sm font-medium rounded-lg transition-all flex items-center justify-center space-x-2 ${
-                    selected
-                      ? 'bg-white dark:bg-gray-800 shadow text-blue-700 dark:text-blue-400'
-                      : 'text-blue-600 dark:text-blue-300 hover:bg-white/[0.12] hover:text-blue-800 dark:hover:text-white'
-                  }`
-                }
-              >
-                <tab.icon />
-                <span>{tab.label}</span>
-              </Tab>
-            ))}
-          </Tab.List>
-          <Tab.Panels className="mt-6">
-            <Tab.Panel>{renderInputs()}</Tab.Panel>
-            <Tab.Panel>{renderResults()}</Tab.Panel>
-            <Tab.Panel>{renderSummary()}</Tab.Panel>
-          </Tab.Panels>
-        </Tab.Group>
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Inputs */}
+          <div className="lg:col-span-2 space-y-6">
+            <SectionCard title="Fabric Specifications" icon={FaToolbox} color="text-blue-600">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <TextInput
+                  label="Width (inches)"
+                  value={width}
+                  onChange={(e) => setWidth(e.target.value)}
+                  type="number"
+                  icon={FaToolbox}
+                  min={0}
+                  step="0.01"
+                />
+                <DropdownField
+                  label="Warp Count"
+                  value={warpCount}
+                  onChange={(e) => setWarpCount(e.target.value)}
+                  options={warpCountOptions}
+                  icon={FaWeight}
+                />
+                <TextInput
+                  label="Reed"
+                  value={reed}
+                  onChange={(e) => setReed(e.target.value)}
+                  type="number"
+                  icon={FaIndustry}
+                  min={0}
+                  step="0.01"
+                />
+                <DropdownField
+                  label="Weft Count"
+                  value={weftCount}
+                  onChange={(e) => setWeftCount(e.target.value)}
+                  options={weftCountOptions}
+                  icon={FaWeight}
+                />
+                 <div className="md:col-span-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <TextInput
+          label="Pick"
+          value={pick}
+          onChange={(e) => setPick(e.target.value)}
+          type="number"
+          icon={FaIndustry}
+          min={0}
+          step="0.01"
+        />
+        <TextInput
+          label="Warp Constant"
+          value={numWarpConstant}
+          onChange={(e) => setWarpNumConstant(e.target.value)}
+          type="number"
+          className="w-full sm:w-32 md:w-40"
+          icon={FaNewspaper}
+          min={0}
+          step="0.01"
+        />
+        <TextInput
+          label="Weft Constant"
+          value={numWeftConstant}
+          onChange={(e) => setWeftNumConstant(e.target.value)}
+          type="number"
+          className="w-full sm:w-32 md:w-40"
+          icon={FaNewspaper}
+          min={0}
+          step="0.01"
+        />
+      </div>
+    </div>
+              </div>
+            </SectionCard>
+
+            <SectionCard title="Material Costs" icon={FaMoneyBillWave} color="text-green-600">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <TextInput
+                  label="Warp Cost (per unit)"
+                  value={initWarpCost}
+                  onChange={(e) => setInitWarpCost(e.target.value)}
+                  type="number"
+                  icon={FaMoneyBillWave}
+                  min={0}
+                  step="0.01"
+                />
+                <TextInput
+                  label="Weft Cost (per unit)"
+                  value={initWeftCost}
+                  onChange={(e) => setInitWeftCost(e.target.value)}
+                  type="number"
+                  icon={FaMoneyBillWave}
+                  min={0}
+                  step="0.01"
+                />
+                <TextInput
+                  label="Warp Dyeing Cost"
+                  value={warpDyeing}
+                  onChange={(e) => setWarpDyeing(e.target.value)}
+                  type="number"
+                  icon={FaIndustry}
+                  min={0}
+                  step="0.01"
+                />
+                <TextInput
+                  label="Weft Dyeing Cost"
+                  value={weftDyeing}
+                  onChange={(e) => setWeftDyeing(e.target.value)}
+                  type="number"
+                  icon={FaIndustry}
+                  min={0}
+                  step="0.01"
+                />
+              </div>
+            </SectionCard>
+
+            <SectionCard title="Processing Costs" icon={FaIndustry} color="text-purple-600">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <TextInput
+                  label="Weaving Cost"
+                  value={weaving}
+                  onChange={(e) => setWeaving(e.target.value)}
+                  type="number"
+                  icon={FaIndustry}
+                  min={0}
+                  step="0.01"
+                />
+                <TextInput
+                  label="Washing Cost"
+                  value={washing}
+                  onChange={(e) => setWashing(e.target.value)}
+                  type="number"
+                  icon={FaIndustry}
+                  min={0}
+                  step="0.01"
+                />
+                <TextInput
+                  label="Transport Cost"
+                  value={transport}
+                  onChange={(e) => setTransport(e.target.value)}
+                  type="number"
+                  icon={FaTruck}
+                  min={0}
+                  step="0.01"
+                />
+              </div>
+            </SectionCard>
+          </div>
+
+          {/* Right Column - Results */}
+          <div className="space-y-6">
+            <SectionCard title="Weight Calculations" icon={FaWeight} color="text-yellow-600">
+              <div className="grid grid-cols-1 gap-4">
+                <ResultCard
+                  title="Warp Weight"
+                  value={warpweight}
+                  icon={FaWeight}
+                  color="bg-yellow-50"
+                />
+                <ResultCard
+                  title="Weft Weight"
+                  value={weftweight}
+                  icon={FaWeight}
+                  color="bg-yellow-50"
+                />
+              </div>
+            </SectionCard>
+
+            <SectionCard title="Cost Breakdown" icon={FaMoneyBillWave} color="text-blue-600">
+              <div className="grid grid-cols-1 gap-4">
+                <ResultCard
+                  title="Warp Cost"
+                  value={warpCost}
+                  icon={FaMoneyBillWave}
+                  color="bg-blue-50"
+                />
+                <ResultCard
+                  title="Weft Cost"
+                  value={weftCost}
+                  icon={FaMoneyBillWave}
+                  color="bg-blue-50"
+                />
+                <ResultCard
+                  title="Processing Cost"
+                  value={(toNum(weaving) + toNum(washing)).toFixed(3)}
+                  icon={FaIndustry}
+                  color="bg-purple-50"
+                />
+              </div>
+            </SectionCard>
+
+            <SectionCard title="Final Costs" icon={FaCalculator} color="text-green-600">
+              <div className="grid grid-cols-1 gap-4">
+                <ResultCard
+                  title="Subtotal"
+                  value={(toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing)).toFixed(3)}
+                  icon={FaCalculator}
+                  color="bg-gray-50"
+                />
+                <ResultCard
+                  title="Profit (12%)"
+                  value={profit}
+                  icon={FaPercentage}
+                  color="bg-green-50"
+                />
+                <ResultCard
+                  title="GST (5%)"
+                  value={gst}
+                  icon={FaPercentage}
+                  color="bg-red-50"
+                />
+                <ResultCard
+                  title="Final Total"
+                  value={finaltotal}
+                  icon={FaMoneyBillWave}
+                  color="bg-green-50"
+                />
+              </div>
+            </SectionCard>
+          </div>
+        </div>
       </div>
     </div>
   );
