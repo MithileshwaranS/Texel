@@ -20,7 +20,7 @@ app.get('/api/yarnCounts', async(req,res)=>{
         
     }
 
-    console.log(yarnCounts.rows)
+    
 })
 
 
