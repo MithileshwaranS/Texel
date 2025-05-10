@@ -101,7 +101,7 @@ const SubmitButton = ({ disabled, onClick }) => (
   </motion.button>
 );
 
-function Costing() {
+function CostingPage() {
   // State
   const [designName, setDesignName] = useState("");
   const [displayedName, setDisplayName] = useState("");
@@ -643,4 +643,4 @@ const backendUrl = process.env.REACT_APP_BACKEND_URL;
   );
 }
 
-export default Costing;
+export default CostingPage;

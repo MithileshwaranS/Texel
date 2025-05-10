@@ -13,7 +13,7 @@ import {
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import HeaderItem from "./components/common/HeaderItem";
 import Dashboard from "./pages/Dashboard";
-import Costing from "./pages/costing";
+import Costing from "./pages/CostingPage";
 import Inventory from "./pages/Inventory";
 import Reports from "./pages/Reports";
 import Customers from "./pages/Customers";
