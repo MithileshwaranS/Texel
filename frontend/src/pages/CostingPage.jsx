@@ -190,7 +190,7 @@ function CostingPage() {
       finaltotal,
     };
 
-    const response = await fetch(`${apiUrl}:3000/api/submit`, {
+    const response = await fetch(`https://texel.onrender.com:3000/api/submit`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
@@ -303,7 +303,7 @@ function CostingPage() {
 
   useEffect(() => {
     // Fetch data from API
-    fetch(`${apiUrl}/api/yarnCounts`)
+    fetch(`https://texel.onrender.com/api/yarnCounts`)
       .then(response => response.json())
       .then(data => {
         console.log(data)
