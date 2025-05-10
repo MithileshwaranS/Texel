@@ -130,6 +130,7 @@ function Costing() {
   const [numWarpConstant,setWarpNumConstant] = useState(1.35);
   const [numWeftConstant,setWeftNumConstant] = useState(1.35);
   const [toast, setToast] = useState(null);
+  const [profit1,setProfit1] = useState(0.12)
 
   const Toast = ({ message, type, onClose }) => (
   <motion.div
@@ -335,7 +336,7 @@ function Costing() {
 
   useEffect(() => {
     if (warpCost && weftCost && weaving && washing) {
-      const profitVal = (toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing)) * 0.12;
+      const profitVal = (toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing)) * 0.15;
       setProfit(profitVal.toFixed(3));
       setSaveProfit(profitVal.toFixed(3));
     }
@@ -539,6 +540,15 @@ function Costing() {
                   min={0}
                   step="0.01"
                 />
+                <TextInput
+                  label="Profit"
+                  value={profit1}
+                  onChange={(e) => setProfit1(e.target.value)}
+                  type="number"
+                  icon={FaTruck}
+                  min={0}
+                  step="0.01"
+                />
               </div>
             </SectionCard>
             
@@ -593,16 +603,16 @@ function Costing() {
             <SectionCard title="Final Costs" icon={FaCalculator} color="text-green-600">
               <div className="grid grid-cols-1 gap-4">
                 <ResultCard
-                  title="Subtotal"
-                  value={(toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing)).toFixed(3)}
-                  icon={FaCalculator}
-                  color="bg-gray-50"
-                />
-                <ResultCard
                   title="Profit (12%)"
                   value={profit}
                   icon={FaPercentage}
                   color="bg-green-50"
+                />
+                <ResultCard
+                  title="Subtotal"
+                  value={(toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing)).toFixed(3)}
+                  icon={FaCalculator}
+                  color="bg-gray-50"
                 />
                 <ResultCard
                   title="GST (5%)"
