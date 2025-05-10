@@ -150,6 +150,7 @@ function Costing() {
     </button>
   </motion.div>
 );
+const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
   const onSubmitForm = async (e) => {
   try {
@@ -187,7 +188,7 @@ function Costing() {
       finaltotal,
     };
 
-    const response = await fetch("http://localhost:3000/api/submit", {
+    const response = await fetch(`${backendUrl}/api/submit`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
@@ -300,7 +301,7 @@ function Costing() {
 
   useEffect(() => {
     // Fetch data from API
-    fetch(`http://localhost:3000/api/yarnCounts`)
+    fetch(`${backendUrl}/api/yarnCounts`)
       .then(response => response.json())
       .then(data => setYarnCount(data))
       .catch(error => console.error('Error fetching data:', error));
