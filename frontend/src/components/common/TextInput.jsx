@@ -1,6 +1,6 @@
 import { FaToolbox } from "react-icons/fa";
 
-const TextInput = ({ label, value, onChange, icon: Icon = FaToolbox, ...props }) => (
+const TextInput = ({ label, value, onChange, icon: Icon = FaToolbox,required=true, ...props }) => (
   <div className="flex flex-col space-y-1">
     <label className="text-sm font-medium text-gray-700 flex items-center">
       {Icon && <Icon className="mr-2" />}
@@ -11,6 +11,7 @@ const TextInput = ({ label, value, onChange, icon: Icon = FaToolbox, ...props })
       value={value}
       onChange={onChange}
       min = {min}
+      required = {required}
       {...props}
     />
   </div>

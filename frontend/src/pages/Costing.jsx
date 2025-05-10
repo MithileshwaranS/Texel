@@ -13,11 +13,12 @@ import {
 import { motion } from 'framer-motion';
 
 // Custom Components
-const TextInput = ({ label, value, onChange, type = "text", placeholder = "", icon: Icon, className = "", min, step }) => (
+const TextInput = ({ label, value, onChange, type = "text", placeholder = "", icon: Icon, className = "", min, step, required = true }) => (
   <div className={`flex flex-col ${className}`}>
     <label className="text-sm font-medium text-gray-700 mb-1 flex items-center">
       {Icon && <Icon className="mr-2" size={14} />}
       {label}
+      {required && <span className="text-red-500 ml-1">*</span>}
     </label>
     <input
       type={type}
@@ -27,20 +28,23 @@ const TextInput = ({ label, value, onChange, type = "text", placeholder = "", ic
       className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
       min={min}
       step={step}
+      required={required}
     />
   </div>
 );
 
-const DropdownField = ({ label, value, onChange, options, icon: Icon }) => (
+const DropdownField = ({ label, value, onChange, options, icon: Icon, required = true }) => (
   <div className="flex flex-col">
     <label className="text-sm font-medium text-gray-700 mb-1 flex items-center">
       {Icon && <Icon className="mr-2" size={14} />}
       {label}
+      {required && <span className="text-red-500 ml-1">*</span>}
     </label>
     <select
       value={value}
       onChange={onChange}
       className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+      required={required}
     >
       <option value="">Select {label}</option>
       {options.map((option, index) => (
@@ -83,6 +87,20 @@ const SectionCard = ({ title, icon: Icon, children, color = "text-blue-600" }) =
   </div>
 );
 
+const SubmitButton = ({ disabled, onClick }) => (
+  <motion.button
+    whileHover={!disabled ? { scale: 1.03 } : {}}
+    whileTap={!disabled ? { scale: 0.98 } : {}}
+    onClick={onClick}
+    disabled={disabled}
+    className={`w-full py-3 px-6 rounded-lg font-medium text-white transition-all ${
+      disabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+    }`}
+  >
+    Submit Design
+  </motion.button>
+);
+
 function Costing() {
   // State
   const [designName, setDesignName] = useState("");
@@ -111,6 +129,147 @@ function Costing() {
   const [yarnCount, setYarnCount] = useState([]);
   const [numWarpConstant,setWarpNumConstant] = useState(1.35);
   const [numWeftConstant,setWeftNumConstant] = useState(1.35);
+  const [toast, setToast] = useState(null);
+
+  const Toast = ({ message, type, onClose }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    className={`fixed bottom-4 right-4 px-6 py-4 rounded-lg shadow-lg flex items-center ${
+      type === 'success' ? 'bg-green-500' : 'bg-red-500'
+    } text-white`}
+  >
+    <span>{message}</span>
+    <button 
+      onClick={onClose}
+      className="ml-4 text-white hover:text-gray-200"
+    >
+      ×
+    </button>
+  </motion.div>
+);
+
+  const onSubmitForm = async (e) => {
+  try {
+    e.preventDefault();
+    if (!checkAllFieldsFilled()) {
+      setToast({
+        message: 'Please fill all required fields',
+        type: 'error'
+      });
+      return;
+    }
+
+    const body = {
+      designName,
+      width,
+      reed,
+      pick,
+      warpweight,
+      weftweight,
+      warpCount,
+      weftCount,
+      warpCost,
+      weftCost,
+      warpDyeing,
+      weftDyeing,
+      initWeftCost,
+      initWarpCost,
+      weaving,
+      washing,
+      profit,
+      totalCost,
+      saveprofit,
+      gst,
+      transport,
+      finaltotal,
+    };
+
+    const response = await fetch("http://localhost:3000/api/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const result = await response.json();
+
+    if (response.status === 409) {
+      setToast({
+        message: result.message,
+        type: 'error'
+      });
+      return;
+    }
+
+    if (response.ok) {
+      setToast({
+        message: 'Design submitted successfully!',
+        type: 'success',
+        
+      });
+      // Reset all fields
+      setDesignName('');
+      setWidth('');
+      setReed('');
+      setPick('');
+      setWarpWeight('');
+      setWeftWeight('');
+      setWarpCount('');
+      setWeftCount('');
+      setWarpCost('');
+      setWeftCost('');
+      setWarpDyeing('');
+      setWeftDyeing('');
+      setInitWeftCost('');
+      setInitWarpCost('');
+      setWeaving('');
+      setWashing('');
+      setProfit('');
+      setTotalCost('');
+      setSaveProfit('');
+      setGst('');
+      setTransport('');
+      setFinalTotal('');
+
+     
+      // Optionally reset form here if needed
+    }
+    
+    else {
+      setToast({
+        message: 'Failed to submit design. Please try again.',
+        type: 'error'
+      });
+    }
+
+  } catch (err) {
+    console.log(err.message);
+    setToast({
+      message: 'An error occurred. Please try again.',
+      type: 'error'
+    });
+  }
+};
+
+  const checkAllFieldsFilled = () => {
+    const requiredFields = [
+      designName,
+      width,
+      reed,
+      pick,
+      warpCount,
+      weftCount,
+      initWarpCost,
+      initWeftCost,
+      warpDyeing,
+      weftDyeing,
+      weaving,
+      washing,
+      transport
+    ];
+    
+    return requiredFields.every(field => field !== "" && field !== undefined && field !== null);
+  };
 
   // Constants
   const warpCountOptions = yarnCount?.map(y => y?.yarn_count) || [];
@@ -125,6 +284,15 @@ function Costing() {
   const toNum = (val) => parseFloat(val || 0);
 
   // Effects
+  useEffect(() => {
+  if (toast) {
+    const timer = setTimeout(() => {
+      setToast(null);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }
+}, [toast]);
+
   useEffect(() => {
     setDisplayName(designName);
   }, [designName]);
@@ -222,6 +390,7 @@ function Costing() {
               onChange={(e) => setDesignName(e.target.value)}
               placeholder="Enter design name..."
               icon={FaFileSignature}
+              required={true}
             />
           </div>
         </div>
@@ -264,39 +433,39 @@ function Costing() {
                   options={weftCountOptions}
                   icon={FaWeight}
                 />
-                 <div className="md:col-span-2">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <TextInput
-          label="Pick"
-          value={pick}
-          onChange={(e) => setPick(e.target.value)}
-          type="number"
-          icon={FaIndustry}
-          min={0}
-          step="0.01"
-        />
-        <TextInput
-          label="Warp Constant"
-          value={numWarpConstant}
-          onChange={(e) => setWarpNumConstant(e.target.value)}
-          type="number"
-          className="w-full sm:w-32 md:w-40"
-          icon={FaNewspaper}
-          min={0}
-          step="0.01"
-        />
-        <TextInput
-          label="Weft Constant"
-          value={numWeftConstant}
-          onChange={(e) => setWeftNumConstant(e.target.value)}
-          type="number"
-          className="w-full sm:w-32 md:w-40"
-          icon={FaNewspaper}
-          min={0}
-          step="0.01"
-        />
-      </div>
-    </div>
+                <div className="md:col-span-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <TextInput
+                      label="Pick"
+                      value={pick}
+                      onChange={(e) => setPick(e.target.value)}
+                      type="number"
+                      icon={FaIndustry}
+                      min={0}
+                      step="0.01"
+                    />
+                    <TextInput
+                      label="Warp Constant"
+                      value={numWarpConstant}
+                      onChange={(e) => setWarpNumConstant(e.target.value)}
+                      type="number"
+                      className="w-full sm:w-32 md:w-40"
+                      icon={FaNewspaper}
+                      min={0}
+                      step="0.01"
+                    />
+                    <TextInput
+                      label="Weft Constant"
+                      value={numWeftConstant}
+                      onChange={(e) => setWeftNumConstant(e.target.value)}
+                      type="number"
+                      className="w-full sm:w-32 md:w-40"
+                      icon={FaNewspaper}
+                      min={0}
+                      step="0.01"
+                    />
+                  </div>
+                </div>
               </div>
             </SectionCard>
 
@@ -372,6 +541,11 @@ function Costing() {
                 />
               </div>
             </SectionCard>
+            
+            <SubmitButton 
+              disabled={!checkAllFieldsFilled()} 
+              onClick={onSubmitForm} 
+            />
           </div>
 
           {/* Right Column - Results */}
@@ -446,6 +620,13 @@ function Costing() {
             </SectionCard>
           </div>
         </div>
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
       </div>
     </div>
   );
