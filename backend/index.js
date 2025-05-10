@@ -8,6 +8,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const port = process.env.PORT || 4000;
+
 
 //displaying the yarncounts in the dropdownmenu
 app.get('/api/yarnCounts', async(req,res)=>{
