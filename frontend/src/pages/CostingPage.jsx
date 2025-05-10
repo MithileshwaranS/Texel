@@ -12,6 +12,8 @@ import {
 } from "react-icons/fa";
 import { motion } from 'framer-motion';
 
+const apiUrl = process.env.REACT_APP_BACKEND_URL;
+
 // Custom Components
 const TextInput = ({ label, value, onChange, type = "text", placeholder = "", icon: Icon, className = "", min, step, required = true }) => (
   <div className={`flex flex-col ${className}`}>
@@ -150,7 +152,7 @@ function CostingPage() {
     </button>
   </motion.div>
 );
-const backendUrl = process.env.REACT_APP_BACKEND_URL;
+
 
   const onSubmitForm = async (e) => {
   try {
@@ -188,7 +190,7 @@ const backendUrl = process.env.REACT_APP_BACKEND_URL;
       finaltotal,
     };
 
-    const response = await fetch(`${backendUrl}/api/submit`, {
+    const response = await fetch(`${apiUrl}:3000/api/submit`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
@@ -301,9 +303,11 @@ const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
   useEffect(() => {
     // Fetch data from API
-    fetch(`${backendUrl}/api/yarnCounts`)
+    fetch(`${apiUrl}/api/yarnCounts`)
       .then(response => response.json())
-      .then(data => setYarnCount(data))
+      .then(data => {
+        console.log(data)
+        setYarnCount(data)})
       .catch(error => console.error('Error fetching data:', error));
   }, []);
 
