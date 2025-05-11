@@ -12,7 +12,7 @@ import {
 } from "react-icons/fa";
 import { motion } from 'framer-motion';
 
-const apiUrl = process.env.REACT_APP_BACKEND_URL;
+// const apiUrl = process.env.REACT_APP_BACKEND_URL;
 
 // Custom Components
 const TextInput = ({ label, value, onChange, type = "text", placeholder = "", icon: Icon, className = "", min, step, required = true }) => (
@@ -129,10 +129,11 @@ function CostingPage() {
   const [transport, setTransport] = useState("");
   const [finaltotal, setFinalTotal] = useState("");
   const [yarnCount, setYarnCount] = useState([]);
+  const [yarnPrice,setYarnPrice] = useState([]);
   const [numWarpConstant,setWarpNumConstant] = useState(1.35);
   const [numWeftConstant,setWeftNumConstant] = useState(1.35);
   const [toast, setToast] = useState(null);
-  const [profit1,setProfit1] = useState(0.12)
+  const [profitPercent,setprofitPercent] = useState(0.15)
 
   const Toast = ({ message, type, onClose }) => (
   <motion.div
@@ -190,7 +191,7 @@ function CostingPage() {
       finaltotal,
     };
 
-    const response = await fetch(`https://texel.onrender.com/api/submit`, {
+    const response = await fetch(`http://localhost:3000/api/submit`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
@@ -276,13 +277,52 @@ function CostingPage() {
   };
 
   // Constants
-  const warpCountOptions = yarnCount?.map(y => y?.yarn_count) || [];
+    const warpCountOptions = yarnCount?.map(y => y?.yarn_count) || [];
   const weftCountOptions = yarnCount?.map(y => y.yarn_count) || [];
   
+
+const sortYarnCounts = (counts) => {
+  const regularCounts = [];
+  const twistedCounts = [];
+
+  counts.forEach(count => {
+    if (count.includes('/')) {
+      twistedCounts.push(count);
+    } else {
+      regularCounts.push(count);
+    }
+  });
+
+  const parseCount = (str) => {
+    if (str.includes('/')) {
+      const [prefix, base] = str.replace('s', '').split('/').map(Number);
+      return prefix * base;
+    } else {
+      return parseInt(str.replace('s', ''));
+    }
+  };
+
+  regularCounts.sort((a, b) => parseCount(a) - parseCount(b));
+  twistedCounts.sort((a, b) => parseCount(a) - parseCount(b));
+
+  return [...regularCounts, ...twistedCounts];
+};
+
+
+const sortedWarpCountOptions = sortYarnCounts([...warpCountOptions]);
+const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
+
+
   const getHanksWt = (count) => {
     const found = yarnCount.find(y => y.yarn_count === count);
     return found ? found.hanks_wt : 0;
   };
+
+  const getYarnPrice = (count) =>{
+    const found = yarnPrice.find(y =>y.yarn_count === count);
+    return found ? found.yarnprice : 0;
+  }
+
 
   // Helper function
   const toNum = (val) => parseFloat(val || 0);
@@ -303,13 +343,35 @@ function CostingPage() {
 
   useEffect(() => {
     // Fetch data from API
-    fetch(`https://texel.onrender.com/api/yarnCounts`)
+    fetch(`http://localhost:3000/api/yarnCounts`)
       .then(response => response.json())
       .then(data => {
         console.log(data)
         setYarnCount(data)})
       .catch(error => console.error('Error fetching data:', error));
   }, []);
+
+  useEffect(()=>{
+    fetch(`http://localhost:3000/api/yarnPrice`)
+    .then(response => response.json())
+    .then(data =>{
+      console.log(data)
+      setYarnPrice(data)})
+    .catch(error=>consoly.error('Error fetching data',error))
+  },[]);
+
+
+  useEffect(()=>{
+    if(warpCount){
+      setInitWarpCost(getYarnPrice(`${warpCount}`))
+    }
+  },[warpCount]);
+
+  useEffect(()=>{
+    if(weftCount){
+      setInitWeftCost(getYarnPrice(`${weftCount}`))
+    }
+  },[weftCount]);
 
   useEffect(() => {
     if (width && reed && warpCount) {
@@ -341,11 +403,11 @@ function CostingPage() {
 
   useEffect(() => {
     if (warpCost && weftCost && weaving && washing) {
-      const profitVal = (toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing)) * 0.15;
+      const profitVal = (toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing)) * profitPercent;
       setProfit(profitVal.toFixed(3));
       setSaveProfit(profitVal.toFixed(3));
     }
-  }, [warpCost, weftCost, weaving, washing]);
+  }, [warpCost, weftCost, weaving, washing,profitPercent]);
 
   useEffect(() => {
     if (warpCost && weftCost && weaving && washing && saveprofit) {
@@ -420,8 +482,9 @@ function CostingPage() {
                   label="Warp Count"
                   value={warpCount}
                   onChange={(e) => setWarpCount(e.target.value)}
-                  options={warpCountOptions}
+                  options={sortedWarpCountOptions}
                   icon={FaWeight}
+                  
                 />
                 <TextInput
                   label="Reed"
@@ -436,7 +499,7 @@ function CostingPage() {
                   label="Weft Count"
                   value={weftCount}
                   onChange={(e) => setWeftCount(e.target.value)}
-                  options={weftCountOptions}
+                  options={sortedWeftCountOptions}
                   icon={FaWeight}
                 />
                 <div className="md:col-span-2">
@@ -547,8 +610,8 @@ function CostingPage() {
                 />
                 <TextInput
                   label="Profit"
-                  value={profit1}
-                  onChange={(e) => setProfit1(e.target.value)}
+                  value={profitPercent}
+                  onChange={(e) => setprofitPercent(e.target.value)}
                   type="number"
                   icon={FaTruck}
                   min={0}
@@ -608,7 +671,7 @@ function CostingPage() {
             <SectionCard title="Final Costs" icon={FaCalculator} color="text-green-600">
               <div className="grid grid-cols-1 gap-4">
                 <ResultCard
-                  title="Profit (12%)"
+                  title={`Profit (${(profitPercent * 100).toFixed(0)}%)`}
                   value={profit}
                   icon={FaPercentage}
                   color="bg-green-50"

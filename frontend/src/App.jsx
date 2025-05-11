@@ -51,7 +51,7 @@ function App() {
             {/* Logo */}
             <div className="flex items-center">
               <FaIndustry className="text-blue-600 text-2xl mr-2" />
-              <span className="text-xl font-bold text-gray-800">Texile</span>
+              <span className="text-xl font-bold text-gray-800">Texel</span>
             </div>
 
             {/* Desktop Navigation */}
