@@ -2,6 +2,7 @@ import pool from "./db.js";
 import express from "express";
 import cors from "cors";
 import supabase from "./db.js";
+import path from 'path';
 
 const app = express();
 
