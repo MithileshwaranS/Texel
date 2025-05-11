@@ -190,7 +190,7 @@ function CostingPage() {
       finaltotal,
     };
 
-    const response = await fetch(`https://texel.onrender.com:3000/api/submit`, {
+    const response = await fetch(`https://texel.onrender.com/api/submit`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
