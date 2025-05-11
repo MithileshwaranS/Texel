@@ -8,8 +8,11 @@ import {
   FaPercentage,
   FaTruck,
   FaFileSignature,
-  FaNewspaper
+  FaNewspaper,
+  FaCalendarAlt
 } from "react-icons/fa";
+import { Grid } from '@mui/material';
+
 import { motion } from 'framer-motion';
 
 // const apiUrl = process.env.REACT_APP_BACKEND_URL;
@@ -116,17 +119,18 @@ function CostingPage() {
   const [weftCount, setWeftCount] = useState("");
   const [warpCost, setWarpCost] = useState("");
   const [weftCost, setWeftCost] = useState("");
-  const [warpDyeing, setWarpDyeing] = useState("");
-  const [weftDyeing, setWeftDyeing] = useState("");
+  const [warpDyeing, setWarpDyeing] = useState(300);
+  const [weftDyeing, setWeftDyeing] = useState(300);
   const [initWeftCost, setInitWeftCost] = useState("");
   const [initWarpCost, setInitWarpCost] = useState("");
   const [weaving, setWeaving] = useState("");
-  const [washing, setWashing] = useState("");
+  const [washing, setWashing] = useState(8);
   const [profit, setProfit] = useState("");
   const [totalCost, setTotalCost] = useState("");
   const [saveprofit, setSaveProfit] = useState("");
   const [gst, setGst] = useState("");
-  const [transport, setTransport] = useState("");
+  const [transport, setTransport] = useState(7);
+  const [mending,setMending] = useState(10);
   const [finaltotal, setFinalTotal] = useState("");
   const [yarnCount, setYarnCount] = useState([]);
   const [yarnPrice,setYarnPrice] = useState([]);
@@ -134,6 +138,8 @@ function CostingPage() {
   const [numWeftConstant,setWeftNumConstant] = useState(1.35);
   const [toast, setToast] = useState(null);
   const [profitPercent,setprofitPercent] = useState(0.15)
+  const [designDate,setDesignDate] = useState('');
+  const [twisting,setTwisting] = useState(0);
 
   const Toast = ({ message, type, onClose }) => (
   <motion.div
@@ -189,6 +195,7 @@ function CostingPage() {
       gst,
       transport,
       finaltotal,
+      designDate
     };
 
     const response = await fetch(`http://localhost:3000/api/submit`, {
@@ -235,6 +242,11 @@ function CostingPage() {
       setGst('');
       setTransport('');
       setFinalTotal('');
+      setWarpDyeing('');
+      setWeftDyeing('');
+      setWashing('');
+      setTransport('');
+
 
      
       // Optionally reset form here if needed
@@ -402,19 +414,19 @@ const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
   }, [initWeftCost, weftDyeing, weftweight]);
 
   useEffect(() => {
-    if (warpCost && weftCost && weaving && washing) {
-      const profitVal = (toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing)) * profitPercent;
+    if (warpCost && weftCost && weaving && washing && mending && twisting) {
+      const profitVal = (toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing) +toNum(mending) + toNum(twisting)) * profitPercent;
       setProfit(profitVal.toFixed(3));
       setSaveProfit(profitVal.toFixed(3));
     }
-  }, [warpCost, weftCost, weaving, washing,profitPercent]);
+  }, [warpCost, weftCost, weaving, washing,profitPercent,mending,twisting]);
 
   useEffect(() => {
-    if (warpCost && weftCost && weaving && washing && saveprofit) {
-      const total = toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing) + toNum(saveprofit);
+    if (warpCost && weftCost && weaving && washing && saveprofit && transport && mending && twisting) {
+      const total = toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing) + toNum(saveprofit)+ toNum(mending) + toNum(twisting) + toNum(transport);
       setTotalCost(total.toFixed(3));
     }
-  }, [warpCost, weftCost, weaving, washing, saveprofit]);
+  }, [warpCost, weftCost, weaving, washing, saveprofit,transport,mending,twisting]);
 
   useEffect(() => {
     if (totalCost) {
@@ -424,11 +436,11 @@ const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
   }, [totalCost]);
 
   useEffect(() => {
-    if (totalCost && gst && transport) {
-      const sum = toNum(totalCost) + toNum(gst) + toNum(transport);
+    if (totalCost && gst ) {
+      const sum = toNum(totalCost) + toNum(gst);
       setFinalTotal(sum.toFixed(3));
     }
-  }, [totalCost, gst, transport]);
+  }, [totalCost, gst]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -452,14 +464,34 @@ const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
           </div>
           
           <div className="w-full md:w-64">
-            <TextInput
-              label="Design Name"
-              value={designName}
-              onChange={(e) => setDesignName(e.target.value)}
-              placeholder="Enter design name..."
-              icon={FaFileSignature}
-              required={true}
-            />
+
+            <Grid container spacing={2}>
+  <Grid item xs={6}>
+    <TextInput
+      label="Design Name"
+      value={designName}
+      onChange={(e) => setDesignName(e.target.value)}
+      placeholder="Enter design name..."
+      icon={FaFileSignature}
+      required={true}
+    />
+  </Grid>
+  <Grid item xs={6}>
+    <TextInput
+      label="Design Date"
+      value={designDate}
+      onChange={(e) => setDesignDate(e.target.value)}
+      placeholder="Select design date..."
+      icon={FaCalendarAlt}
+      type="date"
+      required={true}
+    />
+  </Grid>
+</Grid>
+
+            
+
+            
           </div>
         </div>
 
@@ -469,15 +501,7 @@ const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
           <div className="lg:col-span-2 space-y-6">
             <SectionCard title="Fabric Specifications" icon={FaToolbox} color="text-blue-600">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextInput
-                  label="Width (inches)"
-                  value={width}
-                  onChange={(e) => setWidth(e.target.value)}
-                  type="number"
-                  icon={FaToolbox}
-                  min={0}
-                  step="0.01"
-                />
+                
                 <DropdownField
                   label="Warp Count"
                   value={warpCount}
@@ -502,9 +526,7 @@ const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
                   options={sortedWeftCountOptions}
                   icon={FaWeight}
                 />
-                <div className="md:col-span-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <TextInput
+                <TextInput
                       label="Pick"
                       value={pick}
                       onChange={(e) => setPick(e.target.value)}
@@ -513,6 +535,17 @@ const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
                       min={0}
                       step="0.01"
                     />
+                <div className="md:col-span-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <TextInput
+                  label="Width (inches)"
+                  value={width}
+                  onChange={(e) => setWidth(e.target.value)}
+                  type="number"
+                  icon={FaToolbox}
+                  min={0}
+                  step="0.01"
+                />
                     <TextInput
                       label="Warp Constant"
                       value={numWarpConstant}
@@ -600,18 +633,37 @@ const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
                   step="0.01"
                 />
                 <TextInput
-                  label="Transport Cost"
-                  value={transport}
-                  onChange={(e) => setTransport(e.target.value)}
+                  label="Mending Cost"
+                  value={mending}
+                  onChange={(e) => setMending(e.target.value)}
+                  type="number"
+                  icon={FaIndustry}
+                  min={0}
+                  step="0.01"
+                />
+                <TextInput
+                  label="Twisting"
+                  value={twisting}
+                  onChange={(e) => setTwisting(e.target.value)}
+                  type="number"
+                  icon={FaTruck}
+                  min={0}
+                  step="0.01"
+                />
+                
+                <TextInput
+                  label="Profit"
+                  value={profitPercent}
+                  onChange={(e) => setprofitPercent(e.target.value)}
                   type="number"
                   icon={FaTruck}
                   min={0}
                   step="0.01"
                 />
                 <TextInput
-                  label="Profit"
-                  value={profitPercent}
-                  onChange={(e) => setprofitPercent(e.target.value)}
+                  label="Transport Cost"
+                  value={transport}
+                  onChange={(e) => setTransport(e.target.value)}
                   type="number"
                   icon={FaTruck}
                   min={0}
