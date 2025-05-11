@@ -1,9 +1,6 @@
-import pool from "./db.js";
 import express from "express";
 import cors from "cors";
 import supabase from "./db.js";
-import path from 'path';
-import { fileURLToPath } from 'url';
 
 const app = express();
 
@@ -26,13 +23,7 @@ app.get('/api/yarnCounts', async (req, res) => {
   }
 });
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-app.use( express.static(path.join(__dirname, 'frontend', 'dist')));
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
-});
 
 // POST: Submit costing
 app.post('/api/submit', async (req, res) => {
