@@ -37,6 +37,19 @@ app.get('/api/yarnPrice',async(req,res)=>{
   }
 })
 
+//getting all the yarndetails
+
+app.get('/api/yarnDetails',async(req,res)=>{
+  try {
+    const yarnDet = await pool.query("SELECT * from yarnDetails")
+    res.json(yarnDet.rows)
+    
+  } catch (error) {
+    console.error(error.message);
+    
+  }
+})
+
 //submiting the costing
 
 app.post('/api/submit',async(req,res)=>{
