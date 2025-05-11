@@ -110,7 +110,7 @@ app.post('/api/addYarn',async(req,res)=>{
 
 app.get('/api/yarnDetails',async(req,res)=>{
   try {
-    const yarnDet = await pool.query("SELECT * from yarnDetails")
+    const yarnDet = await pool.query("SELECT yarn_count, hanks_wt,yarnprice from yarnDetails")
     res.json(yarnDet.rows)
     
   } catch (error) {

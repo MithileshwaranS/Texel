@@ -9,19 +9,17 @@ import {
   FaTruck,
   FaFileSignature,
   FaNewspaper,
-  FaCalendarAlt
+  FaCalendarAlt,
+  FaTimes
 } from "react-icons/fa";
 import { Grid } from '@mui/material';
-
-import { motion } from 'framer-motion';
-
-// const apiUrl = process.env.REACT_APP_BACKEND_URL;
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Custom Components
 const TextInput = ({ label, value, onChange, type = "text", placeholder = "", icon: Icon, className = "", min, step, required = true }) => (
   <div className={`flex flex-col ${className}`}>
-    <label className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-      {Icon && <Icon className="mr-2" size={14} />}
+    <label className="text-xs font-medium text-gray-500 mb-1 flex items-center uppercase tracking-wider">
+      {Icon && <Icon className="mr-2 text-gray-400" size={12} />}
       {label}
       {required && <span className="text-red-500 ml-1">*</span>}
     </label>
@@ -30,7 +28,7 @@ const TextInput = ({ label, value, onChange, type = "text", placeholder = "", ic
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+      className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm"
       min={min}
       step={step}
       required={required}
@@ -40,15 +38,15 @@ const TextInput = ({ label, value, onChange, type = "text", placeholder = "", ic
 
 const DropdownField = ({ label, value, onChange, options, icon: Icon, required = true }) => (
   <div className="flex flex-col">
-    <label className="text-sm font-medium text-gray-700 mb-1 flex items-center">
-      {Icon && <Icon className="mr-2" size={14} />}
+    <label className="text-xs font-medium text-gray-500 mb-1 flex items-center uppercase tracking-wider">
+      {Icon && <Icon className="mr-2 text-gray-400" size={12} />}
       {label}
       {required && <span className="text-red-500 ml-1">*</span>}
     </label>
     <select
       value={value}
       onChange={onChange}
-      className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+      className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm appearance-none"
       required={required}
     >
       <option value="">Select {label}</option>
@@ -63,16 +61,16 @@ const DropdownField = ({ label, value, onChange, options, icon: Icon, required =
 
 const ResultCard = ({ title, value, icon: Icon, color = "bg-white" }) => (
   <motion.div 
-    whileHover={{ scale: 1.03 }}
-    className={`${color} p-4 rounded-lg shadow-sm border border-gray-200 transition-all flex flex-col h-full`}
+    whileHover={{ scale: 1.03, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
+    className={`${color} p-4 rounded-xl shadow-sm border border-gray-100 transition-all flex flex-col h-full`}
   >
     <div className="flex items-center mb-2">
       {Icon && (
-        <div className="p-2 rounded-full bg-blue-100 text-blue-600 mr-3">
-          <Icon size={16} />
+        <div className="p-2 rounded-full bg-opacity-20 bg-blue-500 text-blue-600 mr-3">
+          <Icon size={14} />
         </div>
       )}
-      <p className="text-sm font-medium text-gray-500">{title}</p>
+      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">{title}</p>
     </div>
     <p className="text-xl font-semibold text-gray-800 mt-1">
       {value || "0.000"}
@@ -81,28 +79,38 @@ const ResultCard = ({ title, value, icon: Icon, color = "bg-white" }) => (
 );
 
 const SectionCard = ({ title, icon: Icon, children, color = "text-blue-600" }) => (
-  <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
-    <h2 className={`text-md font-semibold mb-4 flex items-center ${color}`}>
-      {Icon && <Icon className="mr-2" size={16} />}
+  <motion.div 
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="bg-white p-5 rounded-xl shadow-sm border border-gray-100"
+  >
+    <h2 className={`text-sm font-semibold mb-4 flex items-center ${color} uppercase tracking-wider`}>
+      {Icon && <Icon className="mr-2" size={14} />}
       {title}
     </h2>
     <div className="space-y-4">
       {children}
     </div>
-  </div>
+  </motion.div>
 );
 
 const SubmitButton = ({ disabled, onClick }) => (
   <motion.button
-    whileHover={!disabled ? { scale: 1.03 } : {}}
+    whileHover={!disabled ? { scale: 1.02 } : {}}
     whileTap={!disabled ? { scale: 0.98 } : {}}
     onClick={onClick}
     disabled={disabled}
-    className={`w-full py-3 px-6 rounded-lg font-medium text-white transition-all ${
-      disabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-    }`}
+    className={`w-full py-3 px-6 rounded-xl font-medium text-white transition-all ${
+      disabled ? 'bg-gray-300 cursor-not-allowed' : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md'
+    } relative overflow-hidden`}
   >
-    Submit Design
+    <span className="relative z-10">Submit Design</span>
+    {!disabled && (
+      <motion.span 
+        className="absolute inset-0 bg-white opacity-0 hover:opacity-10 transition-opacity"
+        whileHover={{ opacity: 0.1 }}
+      />
+    )}
   </motion.button>
 );
 
@@ -137,136 +145,126 @@ function CostingPage() {
   const [numWarpConstant,setWarpNumConstant] = useState(1.35);
   const [numWeftConstant,setWeftNumConstant] = useState(1.35);
   const [toast, setToast] = useState(null);
-  const [profitPercent,setprofitPercent] = useState(0.15)
-  const [designDate,setDesignDate] = useState('');
+  const [profitPercent,setprofitPercent] = useState(0.15);
+  const [designDate,setDesignDate] = useState(new Date().toISOString().split('T')[0]);
   const [twisting,setTwisting] = useState(0);
 
   const Toast = ({ message, type, onClose }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -20 }}
-    className={`fixed bottom-4 right-4 px-6 py-4 rounded-lg shadow-lg flex items-center ${
-      type === 'success' ? 'bg-green-500' : 'bg-red-500'
-    } text-white`}
-  >
-    <span>{message}</span>
-    <button 
-      onClick={onClose}
-      className="ml-4 text-white hover:text-gray-200"
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className={`fixed bottom-6 right-6 px-6 py-4 rounded-xl shadow-lg flex items-center ${
+        type === 'success' ? 'bg-green-500' : 'bg-red-500'
+      } text-white z-50`}
     >
-      ×
-    </button>
-  </motion.div>
-);
-
+      <span className="text-sm font-medium">{message}</span>
+      <button 
+        onClick={onClose}
+        className="ml-4 text-white hover:text-gray-200 transition-colors"
+      >
+        <FaTimes size={14} />
+      </button>
+    </motion.div>
+  );
 
   const onSubmitForm = async (e) => {
-  try {
-    e.preventDefault();
-    if (!checkAllFieldsFilled()) {
+    try {
+      e.preventDefault();
+      if (!checkAllFieldsFilled()) {
+        setToast({
+          message: 'Please fill all required fields',
+          type: 'error'
+        });
+        return;
+      }
+
+      const body = {
+        designName,
+        width,
+        reed,
+        pick,
+        warpweight,
+        weftweight,
+        warpCount,
+        weftCount,
+        warpCost,
+        weftCost,
+        warpDyeing,
+        weftDyeing,
+        initWeftCost,
+        initWarpCost,
+        weaving,
+        washing,
+        profit,
+        totalCost,
+        saveprofit,
+        gst,
+        transport,
+        finaltotal,
+        designDate
+      };
+
+      const response = await fetch(`http://localhost:3000/api/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const result = await response.json();
+
+      if (response.status === 409) {
+        setToast({
+          message: result.message,
+          type: 'error'
+        });
+        return;
+      }
+
+      if (response.ok) {
+        setToast({
+          message: 'Design submitted successfully!',
+          type: 'success',
+        });
+        // Reset all fields
+        setDesignName('');
+        setWidth('');
+        setReed('');
+        setPick('');
+        setWarpWeight('');
+        setWeftWeight('');
+        setWarpCount('');
+        setWeftCount('');
+        setWarpCost('');
+        setWeftCost('');
+        setWarpDyeing(300);
+        setWeftDyeing(300);
+        setInitWeftCost('');
+        setInitWarpCost('');
+        setWeaving('');
+        setWashing(8);
+        setProfit('');
+        setTotalCost('');
+        setSaveProfit('');
+        setGst('');
+        setTransport(7);
+        setFinalTotal('');
+        setMending(10);
+        setTwisting(0);
+        setDesignDate(new Date().toISOString().split('T')[0]);
+      } else {
+        setToast({
+          message: 'Failed to submit design. Please try again.',
+          type: 'error'
+        });
+      }
+    } catch (err) {
+      console.log(err.message);
       setToast({
-        message: 'Please fill all required fields',
+        message: 'An error occurred. Please try again.',
         type: 'error'
       });
-      return;
     }
-
-    const body = {
-      designName,
-      width,
-      reed,
-      pick,
-      warpweight,
-      weftweight,
-      warpCount,
-      weftCount,
-      warpCost,
-      weftCost,
-      warpDyeing,
-      weftDyeing,
-      initWeftCost,
-      initWarpCost,
-      weaving,
-      washing,
-      profit,
-      totalCost,
-      saveprofit,
-      gst,
-      transport,
-      finaltotal,
-      designDate
-    };
-
-    const response = await fetch(`http://localhost:3000/api/submit`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
-    });
-    const result = await response.json();
-
-    if (response.status === 409) {
-      setToast({
-        message: result.message,
-        type: 'error'
-      });
-      return;
-    }
-
-    if (response.ok) {
-      setToast({
-        message: 'Design submitted successfully!',
-        type: 'success',
-        
-      });
-      // Reset all fields
-      setDesignName('');
-      setWidth('');
-      setReed('');
-      setPick('');
-      setWarpWeight('');
-      setWeftWeight('');
-      setWarpCount('');
-      setWeftCount('');
-      setWarpCost('');
-      setWeftCost('');
-      setWarpDyeing('');
-      setWeftDyeing('');
-      setInitWeftCost('');
-      setInitWarpCost('');
-      setWeaving('');
-      setWashing('');
-      setProfit('');
-      setTotalCost('');
-      setSaveProfit('');
-      setGst('');
-      setTransport('');
-      setFinalTotal('');
-      setWarpDyeing('');
-      setWeftDyeing('');
-      setWashing('');
-      setTransport('');
-
-
-     
-      // Optionally reset form here if needed
-    }
-    
-    else {
-      setToast({
-        message: 'Failed to submit design. Please try again.',
-        type: 'error'
-      });
-    }
-
-  } catch (err) {
-    console.log(err.message);
-    setToast({
-      message: 'An error occurred. Please try again.',
-      type: 'error'
-    });
-  }
-};
+  };
 
   const checkAllFieldsFilled = () => {
     const requiredFields = [
@@ -289,65 +287,61 @@ function CostingPage() {
   };
 
   // Constants
-    const warpCountOptions = yarnCount?.map(y => y?.yarn_count) || [];
+  const warpCountOptions = yarnCount?.map(y => y?.yarn_count) || [];
   const weftCountOptions = yarnCount?.map(y => y.yarn_count) || [];
   
+  const sortYarnCounts = (counts) => {
+    const regularCounts = [];
+    const twistedCounts = [];
 
-const sortYarnCounts = (counts) => {
-  const regularCounts = [];
-  const twistedCounts = [];
+    counts.forEach(count => {
+      if (count.includes('/')) {
+        twistedCounts.push(count);
+      } else {
+        regularCounts.push(count);
+      }
+    });
 
-  counts.forEach(count => {
-    if (count.includes('/')) {
-      twistedCounts.push(count);
-    } else {
-      regularCounts.push(count);
-    }
-  });
+    const parseCount = (str) => {
+      if (str.includes('/')) {
+        const [prefix, base] = str.replace('s', '').split('/').map(Number);
+        return prefix * base;
+      } else {
+        return parseInt(str.replace('s', ''));
+      }
+    };
 
-  const parseCount = (str) => {
-    if (str.includes('/')) {
-      const [prefix, base] = str.replace('s', '').split('/').map(Number);
-      return prefix * base;
-    } else {
-      return parseInt(str.replace('s', ''));
-    }
+    regularCounts.sort((a, b) => parseCount(a) - parseCount(b));
+    twistedCounts.sort((a, b) => parseCount(a) - parseCount(b));
+
+    return [...regularCounts, ...twistedCounts];
   };
 
-  regularCounts.sort((a, b) => parseCount(a) - parseCount(b));
-  twistedCounts.sort((a, b) => parseCount(a) - parseCount(b));
-
-  return [...regularCounts, ...twistedCounts];
-};
-
-
-const sortedWarpCountOptions = sortYarnCounts([...warpCountOptions]);
-const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
-
+  const sortedWarpCountOptions = sortYarnCounts([...warpCountOptions]);
+  const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
 
   const getHanksWt = (count) => {
     const found = yarnCount.find(y => y.yarn_count === count);
     return found ? found.hanks_wt : 0;
   };
 
-  const getYarnPrice = (count) =>{
-    const found = yarnPrice.find(y =>y.yarn_count === count);
+  const getYarnPrice = (count) => {
+    const found = yarnPrice.find(y => y.yarn_count === count);
     return found ? found.yarnprice : 0;
   }
-
 
   // Helper function
   const toNum = (val) => parseFloat(val || 0);
 
   // Effects
   useEffect(() => {
-  if (toast) {
-    const timer = setTimeout(() => {
-      setToast(null);
-    }, 5000);
-    return () => clearTimeout(timer);
-  }
-}, [toast]);
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   useEffect(() => {
     setDisplayName(designName);
@@ -363,80 +357,79 @@ const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
       .catch(error => console.error('Error fetching data:', error));
   }, []);
 
-  useEffect(()=>{
+  useEffect(() => {
     fetch(`http://localhost:3000/api/yarnPrice`)
-    .then(response => response.json())
-    .then(data =>{
-      console.log(data)
-      setYarnPrice(data)})
-    .catch(error=>consoly.error('Error fetching data',error))
-  },[]);
+      .then(response => response.json())
+      .then(data => {
+        console.log(data)
+        setYarnPrice(data)})
+      .catch(error => console.error('Error fetching data', error));
+  }, []);
 
-
-  useEffect(()=>{
-    if(warpCount){
+  useEffect(() => {
+    if (warpCount!=null) {
       setInitWarpCost(getYarnPrice(`${warpCount}`))
     }
-  },[warpCount]);
+  }, [warpCount]);
 
-  useEffect(()=>{
-    if(weftCount){
+  useEffect(() => {
+    if (weftCount!=null) {
       setInitWeftCost(getYarnPrice(`${weftCount}`))
     }
-  },[weftCount]);
+  }, [weftCount]);
 
   useEffect(() => {
-    if (width && reed && warpCount) {
-      const weight = ((toNum(width) * toNum(reed) * toNum(numWarpConstant)) / 840) * getHanksWt(warpCount);
+    if (width!=null && reed!=null && warpCount!=null) {
+      const weight = ((toNum(width) * toNum(reed) * toNum(numWarpConstant)) / 840 * getHanksWt(warpCount));
       setWarpWeight(weight.toFixed(3));
     }
-  }, [width, reed, warpCount,numWarpConstant]);
+  }, [width, reed, warpCount, numWarpConstant]);
 
   useEffect(() => {
-    if (width && pick && weftCount) {
+    if (width!=null && pick!=null && weftCount!=null) {
       const weight = ((toNum(width) * toNum(pick) * toNum(numWeftConstant)) / 840 * getHanksWt(weftCount));
       setWeftWeight(weight.toFixed(3));
     }
-  }, [width, pick, weftCount,numWeftConstant]);
+  }, [width, pick, weftCount, numWeftConstant]);
 
   useEffect(() => {
-    if (initWarpCost && warpDyeing && warpweight) {
+    if (initWarpCost!=null && warpDyeing!=null && warpweight!=null) {
       const cost = (toNum(initWarpCost) + toNum(warpDyeing)) * toNum(warpweight);
       setWarpCost(cost.toFixed(3));
     }
   }, [initWarpCost, warpDyeing, warpweight]);
 
   useEffect(() => {
-    if (initWeftCost && weftDyeing && weftweight) {
+    if (initWeftCost!=null && weftDyeing!=null && weftweight!=null) {
       const cost = (toNum(initWeftCost) + toNum(weftDyeing)) * toNum(weftweight);
       setWeftCost(cost.toFixed(3));
     }
   }, [initWeftCost, weftDyeing, weftweight]);
 
   useEffect(() => {
-    if (warpCost && weftCost && weaving && washing && mending && twisting) {
-      const profitVal = (toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing) +toNum(mending) + toNum(twisting)) * profitPercent;
+    if (warpCost!=null && weftCost!=null && weaving!=null && washing!=null && mending!=null && twisting!=null) {
+      const profitVal = (toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing) + toNum(mending) + toNum(twisting)) * profitPercent;
       setProfit(profitVal.toFixed(3));
       setSaveProfit(profitVal.toFixed(3));
     }
-  }, [warpCost, weftCost, weaving, washing,profitPercent,mending,twisting]);
+  }, [warpCost, weftCost, weaving, washing, profitPercent, mending,twisting]);
 
   useEffect(() => {
-    if (warpCost && weftCost && weaving && washing && saveprofit && transport && mending && twisting) {
-      const total = toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing) + toNum(saveprofit)+ toNum(mending) + toNum(twisting) + toNum(transport);
+    if (warpCost!=null && weftCost!=null && weaving!=null && washing!=null && saveprofit!=null && transport!=null && mending!=null && twisting!=null) {
+      const total = toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing) + toNum(saveprofit) + toNum(mending) + toNum(twisting) + toNum(transport);
       setTotalCost(total.toFixed(3));
     }
-  }, [warpCost, weftCost, weaving, washing, saveprofit,transport,mending,twisting]);
+  }, [warpCost, weftCost, weaving, washing, saveprofit, transport, mending, twisting]);
 
   useEffect(() => {
-    if (totalCost) {
+    if (totalCost!=null) {
       const gstVal = toNum(totalCost) * 0.05;
       setGst(gstVal.toFixed(3));
     }
   }, [totalCost]);
 
   useEffect(() => {
-    if (totalCost && gst ) {
+    if (totalCost!=null && gst!=null) {
       const sum = toNum(totalCost) + toNum(gst);
       setFinalTotal(sum.toFixed(3));
     }
@@ -444,11 +437,15 @@ const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4"
+        >
           <div className="flex items-center">
-            <div className="p-3 rounded-lg bg-blue-100 text-blue-600 mr-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 text-blue-600 mr-4 shadow-sm">
               <FaCalculator size={24} />
             </div>
             <div>
@@ -463,37 +460,32 @@ const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
             </div>
           </div>
           
-          <div className="w-full md:w-64">
-
+          <div className="w-full md:w-80">
             <Grid container spacing={2}>
-  <Grid item xs={6}>
-    <TextInput
-      label="Design Name"
-      value={designName}
-      onChange={(e) => setDesignName(e.target.value)}
-      placeholder="Enter design name..."
-      icon={FaFileSignature}
-      required={true}
-    />
-  </Grid>
-  <Grid item xs={6}>
-    <TextInput
-      label="Design Date"
-      value={designDate}
-      onChange={(e) => setDesignDate(e.target.value)}
-      placeholder="Select design date..."
-      icon={FaCalendarAlt}
-      type="date"
-      required={true}
-    />
-  </Grid>
-</Grid>
-
-            
-
-            
+              <Grid item xs={12} md={6}>
+                <TextInput
+                  label="Design Name"
+                  value={designName}
+                  onChange={(e) => setDesignName(e.target.value)}
+                  placeholder="Enter design name..."
+                  icon={FaFileSignature}
+                  required={true}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <div className="flex flex-col">
+                  <label className="text-xs font-medium text-gray-500 mb-1 flex items-center uppercase tracking-wider">
+                    <FaCalendarAlt className="mr-2 text-gray-400" size={12} />
+                    Design Date
+                  </label>
+                  <div className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-gray-800 shadow-sm">
+                    {designDate}
+                  </div>
+                </div>
+              </Grid>
+            </Grid>
           </div>
-        </div>
+        </motion.div>
 
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -501,6 +493,21 @@ const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
           <div className="lg:col-span-2 space-y-6">
             <SectionCard title="Fabric Specifications" icon={FaToolbox} color="text-blue-600">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+                    <TextInput
+                      label="Width (inches)"
+                      value={width}
+                      onChange={(e) => setWidth(e.target.value)}
+                      type="number"
+                      icon={FaToolbox}
+                      min={0}
+                      step="0.01"
+                    />
+
+
+                  </div>
+                </div>
                 
                 <DropdownField
                   label="Warp Count"
@@ -508,7 +515,6 @@ const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
                   onChange={(e) => setWarpCount(e.target.value)}
                   options={sortedWarpCountOptions}
                   icon={FaWeight}
-                  
                 />
                 <TextInput
                   label="Reed"
@@ -527,31 +533,22 @@ const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
                   icon={FaWeight}
                 />
                 <TextInput
-                      label="Pick"
-                      value={pick}
-                      onChange={(e) => setPick(e.target.value)}
-                      type="number"
-                      icon={FaIndustry}
-                      min={0}
-                      step="0.01"
-                    />
-                <div className="md:col-span-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <TextInput
-                  label="Width (inches)"
-                  value={width}
-                  onChange={(e) => setWidth(e.target.value)}
+                  label="Pick"
+                  value={pick}
+                  onChange={(e) => setPick(e.target.value)}
                   type="number"
-                  icon={FaToolbox}
+                  icon={FaIndustry}
                   min={0}
                   step="0.01"
                 />
+                <div className="md:col-span-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    
                     <TextInput
                       label="Warp Constant"
                       value={numWarpConstant}
                       onChange={(e) => setWarpNumConstant(e.target.value)}
                       type="number"
-                      className="w-full sm:w-32 md:w-40"
                       icon={FaNewspaper}
                       min={0}
                       step="0.01"
@@ -561,11 +558,11 @@ const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
                       value={numWeftConstant}
                       onChange={(e) => setWeftNumConstant(e.target.value)}
                       type="number"
-                      className="w-full sm:w-32 md:w-40"
                       icon={FaNewspaper}
                       min={0}
                       step="0.01"
                     />
+                    
                   </div>
                 </div>
               </div>
@@ -642,19 +639,9 @@ const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
                   step="0.01"
                 />
                 <TextInput
-                  label="Twisting"
+                  label="Twisting Cost"
                   value={twisting}
                   onChange={(e) => setTwisting(e.target.value)}
-                  type="number"
-                  icon={FaTruck}
-                  min={0}
-                  step="0.01"
-                />
-                
-                <TextInput
-                  label="Profit"
-                  value={profitPercent}
-                  onChange={(e) => setprofitPercent(e.target.value)}
                   type="number"
                   icon={FaTruck}
                   min={0}
@@ -669,13 +656,25 @@ const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
                   min={0}
                   step="0.01"
                 />
+                <TextInput
+                      label="Profit %"
+                      value={(profitPercent * 100).toFixed(0)}
+                      onChange={(e) => setprofitPercent(e.target.value / 100)}
+                      type="number"
+                      icon={FaPercentage}
+                      min={0}
+                      max={100}
+                      step="1"
+                    />
               </div>
             </SectionCard>
             
-            <SubmitButton 
-              disabled={!checkAllFieldsFilled()} 
-              onClick={onSubmitForm} 
-            />
+            <motion.div whileHover={{ scale: 1.005 }}>
+              <SubmitButton 
+                disabled={!checkAllFieldsFilled()} 
+                onClick={onSubmitForm} 
+              />
+            </motion.div>
           </div>
 
           {/* Right Column - Results */}
@@ -713,7 +712,7 @@ const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
                 />
                 <ResultCard
                   title="Processing Cost"
-                  value={(toNum(weaving) + toNum(washing)).toFixed(3)}
+                  value={(toNum(weaving) + toNum(washing) + toNum(mending) + toNum(twisting)).toFixed(3)}
                   icon={FaIndustry}
                   color="bg-purple-50"
                 />
@@ -730,7 +729,7 @@ const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
                 />
                 <ResultCard
                   title="Subtotal"
-                  value={(toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing)).toFixed(3)}
+                  value={(toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing) + toNum(mending) + toNum(twisting)).toFixed(3)}
                   icon={FaCalculator}
                   color="bg-gray-50"
                 />
@@ -750,13 +749,16 @@ const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
             </SectionCard>
           </div>
         </div>
-        {toast && (
-          <Toast
-            message={toast.message}
-            type={toast.type}
-            onClose={() => setToast(null)}
-          />
-        )}
+        
+        <AnimatePresence>
+          {toast && (
+            <Toast
+              message={toast.message}
+              type={toast.type}
+              onClose={() => setToast(null)}
+            />
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
