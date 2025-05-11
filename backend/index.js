@@ -24,6 +24,12 @@ app.get('/api/yarnCounts', async (req, res) => {
   }
 });
 
+app.use('/myapp', express.static(path.join(__dirname, 'frontend', 'build')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'frontend', 'build', 'index.html'));
+});
+
 // POST: Submit costing
 app.post('/api/submit', async (req, res) => {
   try {
