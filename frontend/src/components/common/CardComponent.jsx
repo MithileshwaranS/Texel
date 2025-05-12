@@ -3,24 +3,35 @@ import { Card, CardMedia, CardContent, Typography, Button, Box } from '@mui/mate
 import { styled } from '@mui/material/styles';
 
 const StyledCard = styled(Card)(({ theme }) => ({
-  maxWidth: 345,
-  margin: '1rem',
-  borderRadius: '16px',
+  maxWidth: 300,
+  minWidth: 200,
+  margin: '0.5rem',
+  borderRadius: '8px',
   overflow: 'hidden',
-  boxShadow: theme.shadows[2],
-  transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+  boxShadow: 'none',
+  transition: 'all 0.3s ease',
   position: 'relative',
-  backgroundColor: theme.palette.background.paper,
+  backgroundColor: 'transparent',
+  display: 'flex',
+  flexDirection: 'column',
   '&:hover': {
-    transform: 'translateY(-8px)',
-    boxShadow: theme.shadows[8],
-    '& .card-media': {
-      transform: 'scale(1.05)',
+    transform: 'scale(1.05)',
+    zIndex: 10,
+    '& .card-content': {
+      opacity: 1,
+      transform: 'translateY(0)',
     },
-    '&::after': {
-      opacity: 0.15,
-    }
+    '& .card-media': {
+      transform: 'scale(1.1)',
+    },
   },
+}));
+
+const MediaWrapper = styled(Box)({
+  overflow: 'hidden',
+  position: 'relative',
+  height: '250px',
+  borderRadius: '8px 8px 0 0',
   '&::after': {
     content: '""',
     position: 'absolute',
@@ -28,17 +39,9 @@ const StyledCard = styled(Card)(({ theme }) => ({
     left: 0,
     right: 0,
     bottom: 0,
-    background: `linear-gradient(135deg, ${theme.palette.primary.light} 0%, ${theme.palette.secondary.light} 100%)`,
-    opacity: 0,
-    transition: 'opacity 0.4s ease',
+    background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 50%)',
     zIndex: 1,
   }
-}));
-
-const MediaWrapper = styled(Box)({
-  overflow: 'hidden',
-  position: 'relative',
-  height: '200px',
 });
 
 const StyledCardMedia = styled(CardMedia)({
@@ -49,44 +52,101 @@ const StyledCardMedia = styled(CardMedia)({
 });
 
 const ContentWrapper = styled(CardContent)(({ theme }) => ({
-  position: 'relative',
+  position: 'absolute',
+  bottom: 0,
+  left: 0,
+  right: 0,
   zIndex: 2,
-  padding: theme.spacing(3),
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  textAlign: 'center',
+  padding: theme.spacing(2),
+  opacity: 0,
+  transform: 'translateY(20px)',
+  transition: 'all 0.3s ease',
+  background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%)',
+  color: theme.palette.common.white,
 }));
 
+const BottomContent = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(2),
+  backgroundColor: theme.palette.background.paper,
+  borderRadius: '0 0 8px 8px',
+  flexGrow: 1,
+  display: 'flex',
+  flexDirection: 'column',
+}));
+
+const TitleRow = styled(Box)({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  width: '100%',
+  marginBottom: '8px',
+});
+
 const TitleText = styled(Typography)(({ theme }) => ({
-  fontWeight: 700,
-  marginBottom: theme.spacing(2),
+  fontWeight: 'bold',
+  fontSize: '1rem',
   color: theme.palette.text.primary,
-  letterSpacing: '0.5px',
+  flex: 1,
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  marginRight: theme.spacing(1),
+}));
+
+const DateText = styled(Typography)(({ theme }) => ({
+  fontSize: '0.85rem',
+  color: theme.palette.text.secondary,
+  whiteSpace: 'nowrap',
 }));
 
 const DescriptionText = styled(Typography)(({ theme }) => ({
+  fontSize: '0.9rem',
   color: theme.palette.text.secondary,
-  marginBottom: theme.spacing(3),
-  lineHeight: 1.6,
+  lineHeight: 1.4,
+  display: '-webkit-box',
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: 'vertical',
+  overflow: 'hidden',
+  marginBottom: theme.spacing(2),
 }));
+
+const ActionButtons = styled(Box)({
+  display: 'flex',
+  gap: '8px',
+  marginTop: 'auto', // Pushes buttons to bottom
+});
 
 const StyledButton = styled(Button)(({ theme }) => ({
-  padding: theme.spacing(1.5, 4),
-  borderRadius: '50px',
+  minWidth: 'unset',
+  padding: '6px 12px',
+  borderRadius: '4px',
   fontWeight: '600',
-  letterSpacing: '0.5px',
+  fontSize: '0.8rem',
   textTransform: 'none',
-  transition: 'all 0.3s ease',
-  boxShadow: 'none',
-  alignSelf: 'center',
+  transition: 'all 0.2s ease',
   '&:hover': {
-    transform: 'translateY(-2px)',
-    boxShadow: theme.shadows[2],
-  }
+    transform: 'scale(1.05)',
+  },
 }));
 
-const YarnCard = ({ title, description, onViewMore }) => {
+const PrimaryButton = styled(StyledButton)(({ theme }) => ({
+  backgroundColor: theme.palette.primary.main,
+  color: theme.palette.common.white,
+  '&:hover': {
+    backgroundColor: theme.palette.primary.dark,
+  },
+}));
+
+const SecondaryButton = styled(StyledButton)(({ theme }) => ({
+  backgroundColor: 'transparent',
+  color: theme.palette.text.primary,
+  border: `1px solid ${theme.palette.divider}`,
+  '&:hover': {
+    backgroundColor: theme.palette.action.hover,
+  },
+}));
+
+const YarnCard = ({ title, description, date, onViewMore, onDelete }) => {
   return (
     <StyledCard>
       <MediaWrapper>
@@ -96,23 +156,33 @@ const YarnCard = ({ title, description, onViewMore }) => {
           image="https://images.unsplash.com/photo-1533050487297-09b450131914?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80"
           alt="Yarn sample"
         />
+        <ContentWrapper className="card-content">
+        </ContentWrapper>
       </MediaWrapper>
-      <ContentWrapper>
-        <TitleText variant="h5" component="h3">
-          {title}
-        </TitleText>
-        <DescriptionText variant="body1">
-          {description || "Premium quality yarn for all your crafting needs. Soft texture with vibrant colors."}
+      
+      <BottomContent>
+        <TitleRow>
+          <TitleText variant="subtitle1">{title}</TitleText>
+          <DateText variant="caption">{date}</DateText>
+        </TitleRow>
+        <DescriptionText variant="body2">
+          {description || "Premium quality yarn for all your crafting needs."}
         </DescriptionText>
-        <StyledButton 
-          onClick={onViewMore} 
-          variant="contained" 
-          color="primary"
-          disableElevation
-        >
-          View Details
-        </StyledButton>
-      </ContentWrapper>
+        <ActionButtons>
+          <PrimaryButton 
+            onClick={onViewMore}
+            variant="contained"
+          >
+            View
+          </PrimaryButton>
+          <SecondaryButton 
+            onClick={onDelete}
+            variant="outlined"
+          >
+            Delete
+          </SecondaryButton>
+        </ActionButtons>
+      </BottomContent>
     </StyledCard>
   );
 };

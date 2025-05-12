@@ -138,7 +138,7 @@ app.post('/api/addYarn',async(req,res)=>{
 app.get('/api/yarnDetails',async(req,res)=>{
   try {
     console.log(req.body);
-    const yarnDet = await pool.query("SELECT yarn_count, hanks_wt,yarnprice from yarnDetails")
+    const yarnDet = await pool.query("SELECT yarn_count, hanks_wt,yarnprice,id from yarnDetails")
     res.json(yarnDet.rows)
     
   } catch (error) {
@@ -176,7 +176,8 @@ app.post('/api/submit',async(req,res)=>{
             finaltotal,
             mending,
             twisting,
-            designDate
+            designDate,
+            profitPercent
             
             } = req.body;
 
@@ -218,10 +219,11 @@ app.post('/api/submit',async(req,res)=>{
                 initwarpcost,
                 mendingcost,
                 twistingcost,
-                created_date
+                created_date,
+                profitpercent
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-                $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,$21 ,$22 ,$23 ,$24
+                $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,$21 ,$22 ,$23 ,$24, $25
             ) RETURNING *`,
             [
                 designName,
@@ -247,7 +249,8 @@ app.post('/api/submit',async(req,res)=>{
                 initWarpCost,
                 mending,
                 twisting,
-                designDate
+                designDate,
+                profitPercent
             ]
             );
     

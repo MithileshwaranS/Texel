@@ -12,6 +12,11 @@ function Reports() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
+  const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  const options = { year: 'numeric', month: 'long', day: 'numeric' };
+  return date.toLocaleDateString(undefined, options); // e.g., "12 May 2025"
+};
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -97,6 +102,7 @@ function Reports() {
               {filteredDesigns.map((item) => (
                 <YarnCard
                   key={item.designname}
+                  date = {formatDate(item.created_date)}
                   title={item.designname}
                   onViewMore={() => handleViewMore(item.designno)}
                 />

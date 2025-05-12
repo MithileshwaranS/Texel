@@ -204,7 +204,8 @@ function CostingPage() {
         finaltotal,
         designDate,
         mending,
-        twisting
+        twisting,
+        profitPercent
       };
 
       const response = await fetch(`http://localhost:3000/api/submit`, {
