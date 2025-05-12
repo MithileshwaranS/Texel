@@ -10,6 +10,33 @@ app.use(express.json());
 
 const port = process.env.PORT || 3000;
 
+//listing all the designDetails
+app.get('/api/designdetails',async(req,res)=>{
+  try {
+    const designDetails = await pool.query('SELECT * from  designdetails ');
+    res.json(designDetails.rows);
+    
+  } catch (error) {
+    console.error(error.message);
+    
+  }
+});
+
+//showing the particular id
+app.get('/api/designdetails/:id',async(req,res)=>{
+  try {
+    const designno = req.params.id;
+    console.log(designno);
+    const designDetails = await pool.query('SELECT * from  designdetails where designno = $1 ',[designno]);
+    console.log(designDetails.rows);
+    res.json(designDetails.rows);
+    
+  } catch (error) {
+    console.error(error.message);
+    
+  }
+});
+
 
 //displaying the yarncounts in the dropdownmenu
 app.get('/api/yarnCounts', async(req,res)=>{

@@ -18,6 +18,7 @@ import Inventory from "./pages/Inventory";
 import Reports from "./pages/Reports";
 import Customers from "./pages/Customers";
 import Settings from "./pages/Settings";
+import DesignDetail from "./components/common/DesignDetail";
 
 function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -104,6 +105,7 @@ function App() {
           <Route path="/costing" element={<Costing />} />
           <Route path="/inventory" element={<Inventory />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/designdetails/:designId" element={<DesignDetail />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
