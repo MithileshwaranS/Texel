@@ -1,275 +1,161 @@
-import pool from "./db.js";
 import express from "express";
 import cors from "cors";
+import supabase from "./supabaseClient.js";
 
 const app = express();
 
-//middle ware 
 app.use(cors());
 app.use(express.json());
 
 const port = process.env.PORT || 3000;
 
-//listing all the designDetails
-app.get('/api/designdetails',async(req,res)=>{
-  try {
-    const designDetails = await pool.query('SELECT * from  designdetails ');
-    res.json(designDetails.rows);
-    
-  } catch (error) {
-    console.error(error.message);
-    
-  }
+// 1. Get all design details
+app.get('/api/designdetails', async (req, res) => {
+  const { data, error } = await supabase.from('designdetails').select('*');
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
 });
 
-//showing the particular id
-app.get('/api/designdetails/:id',async(req,res)=>{
-  try {
-    const designno = req.params.id;
-    console.log(designno);
-    const designDetails = await pool.query('SELECT * from  designdetails where designno = $1 ',[designno]);
-    console.log(designDetails.rows);
-    res.json(designDetails.rows);
-    
-  } catch (error) {
-    console.error(error.message);
-    
-  }
+// 2. Get a design detail by ID
+app.get('/api/designdetails/:id', async (req, res) => {
+  const { id } = req.params;
+  const { data, error } = await supabase
+    .from('designdetails')
+    .select('*')
+    .eq('designno', id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
 });
 
+// 3. Get yarn counts
+app.get('/api/yarnCounts', async (req, res) => {
+  const { data, error } = await supabase
+    .from('yarndetails')
+    .select('yarn_count, hanks_wt');
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
 
-//displaying the yarncounts in the dropdownmenu
-app.get('/api/yarnCounts', async(req,res)=>{
-    try {
-        const yarnCounts = await pool.query("Select yarn_count,hanks_wt from yarnDetails");
-        res.json(yarnCounts.rows)
-        
-    } catch (error) {
-        console.error(error.message)
-        
-    }
+// 4. Get yarn prices
+app.get('/api/yarnPrice', async (req, res) => {
+  const { data, error } = await supabase
+    .from('yarndetails')
+    .select('yarn_count, yarnprice');
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
 
-    
-})
-
-//mapping the yarn price respectively
-app.get('/api/yarnPrice',async(req,res)=>{
-  try {
-    const yarnPrice = await pool.query("Select yarn_count,yarnprice from yarnDetails")
-    res.json(yarnPrice.rows)
-    
-  } catch (error) {
-    console.error(error.message);
-    
-  }
-})
-
-// Edit/Update Yarn Price
+// 5. Edit/Update Yarn
 app.put('/api/editYarn/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { yarnCount, hanksWt, yarnPrice } = req.body;
+  const { id } = req.params;
+  const { yarnCount, hanksWt, yarnPrice } = req.body;
 
-    const updateYarn = await pool.query(
-      "UPDATE yarnDetails SET yarn_count = $1, hanks_wt = $2, yarnprice = $3 WHERE id = $4 RETURNING *",
-      [yarnCount, hanksWt, yarnPrice, id]
-    );
+  const { data, error } = await supabase
+    .from('yarndetails')
+    .update({
+      yarn_count: yarnCount,
+      hanks_wt: hanksWt,
+      yarnprice: yarnPrice,
+    })
+    .eq('id', id)
+    .select();
 
-    res.json({
-      message: 'Yarn updated successfully',
-      updatedYarn: updateYarn.rows[0]
-    });
+  if (error) return res.status(500).json({ message: 'Update failed', error: error.message });
 
-  } catch (error) {
-    console.error(error.message);
-    res.status(500).json({ message: 'Server error while updating yarn' });
-  }
+  res.json({ message: 'Yarn updated successfully', updatedYarn: data[0] });
 });
 
-
-// Delete Yarn
+// 6. Delete Yarn
 app.delete('/api/deleteYarn/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
+  const { id } = req.params;
 
-    // First check if the record exists
-    const checkYarn = await pool.query(
-      "SELECT * FROM yarnDetails WHERE id = $1",
-      [id]
-    );
+  const { error } = await supabase
+    .from('yarndetails')
+    .delete()
+    .eq('id', id);
 
-    if (checkYarn.rows.length === 0) {
-      return res.status(404).json({ message: 'Yarn record not found' });
-    }
+  if (error) return res.status(500).json({ message: 'Delete failed', error: error.message });
 
-    // Delete the record
-    await pool.query(
-      "DELETE FROM yarnDetails WHERE id = $1",
-      [id]
-    );
-
-    res.json({ message: 'Yarn deleted successfully' });
-
-  } catch (error) {
-    console.error(error.message);
-    res.status(500).json({ message: 'Server error while deleting yarn' });
-  }
+  res.json({ message: 'Yarn deleted successfully' });
 });
 
+// 7. Add new yarn
+app.post('/api/addYarn', async (req, res) => {
+  const { yarnCount, hanksWt, yarnPrice } = req.body;
 
-//adding new yarndetails 
-app.post('/api/addYarn',async(req,res)=>{
-    const {yarnCount,hanksWt,yarnPrice} = req.body;
-  try {
-    const result = await pool.query(
-      'INSERT INTO yarndetails (yarn_count, hanks_wt, yarnprice) VALUES ($1, $2, $3) RETURNING *',
-      [yarnCount,hanksWt,yarnPrice]
-    );
-     res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error(error.message)
-    res.status(500).json({ error: 'Database insertion failed' });
-    
+  const { data, error } = await supabase
+    .from('yarndetails')
+    .insert([{ yarn_count: yarnCount, hanks_wt: hanksWt, yarnprice: yarnPrice }])
+    .select();
+
+  if (error) return res.status(500).json({ error: 'Insertion failed', details: error.message });
+
+  res.status(201).json(data[0]);
+});
+
+// 8. Get all yarn details
+app.get('/api/yarnDetails', async (req, res) => {
+  const { data, error } = await supabase
+    .from('yarndetails')
+    .select('yarn_count, hanks_wt, yarnprice, id');
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  res.json(data);
+});
+
+// 9. Submit costing form
+app.post('/api/submit', async (req, res) => {
+  const body = req.body;
+
+  const { data: existing, error: checkError } = await supabase
+    .from('designdetails')
+    .select('*')
+    .eq('designname', body.designName);
+
+  if (checkError) return res.status(500).json({ message: checkError.message });
+
+  if (existing.length > 0) {
+    return res.status(409).json({ message: 'Design name already exists!' });
   }
-})
 
-//getting all the yarndetails
+  const { error } = await supabase
+    .from('designdetails')
+    .insert([
+      {
+        designname: body.designName,
+        width: body.width,
+        reed: body.reed,
+        pick: body.pick,
+        warpweight: body.warpweight,
+        weftweight: body.weftweight,
+        warpcost: body.warpCost,
+        weftcost: body.weftCost,
+        weavingcost: body.weaving,
+        washingcost: body.washing,
+        profit: body.profit,
+        totalcost: body.totalCost,
+        gst: body.gst,
+        warpcount: body.warpCount,
+        weftcount: body.weftCount,
+        transportcost: body.transport,
+        finaltotal: body.finaltotal,
+        warpdyeing: body.warpDyeing,
+        weftdyeing: body.weftDyeing,
+        initweftcost: body.initWeftCost,
+        initwarpcost: body.initWarpCost,
+        mendingcost: body.mending,
+        twistingcost: body.twisting,
+        created_date: body.designDate,
+        profitpercent: body.profitPercent
+      }
+    ]);
 
-app.get('/api/yarnDetails',async(req,res)=>{
-  try {
-    console.log(req.body);
-    const yarnDet = await pool.query("SELECT yarn_count, hanks_wt,yarnprice,id from yarnDetails")
-    res.json(yarnDet.rows)
-    
-  } catch (error) {
-    console.error(error.message);
-    
-  }
-})
+  if (error) return res.status(500).json({ message: 'Insert failed', error: error.message });
 
-//submiting the costing
+  res.status(200).json({ message: 'Design inserted successfully' });
+});
 
-app.post('/api/submit',async(req,res)=>{
-    try {
-        const {
-            designName,
-            width,
-            reed,
-            pick,
-            warpweight,
-            weftweight,
-            warpCount,
-            weftCount,
-            warpCost,
-            weftCost,
-            warpDyeing,
-            weftDyeing,
-            initWeftCost,
-            initWarpCost,
-            weaving,
-            washing,
-            profit,
-            totalCost,
-            saveprofit,
-            gst,
-            transport,
-            finaltotal,
-            mending,
-            twisting,
-            designDate,
-            profitPercent
-            
-            } = req.body;
-
-
-
-            const existing = await pool.query(
-      'SELECT * FROM designdetails WHERE designname = $1',
-      [designName]
-    );
-
-    if (existing.rows.length > 0) {
-      return res.status(409).json({ message: 'Design name already exists!' });
-    }
-
-    
-
-        const newDesign = await pool.query(
-            `INSERT INTO designdetails (
-                designname,
-                width,
-                reed,
-                pick,
-                warpweight,
-                weftweight,
-                warpcost,
-                weftcost,
-                weavingcost,
-                washingcost,
-                profit,
-                totalcost,
-                gst,
-                warpcount,
-                weftcount,
-                transportcost,
-                finaltotal,
-                warpdyeing,
-                weftdyeing,
-                initweftcost,
-                initwarpcost,
-                mendingcost,
-                twistingcost,
-                created_date,
-                profitpercent
-            ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-                $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,$21 ,$22 ,$23 ,$24, $25
-            ) RETURNING *`,
-            [
-                designName,
-                width,
-                reed,
-                pick,
-                warpweight,
-                weftweight,
-                warpCost,
-                weftCost,
-                weaving,
-                washing,
-                profit,
-                totalCost,
-                gst,
-                warpCount,
-                weftCount,
-                transport,
-                finaltotal,
-                warpDyeing,
-                weftDyeing,
-                initWeftCost,
-                initWarpCost,
-                mending,
-                twisting,
-                designDate,
-                profitPercent
-            ]
-            );
-    
-        console.log("Submitted succesfully");
-        
-
-        res.status(200).json({ message: "Design inserted successfully" });
-        
-
-        
-    } catch (error) {
-        console.error("Insert error:", error.message);
-    res.status(500).json({ message: "Server error while inserting design" });
-        
-    }
-})
-
-
-
-app.listen(3000,()=>{
-    console.log("Server is up and running");
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
