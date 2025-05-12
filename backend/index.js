@@ -137,6 +137,7 @@ app.post('/api/addYarn',async(req,res)=>{
 
 app.get('/api/yarnDetails',async(req,res)=>{
   try {
+    console.log(req.body);
     const yarnDet = await pool.query("SELECT yarn_count, hanks_wt,yarnprice from yarnDetails")
     res.json(yarnDet.rows)
     
@@ -152,7 +153,6 @@ app.post('/api/submit',async(req,res)=>{
     try {
         const {
             designName,
-            
             width,
             reed,
             pick,
@@ -174,8 +174,13 @@ app.post('/api/submit',async(req,res)=>{
             gst,
             transport,
             finaltotal,
+            mending,
+            twisting,
+            designDate
             
             } = req.body;
+
+
 
             const existing = await pool.query(
       'SELECT * FROM designdetails WHERE designname = $1',
@@ -210,10 +215,13 @@ app.post('/api/submit',async(req,res)=>{
                 warpdyeing,
                 weftdyeing,
                 initweftcost,
-                initwarpcost
+                initwarpcost,
+                mendingcost,
+                twistingcost,
+                created_date
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-                $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,$21
+                $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,$21 ,$22 ,$23 ,$24
             ) RETURNING *`,
             [
                 designName,
@@ -236,7 +244,10 @@ app.post('/api/submit',async(req,res)=>{
                 warpDyeing,
                 weftDyeing,
                 initWeftCost,
-                initWarpCost
+                initWarpCost,
+                mending,
+                twisting,
+                designDate
             ]
             );
     

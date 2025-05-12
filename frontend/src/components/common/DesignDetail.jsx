@@ -373,6 +373,22 @@ useEffect(() => {
                           <HighlightText>₹{formatCurrency(design.transportcost)}</HighlightText>
                         </TableCell>
                       </TableRow>
+                      <TableRow>
+                        <TableCell>
+                          <Typography variant="subtitle2">Mending Cost</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <HighlightText>₹{formatCurrency(design.mendingcost || 0)}</HighlightText>
+                        </TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell>
+                          <Typography variant="subtitle2">Twisiting Cost</Typography>
+                        </TableCell>
+                        <TableCell>
+                          <HighlightText>₹{formatCurrency(design.twistingcost || 0)}</HighlightText>
+                        </TableCell>
+                      </TableRow>
                     </TableBody>
                   </Table>
                 </TableContainer>
