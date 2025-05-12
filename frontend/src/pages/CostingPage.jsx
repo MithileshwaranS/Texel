@@ -208,7 +208,7 @@ function CostingPage() {
         profitPercent
       };
 
-      const response = await fetch(`http://localhost:3000/api/submit`, {
+      const response = await fetch(`https://texel.onrender.com/api/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
@@ -352,7 +352,7 @@ function CostingPage() {
 
   useEffect(() => {
     // Fetch data from API
-    fetch(`http://localhost:3000/api/yarnCounts`)
+    fetch(`https://texel.onrender.com/api/yarnCounts`)
       .then(response => response.json())
       .then(data => {
         console.log(data)
@@ -361,7 +361,7 @@ function CostingPage() {
   }, []);
 
   useEffect(() => {
-    fetch(`http://localhost:3000/api/yarnPrice`)
+    fetch(`https://texel.onrender.com/api/yarnPrice`)
       .then(response => response.json())
       .then(data => {
         console.log(data)
