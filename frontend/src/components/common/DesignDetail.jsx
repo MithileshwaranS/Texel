@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Box, 
@@ -7,68 +7,58 @@ import {
   Container, 
   Grid, 
   Paper, 
-  Divider,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Tooltip,
   IconButton,
   Menu,
   MenuItem,
   useMediaQuery,
   useTheme,
-  styled
+  styled,
+  Chip
 } from '@mui/material';
 import {
   ArrowBack,
   PictureAsPdf,
-  Download,
-  Share,
   MoreVert,
-  InfoOutlined
+  InfoOutlined,
+  AttachMoney,
+  LocalShipping,
+  Palette,
+  Receipt
 } from '@mui/icons-material';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 
+// Modern styled components
 const CostingSheetContainer = styled(Container)(({ theme }) => ({
   padding: theme.spacing(4),
   backgroundColor: theme.palette.background.paper,
   borderRadius: theme.spacing(2),
-  boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.08)',
+  boxShadow: theme.shadows[2],
   marginTop: theme.spacing(4),
   marginBottom: theme.spacing(4),
   position: 'relative',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 4,
-    background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-    borderTopLeftRadius: theme.spacing(2),
-    borderTopRightRadius: theme.spacing(2)
+  border: `1px solid ${theme.palette.divider}`,
+  [theme.breakpoints.down('sm')]: {
+    padding: theme.spacing(2)
   }
 }));
 
 const SectionHeader = styled(Typography)(({ theme }) => ({
   fontWeight: 600,
-  marginBottom: theme.spacing(3),
-  paddingBottom: theme.spacing(1.5),
-  borderBottom: `1px solid ${theme.palette.divider}`,
+  marginBottom: theme.spacing(2),
   color: theme.palette.text.primary,
   display: 'flex',
   alignItems: 'center',
-  gap: theme.spacing(1),
-  '&::after': {
-    content: '""',
-    flex: 1,
-    marginLeft: theme.spacing(2),
-    height: 1,
-    backgroundColor: theme.palette.divider
+  gap: theme.spacing(1.5),
+  fontSize: '1.1rem',
+  '& svg': {
+    color: theme.palette.primary.main
   }
 }));
 
@@ -80,11 +70,9 @@ const CostTable = styled(Table)(({ theme }) => ({
   },
   '& .MuiTableCell-head': {
     fontWeight: 600,
-    backgroundColor: theme.palette.grey[50],
-    color: theme.palette.text.secondary,
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    fontSize: '0.75rem'
+    backgroundColor: theme.palette.grey[100],
+    color: theme.palette.text.primary,
+    fontSize: '0.8rem'
   }
 }));
 
@@ -98,8 +86,8 @@ const TotalRow = styled(TableRow)(({ theme }) => ({
 const FinalTotalRow = styled(TableRow)(({ theme }) => ({
   '& .MuiTableCell-root': {
     fontWeight: 700,
-    fontSize: '1rem',
-    backgroundColor: theme.palette.primary.main,
+    fontSize: '0.95rem',
+    backgroundColor: theme.palette.primary.light,
     color: theme.palette.primary.contrastText
   }
 }));
@@ -107,13 +95,31 @@ const FinalTotalRow = styled(TableRow)(({ theme }) => ({
 const SpecCard = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(2),
   borderRadius: theme.spacing(1),
-  boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.05)',
+  boxShadow: 'none',
+  border: `1px solid ${theme.palette.divider}`,
+  height: '100%',
   transition: 'all 0.2s ease',
   '&:hover': {
-    transform: 'translateY(-2px)',
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
-    borderLeft: `3px solid ${theme.palette.primary.main}`
+    borderColor: theme.palette.primary.main,
+    boxShadow: theme.shadows[2]
   }
+}));
+
+const DesignTitle = styled(Typography)(({ theme }) => ({
+  fontWeight: 600,
+  color: theme.palette.text.primary,
+  marginBottom: theme.spacing(1),
+  [theme.breakpoints.down('sm')]: {
+    fontSize: '1.5rem'
+  }
+}));
+
+const DesignSubtitle = styled(Typography)(({ theme }) => ({
+  color: theme.palette.text.secondary,
+  display: 'flex',
+  alignItems: 'center',
+  gap: theme.spacing(1),
+  marginBottom: theme.spacing(3)
 }));
 
 function DesignDetail() {
@@ -126,17 +132,11 @@ function DesignDetail() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-   const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  const options = { year: 'numeric', month: 'long', day: 'numeric' };
-  return date.toLocaleDateString(undefined, options); // e.g., "12 May 2025"
-};
-
-  const DateText = styled(Typography)(({ theme }) => ({
-  fontSize: '0.85rem',
-  color: theme.palette.text.secondary,
-  whiteSpace: 'nowrap',
-}));
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return date.toLocaleDateString(undefined, options);
+  };
 
   const open = Boolean(anchorEl);
 
@@ -176,13 +176,12 @@ function DesignDetail() {
     const doc = new jsPDF();
     
     // Title
-    doc.setFontSize(20);
+    doc.setFontSize(18);
     doc.setTextColor(40);
     doc.text(`${design.designname} - Fabric Costing Sheet`, 105, 15, null, null, 'center');
-  
     
     // Basic Specifications
-    doc.setFontSize(14);
+    doc.setFontSize(12);
     doc.text('Basic Specifications', 14, 25);
     doc.autoTable({
       startY: 30,
@@ -202,7 +201,6 @@ function DesignDetail() {
         textColor: 255
       }
     });
-
     
     // Cost Breakdown
     doc.text('Cost Breakdown', 14, doc.autoTable.previous.finalY + 15);
@@ -266,18 +264,19 @@ function DesignDetail() {
   };
 
   const formatCurrency = (value) => {
-    return parseFloat(value).toFixed(2);
+    return parseFloat(value).toLocaleString('en-IN', {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2
+    });
   };
-
-  
 
   if (error) {
     return (
       <Container maxWidth="lg" sx={{ py: 4, textAlign: 'center' }}>
-        <Typography variant="h4" color="error" gutterBottom>
+        <Typography variant="h6" color="error" gutterBottom>
           Error Loading Design
         </Typography>
-        <Typography variant="body1" >
+        <Typography variant="body1" sx={{ mb: 3 }}>
           {error}
         </Typography>
         <Button 
@@ -285,9 +284,8 @@ function DesignDetail() {
           startIcon={<ArrowBack />}
           onClick={() => navigate('/reports')}
           sx={{ 
-            mt: 2,
-            background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-            color: 'white'
+            borderRadius: '8px',
+            textTransform: 'none'
           }}
         >
           Back to Reports
@@ -299,7 +297,7 @@ function DesignDetail() {
   if (loading) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Typography variant="h4" gutterBottom sx={{ fontWeight: 500 }}>Loading Costing Sheet...</Typography>
+        <Typography variant="h6" gutterBottom>Loading Costing Sheet...</Typography>
       </Container>
     );
   }
@@ -312,8 +310,7 @@ function DesignDetail() {
     <Box sx={{ 
       backgroundColor: theme.palette.grey[50], 
       minHeight: '100vh', 
-      py: 4,
-      backgroundImage: 'linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(255,255,255,0.9))'
+      py: 4
     }}>
       <CostingSheetContainer maxWidth="lg">
         {/* Header with actions */}
@@ -330,29 +327,26 @@ function DesignDetail() {
             startIcon={<ArrowBack />}
             onClick={() => navigate('/reports')}
             sx={{
-              borderRadius: 2,
-              borderWidth: 2,
-              '&:hover': {
-                borderWidth: 2
-              }
+              borderRadius: '8px',
+              textTransform: 'none',
+              alignSelf: isMobile ? 'stretch' : 'flex-start'
             }}
           >
-            {isMobile ? 'Back' : 'Back to Reports'}
+            Back to Reports
           </Button>
           
-          <Box>
+          <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
               variant="contained"
               startIcon={<PictureAsPdf />}
               onClick={handleExportPDF}
               sx={{
-                mr: 1,
-                background: `linear-gradient(135deg, ${theme.palette.error.main}, ${theme.palette.error.dark})`,
-                color: 'white',
-                borderRadius: 2
+                borderRadius: '8px',
+                textTransform: 'none',
+                boxShadow: 'none'
               }}
             >
-              Export PDF
+              {isMobile ? 'PDF' : 'Export PDF'}
             </Button>
             <IconButton
               aria-label="more"
@@ -361,10 +355,7 @@ function DesignDetail() {
               onClick={handleMenuClick}
               sx={{
                 border: `1px solid ${theme.palette.divider}`,
-                borderRadius: 2,
-                '&:hover': {
-                  backgroundColor: theme.palette.grey[100]
-                }
+                borderRadius: '8px'
               }}
             >
               <MoreVert />
@@ -378,114 +369,106 @@ function DesignDetail() {
               PaperProps={{
                 style: {
                   width: 200,
-                  borderRadius: 12,
-                  boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.1)'
+                  borderRadius: '12px',
+                  boxShadow: theme.shadows[3]
                 },
               }}
             >
               <MenuItem onClick={handleExportPDF}>
                 <PictureAsPdf color="error" sx={{ mr: 1 }} />
-                Export as PDF
+                Export PDF
               </MenuItem>
               <MenuItem onClick={handleMenuClose}>
-                <Share color="primary" sx={{ mr: 1 }} />
-                Share Costing
+                <Receipt color="primary" sx={{ mr: 1 }} />
+                Print Report
               </MenuItem>
             </Menu>
           </Box>
         </Box>
 
-        {/* Design Title */}
-        <Typography variant="h3" gutterBottom sx={{ 
-          fontWeight: 700, 
-          color: theme.palette.text.primary,
-          mb: 4,
-          position: 'relative',
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            bottom: -8,
-            left: 0,
-            width: 60,
-            height: 4,
-            background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-            borderRadius: 2
-          }
-        }}>
-          {design.designname} - Costing Sheet
-        </Typography>
-        <DateText variant="caption">{formatDate(design.created_date)}</DateText>
-        
+        {/* Design Header */}
+        <Box sx={{ mb: 4 }}>
+          <Chip 
+            label="Costing Sheet" 
+            size="small" 
+            color="primary" 
+            variant="outlined"
+            sx={{ mb: 1 }}
+          />
+          <DesignTitle variant="h4">
+            {design.designname}
+          </DesignTitle>
+          <DesignSubtitle variant="body2">
+            <span>Created on {formatDate(design.created_date)}</span>
+            <span>•</span>
+            <span>ID: {designId}</span>
+          </DesignSubtitle>
+        </Box>
 
         {/* Basic Specifications */}
         <Box sx={{ mb: 4 }}>
-          <SectionHeader variant="h5">
-            <InfoOutlined color="primary" />
-            Basic Specifications
+          <SectionHeader variant="h6">
+            <InfoOutlined fontSize="small" />
+            Fabric Specifications
           </SectionHeader>
-          <Grid container spacing={3} sx={{ mb: 2 }}>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid item xs={6} sm={4} md={3}>
-              <SpecCard elevation={0}>
+              <SpecCard>
                 <Typography variant="subtitle2" color="textSecondary">Width</Typography>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>{design.width} cm</Typography>
+                <Typography variant="h6">{design.width} cm</Typography>
               </SpecCard>
             </Grid>
             <Grid item xs={6} sm={4} md={3}>
-              <SpecCard elevation={0}>
+              <SpecCard>
                 <Typography variant="subtitle2" color="textSecondary">Warp Count</Typography>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>{design.warpcount}</Typography>
+                <Typography variant="h6">{design.warpcount}</Typography>
               </SpecCard>
             </Grid>
             <Grid item xs={6} sm={4} md={3}>
-              <SpecCard elevation={0}>
+              <SpecCard>
                 <Typography variant="subtitle2" color="textSecondary">Reed</Typography>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>{design.reed}</Typography>
+                <Typography variant="h6">{design.reed}</Typography>
               </SpecCard>
             </Grid>
             <Grid item xs={6} sm={4} md={3}>
-              <SpecCard elevation={0}>
+              <SpecCard>
                 <Typography variant="subtitle2" color="textSecondary">Warp Weight</Typography>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>{design.warpweight}</Typography>
+                <Typography variant="h6">{design.warpweight}</Typography>
               </SpecCard>
             </Grid>
             <Grid item xs={6} sm={4} md={3}>
-              <SpecCard elevation={0}>
+              <SpecCard>
                 <Typography variant="subtitle2" color="textSecondary">Weft Count</Typography>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>{design.weftcount}</Typography>
+                <Typography variant="h6">{design.weftcount}</Typography>
               </SpecCard>
             </Grid>
             <Grid item xs={6} sm={4} md={3}>
-              <SpecCard elevation={0}>
+              <SpecCard>
                 <Typography variant="subtitle2" color="textSecondary">Pick</Typography>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>{design.pick}</Typography>
+                <Typography variant="h6">{design.pick}</Typography>
               </SpecCard>
             </Grid>
             <Grid item xs={6} sm={4} md={3}>
-              <SpecCard elevation={0}>
+              <SpecCard>
                 <Typography variant="subtitle2" color="textSecondary">Weft Weight</Typography>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>{design.weftweight}</Typography>
+                <Typography variant="h6">{design.weftweight}</Typography>
               </SpecCard>
             </Grid>
-            
           </Grid>
         </Box>
 
         {/* Dyeing Costs */}
         <Box sx={{ mb: 4 }}>
-          <SectionHeader variant="h5">
-            <InfoOutlined color="primary" />
+          <SectionHeader variant="h6">
+            <Palette fontSize="small" />
             Dyeing Costs
           </SectionHeader>
           <TableContainer 
             component={Paper} 
-            elevation={0} 
-            sx={{ 
-              borderRadius: 2,
-              border: `1px solid ${theme.palette.divider}`,
-              overflow: 'hidden'
-            }}
+            variant="outlined"
+            sx={{ borderRadius: '8px' }}
           >
-            <CostTable size="small">
+            <CostTable>
               <TableHead>
                 <TableRow>
                   <TableCell>Cost Type</TableCell>
@@ -509,7 +492,6 @@ function DesignDetail() {
                   <TableCell>Weft Dyeing</TableCell>
                   <TableCell align="right">{formatCurrency(design.weftdyeing)}</TableCell>
                 </TableRow>
-                
               </TableBody>
             </CostTable>
           </TableContainer>
@@ -517,20 +499,16 @@ function DesignDetail() {
 
         {/* Cost Breakdown */}
         <Box sx={{ mb: 4 }}>
-          <SectionHeader variant="h5">
-            <InfoOutlined color="primary" />
+          <SectionHeader variant="h6">
+            <AttachMoney fontSize="small" />
             Cost Breakdown
           </SectionHeader>
           <TableContainer 
             component={Paper} 
-            elevation={0} 
-            sx={{ 
-              borderRadius: 2,
-              border: `1px solid ${theme.palette.divider}`,
-              overflow: 'hidden'
-            }}
+            variant="outlined"
+            sx={{ borderRadius: '8px' }}
           >
-            <CostTable size="small">
+            <CostTable>
               <TableHead>
                 <TableRow>
                   <TableCell>Cost Type</TableCell>
@@ -570,7 +548,6 @@ function DesignDetail() {
                     <TableCell align="right">{formatCurrency(design.twistingcost)}</TableCell>
                   </TableRow>
                 )}
-                
               </TableBody>
             </CostTable>
           </TableContainer>
@@ -578,20 +555,16 @@ function DesignDetail() {
 
         {/* Financial Summary */}
         <Box sx={{ mb: 4 }}>
-          <SectionHeader variant="h5">
-            <InfoOutlined color="primary" />
+          <SectionHeader variant="h6">
+            <Receipt fontSize="small" />
             Financial Summary
           </SectionHeader>
           <TableContainer 
             component={Paper} 
-            elevation={0} 
-            sx={{ 
-              borderRadius: 2,
-              border: `1px solid ${theme.palette.divider}`,
-              overflow: 'hidden'
-            }}
+            variant="outlined"
+            sx={{ borderRadius: '8px' }}
           >
-            <CostTable size="small">
+            <CostTable>
               <TableHead>
                 <TableRow>
                   <TableCell>Item</TableCell>
@@ -620,27 +593,17 @@ function DesignDetail() {
           </TableContainer>
         </Box>
 
-        {/* Notes or Additional Information */}
+        {/* Footer Note */}
         <Box sx={{ 
           mt: 4, 
-          p: 3, 
-          backgroundColor: theme.palette.grey[50], 
-          borderRadius: 2,
-          borderLeft: `4px solid ${theme.palette.primary.main}`
+          p: 2, 
+          backgroundColor: theme.palette.grey[100], 
+          borderRadius: '8px',
+          textAlign: 'center'
         }}>
-          <Typography variant="subtitle1" gutterBottom sx={{ 
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1
-          }}>
-            <InfoOutlined color="primary" />
-            Notes:
-          </Typography>
-          <Typography variant="body2" color="textSecondary">
-            © 2025 Texel. All rights reserved.  
-Texel is a proprietary application owned by Mithileshwaran. Unauthorized use, reproduction, or distribution of any part of this app is strictly prohibited.
-
+          <Typography variant="caption" color="textSecondary">
+            © {new Date().getFullYear()} Texel. All rights reserved. 
+            This is a proprietary application owned by Mithileshwaran.
           </Typography>
         </Box>
       </CostingSheetContainer>
