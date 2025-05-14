@@ -113,8 +113,8 @@ function Settings() {
 
     try {
       const endpoint = isEditing
-        ? `http://localhost:3000/api/editYarn/${currentId}`
-        : "http://localhost:3000/api/addYarn";
+        ? `https://texel.onrender.com/api/editYarn/${currentId}`
+        : "https://texel.onrender.com/api/addYarn";
       
       const method = isEditing ? "PUT" : "POST";
 
@@ -140,7 +140,7 @@ function Settings() {
   const handleDeleteYarn = async (id) => {
     if (window.confirm("Are you sure you want to delete this yarn?")) {
       try {
-        const response = await fetch(`http://localhost:3000/api/deleteYarn/${id}`, {
+        const response = await fetch(`https://texel.onrender.com/api/deleteYarn/${id}`, {
           method: "DELETE"
         });
 
@@ -158,7 +158,7 @@ function Settings() {
   const fetchYarnData = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("http://localhost:3000/api/yarnDetails");
+      const res = await fetch("https://texel.onrender.com/api/yarnDetails");
       const data = await res.json();
       setRows(data);
       setFilteredRows(data);
