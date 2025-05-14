@@ -10,7 +10,8 @@ import {
   FaFileSignature,
   FaNewspaper,
   FaCalendarAlt,
-  FaTimes
+  FaTimes,
+  FaPlus
 } from "react-icons/fa";
 import { Grid } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -119,18 +120,6 @@ function CostingPage() {
   const [designName, setDesignName] = useState("");
   const [displayedName, setDisplayName] = useState("");
   const [width, setWidth] = useState("");
-  const [reed, setReed] = useState("");
-  const [pick, setPick] = useState("");
-  const [warpweight, setWarpWeight] = useState("");
-  const [weftweight, setWeftWeight] = useState("");
-  const [warpCount, setWarpCount] = useState("");
-  const [weftCount, setWeftCount] = useState("");
-  const [warpCost, setWarpCost] = useState("");
-  const [weftCost, setWeftCost] = useState("");
-  const [warpDyeing, setWarpDyeing] = useState(300);
-  const [weftDyeing, setWeftDyeing] = useState(300);
-  const [initWeftCost, setInitWeftCost] = useState("");
-  const [initWarpCost, setInitWarpCost] = useState("");
   const [weaving, setWeaving] = useState("");
   const [washing, setWashing] = useState(8);
   const [profit, setProfit] = useState("");
@@ -138,16 +127,38 @@ function CostingPage() {
   const [saveprofit, setSaveProfit] = useState("");
   const [gst, setGst] = useState("");
   const [transport, setTransport] = useState(7);
-  const [mending,setMending] = useState(10);
+  const [mending, setMending] = useState(10);
   const [finaltotal, setFinalTotal] = useState("");
   const [yarnCount, setYarnCount] = useState([]);
-  const [yarnPrice,setYarnPrice] = useState([]);
-  const [numWarpConstant,setWarpNumConstant] = useState(1.35);
-  const [numWeftConstant,setWeftNumConstant] = useState(1.35);
+  const [yarnPrice, setYarnPrice] = useState([]);
   const [toast, setToast] = useState(null);
-  const [profitPercent,setprofitPercent] = useState(0.15);
-  const [designDate,setDesignDate] = useState(new Date().toISOString().split('T')[0]);
-  const [twisting,setTwisting] = useState(0);
+  const [profitPercent, setprofitPercent] = useState(0.15);
+  const [designDate, setDesignDate] = useState(new Date().toISOString().split('T')[0]);
+  const [twisting, setTwisting] = useState(0);
+  
+  // Warp and Weft states
+  const [warps, setWarps] = useState([
+    { count: "", reed: "", cost: "", dyeing: 300, constant: 1.35 }
+  ]);
+  
+  const [wefts, setWefts] = useState([
+    { count: "", pick: "", cost: "", dyeing: 300, constant: 1.35 }
+  ]);
+  
+  // Calculated weights
+  const [warpWeights, setWarpWeights] = useState([]);
+  const [weftWeights, setWeftWeights] = useState([]);
+
+  useEffect(() => {
+    console.log("🔍 Warps:", warps);
+    console.log("🔍 Warp Weights:", warpWeights);
+    console.log("🔍 Wefts:", wefts);
+    console.log("🔍 Weft Weights:", weftWeights);
+  }, [warps, warpWeights, wefts, weftWeights]);
+
+  // Calculated costs
+  const [warpCost, setWarpCost] = useState("");
+  const [weftCost, setWeftCost] = useState("");
 
   const Toast = ({ message, type, onClose }) => (
     <motion.div
@@ -168,131 +179,19 @@ function CostingPage() {
     </motion.div>
   );
 
-  const onSubmitForm = async (e) => {
-    try {
-      e.preventDefault();
-      if (!checkAllFieldsFilled()) {
-        setToast({
-          message: 'Please fill all required fields',
-          type: 'error'
-        });
-        return;
-      }
+  // Helper functions
+  const toNum = (val) => parseFloat(val || 0);
 
-      const body = {
-        designName,
-        width,
-        reed,
-        pick,
-        warpweight,
-        weftweight,
-        warpCount,
-        weftCount,
-        warpCost,
-        weftCost,
-        warpDyeing,
-        weftDyeing,
-        initWeftCost,
-        initWarpCost,
-        weaving,
-        washing,
-        profit,
-        totalCost,
-        saveprofit,
-        gst,
-        transport,
-        finaltotal,
-        designDate,
-        mending,
-        twisting,
-        profitPercent
-      };
-
-      const response = await fetch(`https://texel.onrender.com/api/submit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
-      const result = await response.json();
-
-      if (response.status === 409) {
-        setToast({
-          message: result.message,
-          type: 'error'
-        });
-        return;
-      }
-
-      if (response.ok) {
-        setToast({
-          message: 'Design submitted successfully!',
-          type: 'success',
-        });
-        // Reset all fields
-        setDesignName('');
-        setWidth('');
-        setReed('');
-        setPick('');
-        setWarpWeight('');
-        setWeftWeight('');
-        setWarpCount('');
-        setWeftCount('');
-        setWarpCost('');
-        setWeftCost('');
-        setWarpDyeing(300);
-        setWeftDyeing(300);
-        setInitWeftCost('');
-        setInitWarpCost('');
-        setWeaving('');
-        setWashing(8);
-        setProfit('');
-        setTotalCost('');
-        setSaveProfit('');
-        setGst('');
-        setTransport(7);
-        setFinalTotal('');
-        setMending(10);
-        setTwisting(0);
-        setDesignDate(new Date().toISOString().split('T')[0]);
-      } else {
-        setToast({
-          message: 'Failed to submit design. Please try again.',
-          type: 'error'
-        });
-      }
-    } catch (err) {
-      console.log(err.message);
-      setToast({
-        message: 'An error occurred. Please try again.',
-        type: 'error'
-      });
-    }
+  const getHanksWt = (count) => {
+    const found = yarnCount.find(y => y.yarn_count === count);
+    return found ? found.hanks_wt : 0;
   };
 
-  const checkAllFieldsFilled = () => {
-    const requiredFields = [
-      designName,
-      width,
-      reed,
-      pick,
-      warpCount,
-      weftCount,
-      initWarpCost,
-      initWeftCost,
-      warpDyeing,
-      weftDyeing,
-      weaving,
-      washing,
-      transport
-    ];
-    
-    return requiredFields.every(field => field !== "" && field !== undefined && field !== null);
+  const getYarnPrice = (count) => {
+    const found = yarnPrice.find(y => y.yarn_count === count);
+    return found ? found.yarnprice : 0;
   };
 
-  // Constants
-  const warpCountOptions = yarnCount?.map(y => y?.yarn_count) || [];
-  const weftCountOptions = yarnCount?.map(y => y.yarn_count) || [];
-  
   const sortYarnCounts = (counts) => {
     const regularCounts = [];
     const twistedCounts = [];
@@ -320,21 +219,144 @@ function CostingPage() {
     return [...regularCounts, ...twistedCounts];
   };
 
-  const sortedWarpCountOptions = sortYarnCounts([...warpCountOptions]);
-  const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
-
-  const getHanksWt = (count) => {
-    const found = yarnCount.find(y => y.yarn_count === count);
-    return found ? found.hanks_wt : 0;
+  // Warp and Weft management
+  const addWarp = () => {
+    setWarps([...warps, { count: "", reed: "", cost: "", dyeing: 300, constant: 1.35 }]);
   };
 
-  const getYarnPrice = (count) => {
-    const found = yarnPrice.find(y => y.yarn_count === count);
-    return found ? found.yarnprice : 0;
-  }
+  const removeWarp = (index) => {
+    if (warps.length > 1) {
+      const newWarps = [...warps];
+      newWarps.splice(index, 1);
+      setWarps(newWarps);
+    }
+  };
 
-  // Helper function
-  const toNum = (val) => parseFloat(val || 0);
+  const addWeft = () => {
+    setWefts([...wefts, { count: "", pick: "", cost: "", dyeing: 300, constant: 1.35 }]);
+  };
+
+  const removeWeft = (index) => {
+    if (wefts.length > 1) {
+      const newWefts = [...wefts];
+      newWefts.splice(index, 1);
+      setWefts(newWefts);
+    }
+  };
+
+  const handleWarpChange = (index, field, value) => {
+    const newWarps = [...warps];
+    newWarps[index][field] = value;
+    setWarps(newWarps);
+  };
+
+  const handleWeftChange = (index, field, value) => {
+    const newWefts = [...wefts];
+    newWefts[index][field] = value;
+    setWefts(newWefts);
+  };
+
+  // Form submission
+  const onSubmitForm = async (e) => {
+    try {
+      e.preventDefault();
+      if (!checkAllFieldsFilled()) {
+        setToast({
+          message: 'Please fill all required fields',
+          type: 'error'
+        });
+        return;
+      }
+
+      const body = {
+        designName,
+        width,
+        warps,
+        wefts,
+        weaving,
+        washing,
+        profit,
+        totalCost,
+        saveprofit,
+        gst,
+        transport,
+        finaltotal,
+        designDate,
+        mending,
+        twisting,
+        profitPercent,
+        warpWeights,
+        weftWeights
+      };
+
+      const response = await fetch(`http://localhost:3000/api/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const result = await response.json();
+
+      if (response.status === 409) {
+        setToast({
+          message: result.message,
+          type: 'error'
+        });
+        return;
+      }
+
+      if (response.ok) {
+        setToast({
+          message: 'Design submitted successfully!',
+          type: 'success',
+        });
+        // Reset all fields
+        setDesignName('');
+        setWidth('');
+        setWarps([{ count: "", reed: "", cost: "", dyeing: 300, constant: 1.35 }]);
+        setWefts([{ count: "", pick: "", cost: "", dyeing: 300, constant: 1.35 }]);
+        setWarpWeights([]);
+        setWeftWeights([]);
+        setWeaving('');
+        setWashing(8);
+        setProfit('');
+        setTotalCost('');
+        setSaveProfit('');
+        setGst('');
+        setTransport(7);
+        setFinalTotal('');
+        setMending(10);
+        setTwisting(0);
+        setDesignDate(new Date().toISOString().split('T')[0]);
+      } else {
+        setToast({
+          message: 'Failed to submit design. Please try again.',
+          type: 'error'
+        });
+      }
+    } catch (err) {
+      console.log(err.message);
+      setToast({
+        message: 'An error occurred. Please try again.',
+        type: 'error'
+      });
+    }
+  };
+
+  const checkAllFieldsFilled = () => {
+    if (!designName || !width) return false;
+    
+    // Check all warps
+    for (const warp of warps) {
+      if (!warp.count || !warp.reed || !warp.cost || !warp.dyeing) return false;
+    }
+    
+    // Check all wefts
+    for (const weft of wefts) {
+      if (!weft.count || !weft.pick || !weft.cost || !weft.dyeing) return false;
+    }
+    
+    return weaving !== "" && washing !== "" && transport !== "";
+  };
 
   // Effects
   useEffect(() => {
@@ -350,72 +372,60 @@ function CostingPage() {
     setDisplayName(designName);
   }, [designName]);
 
+  // Calculate weights whenever inputs change
   useEffect(() => {
-    // Fetch data from API
-    fetch(`https://texel.onrender.com/api/yarnCounts`)
-      .then(response => response.json())
-      .then(data => {
-        console.log(data)
-        setYarnCount(data)})
-      .catch(error => console.error('Error fetching data:', error));
-  }, []);
-
-  useEffect(() => {
-    fetch(`https://texel.onrender.com/api/yarnPrice`)
-      .then(response => response.json())
-      .then(data => {
-        console.log(data)
-        setYarnPrice(data)})
-      .catch(error => console.error('Error fetching data', error));
-  }, []);
-
-  useEffect(() => {
-    if (warpCount!=null) {
-      setInitWarpCost(getYarnPrice(`${warpCount}`))
+    if (width) {
+      const newWarpWeights = warps.map(warp => {
+        if (warp.count && warp.reed) {
+          return ((toNum(width) * toNum(warp.reed) * toNum(warp.constant || 1.35)) / 840 * getHanksWt(warp.count)).toFixed(3);
+        }
+        return "0.000";
+      });
+      setWarpWeights(newWarpWeights);
     }
-  }, [warpCount]);
+  }, [width, warps]);
 
   useEffect(() => {
-    if (weftCount!=null) {
-      setInitWeftCost(getYarnPrice(`${weftCount}`))
+    if (width) {
+      const newWeftWeights = wefts.map(weft => {
+        if (weft.count && weft.pick) {
+          return ((toNum(width) * toNum(weft.pick) * toNum(weft.constant || 1.35)) / 840 * getHanksWt(weft.count)).toFixed(3);
+        }
+        return "0.000";
+      });
+      setWeftWeights(newWeftWeights);
     }
-  }, [weftCount]);
+  }, [width, wefts]);
+
+  // Calculate costs whenever weights or prices change
+  useEffect(() => {
+    const totalWarpCost = warps.reduce((sum, warp, index) => {
+      if (warp.cost!=null && warp.dyeing!=null && warpWeights[index]!=null) {
+        return sum + (toNum(warp.cost) + toNum(warp.dyeing)) * toNum(warpWeights[index]);
+      }
+      return sum;
+    }, 0);
+    setWarpCost(totalWarpCost.toFixed(3));
+  }, [warps, warpWeights]);
 
   useEffect(() => {
-    if (width!=null && reed!=null && warpCount!=null) {
-      const weight = ((toNum(width) * toNum(reed) * toNum(numWarpConstant)) / 840 * getHanksWt(warpCount));
-      setWarpWeight(weight.toFixed(3));
-    }
-  }, [width, reed, warpCount, numWarpConstant]);
+    const totalWeftCost = wefts.reduce((sum, weft, index) => {
+      if (weft.cost!=null && weft.dyeing!=null && weftWeights[index]!=null) {
+        return sum + (toNum(weft.cost) + toNum(weft.dyeing)) * toNum(weftWeights[index]);
+      }
+      return sum;
+    }, 0);
+    setWeftCost(totalWeftCost.toFixed(3));
+  }, [wefts, weftWeights]);
 
-  useEffect(() => {
-    if (width!=null && pick!=null && weftCount!=null) {
-      const weight = ((toNum(width) * toNum(pick) * toNum(numWeftConstant)) / 840 * getHanksWt(weftCount));
-      setWeftWeight(weight.toFixed(3));
-    }
-  }, [width, pick, weftCount, numWeftConstant]);
-
-  useEffect(() => {
-    if (initWarpCost!=null && warpDyeing!=null && warpweight!=null) {
-      const cost = (toNum(initWarpCost) + toNum(warpDyeing)) * toNum(warpweight);
-      setWarpCost(cost.toFixed(3));
-    }
-  }, [initWarpCost, warpDyeing, warpweight]);
-
-  useEffect(() => {
-    if (initWeftCost!=null && weftDyeing!=null && weftweight!=null) {
-      const cost = (toNum(initWeftCost) + toNum(weftDyeing)) * toNum(weftweight);
-      setWeftCost(cost.toFixed(3));
-    }
-  }, [initWeftCost, weftDyeing, weftweight]);
-
+  // Calculate profit, total cost, GST, and final total
   useEffect(() => {
     if (warpCost!=null && weftCost!=null && weaving!=null && washing!=null && mending!=null && twisting!=null) {
       const profitVal = (toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing) + toNum(mending) + toNum(twisting)) * profitPercent;
       setProfit(profitVal.toFixed(3));
       setSaveProfit(profitVal.toFixed(3));
     }
-  }, [warpCost, weftCost, weaving, washing, profitPercent, mending,twisting]);
+  }, [warpCost, weftCost, weaving, washing, profitPercent, mending, twisting]);
 
   useEffect(() => {
     if (warpCost!=null && weftCost!=null && weaving!=null && washing!=null && saveprofit!=null && transport!=null && mending!=null && twisting!=null) {
@@ -425,18 +435,71 @@ function CostingPage() {
   }, [warpCost, weftCost, weaving, washing, saveprofit, transport, mending, twisting]);
 
   useEffect(() => {
-    if (totalCost!=null) {
+    if (totalCost) {
       const gstVal = toNum(totalCost) * 0.05;
       setGst(gstVal.toFixed(3));
     }
   }, [totalCost]);
 
   useEffect(() => {
-    if (totalCost!=null && gst!=null) {
+    if (totalCost && gst) {
       const sum = toNum(totalCost) + toNum(gst);
       setFinalTotal(sum.toFixed(3));
     }
   }, [totalCost, gst]);
+
+  // Fetch yarn data
+  useEffect(() => {
+    fetch(`http://localhost:3000/api/yarnCounts`)
+      .then(response => response.json())
+      .then(data => setYarnCount(data))
+      .catch(error => console.error('Error fetching data:', error));
+
+    fetch(`http://localhost:3000/api/yarnPrice`)
+      .then(response => response.json())
+      .then(data => setYarnPrice(data))
+      .catch(error => console.error('Error fetching data', error));
+  }, []);
+
+  // Set initial costs when counts are selected
+  useEffect(() => {
+    const newWarps = [...warps];
+    let updated = false;
+    
+    newWarps.forEach((warp, index) => {
+      if (warp.count && !warp.cost) {
+        newWarps[index].cost = getYarnPrice(warp.count);
+        updated = true;
+      }
+    });
+    
+    if (updated) {
+      setWarps(newWarps);
+    }
+  }, [warps]);
+
+  useEffect(() => {
+    const newWefts = [...wefts];
+    let updated = false;
+    
+    newWefts.forEach((weft, index) => {
+      if (weft.count && !weft.cost) {
+        newWefts[index].cost = getYarnPrice(weft.count);
+        updated = true;
+      }
+    });
+    
+    if (updated) {
+      setWefts(newWefts);
+    }
+  }, [wefts]);
+
+  // Get yarn count options
+  const warpCountOptions = yarnCount?.map(y => y?.yarn_count) || [];
+  const weftCountOptions = yarnCount?.map(y => y.yarn_count) || [];
+  
+  const sortedWarpCountOptions = sortYarnCounts([...warpCountOptions]);
+  const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -495,120 +558,186 @@ function CostingPage() {
           {/* Left Column - Inputs */}
           <div className="lg:col-span-2 space-y-6">
             <SectionCard title="Fabric Specifications" icon={FaToolbox} color="text-blue-600">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-1 gap-4">
-                    <TextInput
-                      label="Width (inches)"
-                      value={width}
-                      onChange={(e) => setWidth(e.target.value)}
-                      type="number"
-                      icon={FaToolbox}
-                      min={0}
-                      step="0.01"
-                    />
+              <div className="space-y-6">
+                <TextInput
+                  label="Width (inches)"
+                  value={width}
+                  onChange={(e) => setWidth(e.target.value)}
+                  type="number"
+                  icon={FaToolbox}
+                  min={0}
+                  step="0.01"
+                />
 
-
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-sm font-medium text-gray-700">Warp Specifications</h3>
+                    <button 
+                      onClick={addWarp}
+                      className="text-xs px-3 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition-colors flex items-center"
+                    >
+                      <FaPlus size={10} className="mr-1" /> Add Warp
+                    </button>
                   </div>
+                  
+                  {warps.map((warp, index) => (
+                    <div key={`warp-${index}`} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 relative">
+                      <div className="absolute -top-2 -left-2 bg-blue-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                        {index + 1}
+                      </div>
+                      {warps.length > 1 && (
+                        <button 
+                          onClick={() => removeWarp(index)}
+                          className="absolute top-2 right-2 text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <FaTimes size={14} />
+                        </button>
+                      )}
+                      
+                      <DropdownField
+                        label="Warp Count"
+                        value={warp.count}
+                        onChange={(e) => handleWarpChange(index, 'count', e.target.value)}
+                        options={sortedWarpCountOptions}
+                        icon={FaWeight}
+                      />
+                      <TextInput
+                        label="Reed"
+                        value={warp.reed}
+                        onChange={(e) => handleWarpChange(index, 'reed', e.target.value)}
+                        type="number"
+                        icon={FaIndustry}
+                        min={0}
+                        step="0.01"
+                      />
+                      <TextInput
+                        label="Warp Constant"
+                        value={warp.constant}
+                        onChange={(e) => handleWarpChange(index, 'constant', e.target.value)}
+                        type="number"
+                        icon={FaNewspaper}
+                        min={0}
+                        step="0.01"
+                      />
+                    </div>
+                  ))}
                 </div>
-                
-                <DropdownField
-                  label="Warp Count"
-                  value={warpCount}
-                  onChange={(e) => setWarpCount(e.target.value)}
-                  options={sortedWarpCountOptions}
-                  icon={FaWeight}
-                />
-                <TextInput
-                  label="Reed"
-                  value={reed}
-                  onChange={(e) => setReed(e.target.value)}
-                  type="number"
-                  icon={FaIndustry}
-                  min={0}
-                  step="0.01"
-                />
-                <DropdownField
-                  label="Weft Count"
-                  value={weftCount}
-                  onChange={(e) => setWeftCount(e.target.value)}
-                  options={sortedWeftCountOptions}
-                  icon={FaWeight}
-                />
-                <TextInput
-                  label="Pick"
-                  value={pick}
-                  onChange={(e) => setPick(e.target.value)}
-                  type="number"
-                  icon={FaIndustry}
-                  min={0}
-                  step="0.01"
-                />
-                <div className="md:col-span-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    
-                    <TextInput
-                      label="Warp Constant"
-                      value={numWarpConstant}
-                      onChange={(e) => setWarpNumConstant(e.target.value)}
-                      type="number"
-                      icon={FaNewspaper}
-                      min={0}
-                      step="0.01"
-                    />
-                    <TextInput
-                      label="Weft Constant"
-                      value={numWeftConstant}
-                      onChange={(e) => setWeftNumConstant(e.target.value)}
-                      type="number"
-                      icon={FaNewspaper}
-                      min={0}
-                      step="0.01"
-                    />
-                    
+
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-sm font-medium text-gray-700">Weft Specifications</h3>
+                    <button 
+                      onClick={addWeft}
+                      className="text-xs px-3 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition-colors flex items-center"
+                    >
+                      <FaPlus size={10} className="mr-1" /> Add Weft
+                    </button>
                   </div>
+                  
+                  {wefts.map((weft, index) => (
+                    <div key={`weft-${index}`} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 relative">
+                      <div className="absolute -top-2 -left-2 bg-green-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                        {index + 1}
+                      </div>
+                      {wefts.length > 1 && (
+                        <button 
+                          onClick={() => removeWeft(index)}
+                          className="absolute top-2 right-2 text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <FaTimes size={14} />
+                        </button>
+                      )}
+                      
+                      <DropdownField
+                        label="Weft Count"
+                        value={weft.count}
+                        onChange={(e) => handleWeftChange(index, 'count', e.target.value)}
+                        options={sortedWeftCountOptions}
+                        icon={FaWeight}
+                      />
+                      <TextInput
+                        label="Pick"
+                        value={weft.pick}
+                        onChange={(e) => handleWeftChange(index, 'pick', e.target.value)}
+                        type="number"
+                        icon={FaIndustry}
+                        min={0}
+                        step="0.01"
+                      />
+                      <TextInput
+                        label="Weft Constant"
+                        value={weft.constant}
+                        onChange={(e) => handleWeftChange(index, 'constant', e.target.value)}
+                        type="number"
+                        icon={FaNewspaper}
+                        min={0}
+                        step="0.01"
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
             </SectionCard>
 
             <SectionCard title="Material Costs" icon={FaMoneyBillWave} color="text-green-600">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextInput
-                  label="Warp Cost (per unit)"
-                  value={initWarpCost}
-                  onChange={(e) => setInitWarpCost(e.target.value)}
-                  type="number"
-                  icon={FaMoneyBillWave}
-                  min={0}
-                  step="0.01"
-                />
-                <TextInput
-                  label="Weft Cost (per unit)"
-                  value={initWeftCost}
-                  onChange={(e) => setInitWeftCost(e.target.value)}
-                  type="number"
-                  icon={FaMoneyBillWave}
-                  min={0}
-                  step="0.01"
-                />
-                <TextInput
-                  label="Warp Dyeing Cost"
-                  value={warpDyeing}
-                  onChange={(e) => setWarpDyeing(e.target.value)}
-                  type="number"
-                  icon={FaIndustry}
-                  min={0}
-                  step="0.01"
-                />
-                <TextInput
-                  label="Weft Dyeing Cost"
-                  value={weftDyeing}
-                  onChange={(e) => setWeftDyeing(e.target.value)}
-                  type="number"
-                  icon={FaIndustry}
-                  min={0}
-                  step="0.01"
-                />
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-gray-700">Warp Costs</h3>
+                  {warps.map((warp, index) => (
+                    <div key={`warp-cost-${index}`} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 relative">
+                      <div className="absolute -top-2 -left-2 bg-blue-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                        {index + 1}
+                      </div>
+                      <TextInput
+                        label="Warp Cost (per unit)"
+                        value={warp.cost}
+                        onChange={(e) => handleWarpChange(index, 'cost', e.target.value)}
+                        type="number"
+                        icon={FaMoneyBillWave}
+                        min={0}
+                        step="0.01"
+                      />
+                      <TextInput
+                        label="Warp Dyeing Cost"
+                        value={warp.dyeing}
+                        onChange={(e) => handleWarpChange(index, 'dyeing', e.target.value)}
+                        type="number"
+                        icon={FaIndustry}
+                        min={0}
+                        step="0.01"
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-gray-700">Weft Costs</h3>
+                  {wefts.map((weft, index) => (
+                    <div key={`weft-cost-${index}`} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 relative">
+                      <div className="absolute -top-2 -left-2 bg-green-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                        {index + 1}
+                      </div>
+                      <TextInput
+                        label="Weft Cost (per unit)"
+                        value={weft.cost}
+                        onChange={(e) => handleWeftChange(index, 'cost', e.target.value)}
+                        type="number"
+                        icon={FaMoneyBillWave}
+                        min={0}
+                        step="0.01"
+                      />
+                      <TextInput
+                        label="Weft Dyeing Cost"
+                        value={weft.dyeing}
+                        onChange={(e) => handleWeftChange(index, 'dyeing', e.target.value)}
+                        type="number"
+                        icon={FaIndustry}
+                        min={0}
+                        step="0.01"
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             </SectionCard>
 
@@ -660,15 +789,15 @@ function CostingPage() {
                   step="0.01"
                 />
                 <TextInput
-                      label="Profit %"
-                      value={(profitPercent * 100).toFixed(0)}
-                      onChange={(e) => setprofitPercent(e.target.value / 100)}
-                      type="number"
-                      icon={FaPercentage}
-                      min={0}
-                      max={100}
-                      step="1"
-                    />
+                  label="Profit %"
+                  value={(profitPercent * 100).toFixed(0)}
+                  onChange={(e) => setprofitPercent(e.target.value / 100)}
+                  type="number"
+                  icon={FaPercentage}
+                  min={0}
+                  max={100}
+                  step="1"
+                />
               </div>
             </SectionCard>
             
@@ -683,32 +812,45 @@ function CostingPage() {
           {/* Right Column - Results */}
           <div className="space-y-6">
             <SectionCard title="Weight Calculations" icon={FaWeight} color="text-yellow-600">
-              <div className="grid grid-cols-1 gap-4">
-                <ResultCard
-                  title="Warp Weight"
-                  value={warpweight}
-                  icon={FaWeight}
-                  color="bg-yellow-50"
-                />
-                <ResultCard
-                  title="Weft Weight"
-                  value={weftweight}
-                  icon={FaWeight}
-                  color="bg-yellow-50"
-                />
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-gray-700">Warp Weights</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {warpWeights.map((weight, index) => (
+                    <ResultCard
+                      key={`warp-weight-${index}`}
+                      title={`Warp ${index + 1} Weight`}
+                      value={weight}
+                      icon={FaWeight}
+                      color="bg-yellow-50"
+                    />
+                  ))}
+                </div>
+                
+                <h3 className="text-sm font-medium text-gray-700 mt-6">Weft Weights</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {weftWeights.map((weight, index) => (
+                    <ResultCard
+                      key={`weft-weight-${index}`}
+                      title={`Weft ${index + 1} Weight`}
+                      value={weight}
+                      icon={FaWeight}
+                      color="bg-yellow-50"
+                    />
+                  ))}
+                </div>
               </div>
             </SectionCard>
 
             <SectionCard title="Cost Breakdown" icon={FaMoneyBillWave} color="text-blue-600">
               <div className="grid grid-cols-1 gap-4">
                 <ResultCard
-                  title="Warp Cost"
+                  title="Total Warp Cost"
                   value={warpCost}
                   icon={FaMoneyBillWave}
                   color="bg-blue-50"
                 />
                 <ResultCard
-                  title="Weft Cost"
+                  title="Total Weft Cost"
                   value={weftCost}
                   icon={FaMoneyBillWave}
                   color="bg-blue-50"
@@ -732,7 +874,7 @@ function CostingPage() {
                 />
                 <ResultCard
                   title="Subtotal"
-                  value={(toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing) + toNum(mending) + toNum(twisting)).toFixed(3)}
+                  value={(toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing) + toNum(mending) + toNum(twisting) + toNum(profit)).toFixed(3)}
                   icon={FaCalculator}
                   color="bg-gray-50"
                 />
