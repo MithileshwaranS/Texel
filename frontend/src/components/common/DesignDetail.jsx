@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  Box, 
-  Typography, 
-  Button, 
-  Container, 
-  Grid, 
-  Paper, 
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  Box,
+  Typography,
+  Button,
+  Container,
+  Grid,
+  Paper,
   Table,
   TableBody,
   TableCell,
@@ -19,8 +19,8 @@ import {
   useMediaQuery,
   useTheme,
   styled,
-  Chip
-} from '@mui/material';
+  Chip,
+} from "@mui/material";
 import {
   ArrowBack,
   PictureAsPdf,
@@ -29,10 +29,10 @@ import {
   AttachMoney,
   LocalShipping,
   Palette,
-  Receipt
-} from '@mui/icons-material';
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+  Receipt,
+} from "@mui/icons-material";
+import { jsPDF } from "jspdf";
+import "jspdf-autotable";
 
 // Modern styled components
 const CostingSheetContainer = styled(Container)(({ theme }) => ({
@@ -42,84 +42,84 @@ const CostingSheetContainer = styled(Container)(({ theme }) => ({
   boxShadow: theme.shadows[2],
   marginTop: theme.spacing(4),
   marginBottom: theme.spacing(4),
-  position: 'relative',
+  position: "relative",
   border: `1px solid ${theme.palette.divider}`,
-  [theme.breakpoints.down('sm')]: {
-    padding: theme.spacing(2)
-  }
+  [theme.breakpoints.down("sm")]: {
+    padding: theme.spacing(2),
+  },
 }));
 
 const SectionHeader = styled(Typography)(({ theme }) => ({
   fontWeight: 600,
   marginBottom: theme.spacing(2),
   color: theme.palette.text.primary,
-  display: 'flex',
-  alignItems: 'center',
+  display: "flex",
+  alignItems: "center",
   gap: theme.spacing(1.5),
-  fontSize: '1.1rem',
-  '& svg': {
-    color: theme.palette.primary.main
-  }
+  fontSize: "1.1rem",
+  "& svg": {
+    color: theme.palette.primary.main,
+  },
 }));
 
 const CostTable = styled(Table)(({ theme }) => ({
-  '& .MuiTableCell-root': {
+  "& .MuiTableCell-root": {
     padding: theme.spacing(1.5),
     borderBottom: `1px solid ${theme.palette.divider}`,
-    fontSize: '0.875rem'
+    fontSize: "0.875rem",
   },
-  '& .MuiTableCell-head': {
+  "& .MuiTableCell-head": {
     fontWeight: 600,
     backgroundColor: theme.palette.grey[100],
     color: theme.palette.text.primary,
-    fontSize: '0.8rem'
-  }
+    fontSize: "0.8rem",
+  },
 }));
 
 const TotalRow = styled(TableRow)(({ theme }) => ({
-  '& .MuiTableCell-root': {
+  "& .MuiTableCell-root": {
     fontWeight: 600,
-    backgroundColor: theme.palette.grey[50]
-  }
+    backgroundColor: theme.palette.grey[50],
+  },
 }));
 
 const FinalTotalRow = styled(TableRow)(({ theme }) => ({
-  '& .MuiTableCell-root': {
+  "& .MuiTableCell-root": {
     fontWeight: 700,
-    fontSize: '0.95rem',
+    fontSize: "0.95rem",
     backgroundColor: theme.palette.primary.light,
-    color: theme.palette.primary.contrastText
-  }
+    color: theme.palette.primary.contrastText,
+  },
 }));
 
 const SpecCard = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(2),
   borderRadius: theme.spacing(1),
-  boxShadow: 'none',
+  boxShadow: "none",
   border: `1px solid ${theme.palette.divider}`,
-  height: '100%',
-  transition: 'all 0.2s ease',
-  '&:hover': {
+  height: "100%",
+  transition: "all 0.2s ease",
+  "&:hover": {
     borderColor: theme.palette.primary.main,
-    boxShadow: theme.shadows[2]
-  }
+    boxShadow: theme.shadows[2],
+  },
 }));
 
 const DesignTitle = styled(Typography)(({ theme }) => ({
   fontWeight: 600,
   color: theme.palette.text.primary,
   marginBottom: theme.spacing(1),
-  [theme.breakpoints.down('sm')]: {
-    fontSize: '1.5rem'
-  }
+  [theme.breakpoints.down("sm")]: {
+    fontSize: "1.5rem",
+  },
 }));
 
 const DesignSubtitle = styled(Typography)(({ theme }) => ({
   color: theme.palette.text.secondary,
-  display: 'flex',
-  alignItems: 'center',
+  display: "flex",
+  alignItems: "center",
   gap: theme.spacing(1),
-  marginBottom: theme.spacing(3)
+  marginBottom: theme.spacing(3),
 }));
 
 function DesignDetail() {
@@ -130,11 +130,11 @@ function DesignDetail() {
   const [error, setError] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    const options = { year: "numeric", month: "short", day: "numeric" };
     return date.toLocaleDateString(undefined, options);
   };
 
@@ -143,12 +143,14 @@ function DesignDetail() {
   const fetchDesign = async () => {
     try {
       if (!parseInt(designId) || isNaN(designId)) {
-        throw new Error('Invalid design number');
+        throw new Error("Invalid design number");
       }
 
       setLoading(true);
-      const response = await fetch(`http://localhost:3000/api/designdetails/${designId}`);
-      if (!response.ok) throw new Error('Design not found');
+      const response = await fetch(
+        `https://texel.onrender.com/api/designdetails/${designId}`
+      );
+      if (!response.ok) throw new Error("Design not found");
       const data = await response.json();
       setDesign(data.length > 0 ? data[0] : null);
     } catch (err) {
@@ -172,120 +174,137 @@ function DesignDetail() {
 
   const handleExportPDF = () => {
     handleMenuClose();
-    
+
     const doc = new jsPDF();
-    
+
     // Title
     doc.setFontSize(18);
     doc.setTextColor(40);
-    doc.text(`${design.designname} - Fabric Costing Sheet`, 105, 15, null, null, 'center');
-    
+    doc.text(
+      `${design.designname} - Fabric Costing Sheet`,
+      105,
+      15,
+      null,
+      null,
+      "center"
+    );
+
     // Basic Specifications
     doc.setFontSize(12);
-    doc.text('Basic Specifications', 14, 25);
+    doc.text("Basic Specifications", 14, 25);
     doc.autoTable({
       startY: 30,
-      head: [['Specification', 'Value']],
+      head: [["Specification", "Value"]],
       body: [
-        ['Design Name', design.designname],
-        ['Width', `${design.width} cm`],
-        ['Reed', design.reed],
-        ['Pick', design.pick],
-        ['Warp Count', design.warpcount],
-        ['Weft Count', design.weftcount],
-        ['Warp Weight', design.warpweight]
+        ["Design Name", design.designname],
+        ["Width", `${design.width} cm`],
+        ["Reed", design.reed],
+        ["Pick", design.pick],
+        ["Warp Count", design.warpcount],
+        ["Weft Count", design.weftcount],
+        ["Warp Weight", design.warpweight],
       ],
-      theme: 'grid',
+      theme: "grid",
       headStyles: {
         fillColor: [25, 118, 210],
-        textColor: 255
-      }
+        textColor: 255,
+      },
     });
-    
+
     // Cost Breakdown
-    doc.text('Cost Breakdown', 14, doc.autoTable.previous.finalY + 15);
+    doc.text("Cost Breakdown", 14, doc.autoTable.previous.finalY + 15);
     doc.autoTable({
       startY: doc.autoTable.previous.finalY + 20,
-      head: [['Cost Type', 'Amount (₹)']],
+      head: [["Cost Type", "Amount (₹)"]],
       body: [
-        ['Warp Cost', formatCurrency(design.warpcost)],
-        ['Weft Cost', formatCurrency(design.weftcost)],
-        ['Weaving Cost', formatCurrency(design.weavingcost)],
-        ['Washing Cost', formatCurrency(design.washingcost)],
-        ['Transport Cost', formatCurrency(design.transportcost)],
-        ['Mending Cost', formatCurrency(design.mendingcost || 0)],
-        ['Twisting Cost', formatCurrency(design.twistingcost || 0)]
+        ["Warp Cost", formatCurrency(design.warpcost)],
+        ["Weft Cost", formatCurrency(design.weftcost)],
+        ["Weaving Cost", formatCurrency(design.weavingcost)],
+        ["Washing Cost", formatCurrency(design.washingcost)],
+        ["Transport Cost", formatCurrency(design.transportcost)],
+        ["Mending Cost", formatCurrency(design.mendingcost || 0)],
+        ["Twisting Cost", formatCurrency(design.twistingcost || 0)],
       ],
-      theme: 'grid',
+      theme: "grid",
       headStyles: {
         fillColor: [25, 118, 210],
-        textColor: 255
-      }
+        textColor: 255,
+      },
     });
-    
+
     // Dyeing Costs
-    doc.text('Dyeing Costs', 14, doc.autoTable.previous.finalY + 15);
+    doc.text("Dyeing Costs", 14, doc.autoTable.previous.finalY + 15);
     doc.autoTable({
       startY: doc.autoTable.previous.finalY + 20,
-      head: [['Cost Type', 'Amount (₹)']],
+      head: [["Cost Type", "Amount (₹)"]],
       body: [
-        ['Warp Dyeing', formatCurrency(design.warpdyeing)],
-        ['Weft Dyeing', formatCurrency(design.weftdyeing)],
-        ['Initial Warp Cost', formatCurrency(design.initwarpcost)],
-        ['Initial Weft Cost', formatCurrency(design.initweftcost)]
+        ["Warp Dyeing", formatCurrency(design.warpdyeing)],
+        ["Weft Dyeing", formatCurrency(design.weftdyeing)],
+        ["Initial Warp Cost", formatCurrency(design.initwarpcost)],
+        ["Initial Weft Cost", formatCurrency(design.initweftcost)],
       ],
-      theme: 'grid',
+      theme: "grid",
       headStyles: {
         fillColor: [25, 118, 210],
-        textColor: 255
-      }
+        textColor: 255,
+      },
     });
-    
+
     // Financial Summary
-    doc.text('Financial Summary', 14, doc.autoTable.previous.finalY + 15);
+    doc.text("Financial Summary", 14, doc.autoTable.previous.finalY + 15);
     doc.autoTable({
       startY: doc.autoTable.previous.finalY + 20,
-      head: [['Item', 'Amount (₹)']],
+      head: [["Item", "Amount (₹)"]],
       body: [
-        ['Profit Percentage', `${formatCurrency(design.profitpercent * 100)}%`],
-        ['Profit Amount', formatCurrency(design.profit)],
-        ['Total Cost', formatCurrency(design.totalcost)],
-        ['GST', formatCurrency(design.gst)],
-        ['Final Total', { content: formatCurrency(design.finaltotal), styles: { fontStyle: 'bold', fillColor: [46, 125, 50], textColor: 255 } }]
+        ["Profit Percentage", `${formatCurrency(design.profitpercent * 100)}%`],
+        ["Profit Amount", formatCurrency(design.profit)],
+        ["Total Cost", formatCurrency(design.totalcost)],
+        ["GST", formatCurrency(design.gst)],
+        [
+          "Final Total",
+          {
+            content: formatCurrency(design.finaltotal),
+            styles: {
+              fontStyle: "bold",
+              fillColor: [46, 125, 50],
+              textColor: 255,
+            },
+          },
+        ],
       ],
-      theme: 'grid',
+      theme: "grid",
       headStyles: {
         fillColor: [25, 118, 210],
-        textColor: 255
-      }
+        textColor: 255,
+      },
     });
-    
-    doc.save(`${design.designname || 'design'}-costing-sheet.pdf`);
+
+    doc.save(`${design.designname || "design"}-costing-sheet.pdf`);
   };
 
   const formatCurrency = (value) => {
-    return parseFloat(value).toLocaleString('en-IN', {
+    return parseFloat(value).toLocaleString("en-IN", {
       maximumFractionDigits: 2,
-      minimumFractionDigits: 2
+      minimumFractionDigits: 2,
     });
   };
 
   if (error) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4, textAlign: 'center' }}>
+      <Container maxWidth="lg" sx={{ py: 4, textAlign: "center" }}>
         <Typography variant="h6" color="error" gutterBottom>
           Error Loading Design
         </Typography>
         <Typography variant="body1" sx={{ mb: 3 }}>
           {error}
         </Typography>
-        <Button 
-          variant="contained" 
+        <Button
+          variant="contained"
           startIcon={<ArrowBack />}
-          onClick={() => navigate('/reports')}
-          sx={{ 
-            borderRadius: '8px',
-            textTransform: 'none'
+          onClick={() => navigate("/reports")}
+          sx={{
+            borderRadius: "8px",
+            textTransform: "none",
           }}
         >
           Back to Reports
@@ -297,7 +316,9 @@ function DesignDetail() {
   if (loading) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Typography variant="h6" gutterBottom>Loading Costing Sheet...</Typography>
+        <Typography variant="h6" gutterBottom>
+          Loading Costing Sheet...
+        </Typography>
       </Container>
     );
   }
@@ -307,46 +328,50 @@ function DesignDetail() {
   }
 
   return (
-    <Box sx={{ 
-      backgroundColor: theme.palette.grey[50], 
-      minHeight: '100vh', 
-      py: 4
-    }}>
+    <Box
+      sx={{
+        backgroundColor: theme.palette.grey[50],
+        minHeight: "100vh",
+        py: 4,
+      }}
+    >
       <CostingSheetContainer maxWidth="lg">
         {/* Header with actions */}
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
-          mb: 4,
-          flexDirection: isMobile ? 'column' : 'row',
-          gap: isMobile ? 2 : 0
-        }}>
-          <Button 
-            variant="outlined" 
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 4,
+            flexDirection: isMobile ? "column" : "row",
+            gap: isMobile ? 2 : 0,
+          }}
+        >
+          <Button
+            variant="outlined"
             startIcon={<ArrowBack />}
-            onClick={() => navigate('/reports')}
+            onClick={() => navigate("/reports")}
             sx={{
-              borderRadius: '8px',
-              textTransform: 'none',
-              alignSelf: isMobile ? 'stretch' : 'flex-start'
+              borderRadius: "8px",
+              textTransform: "none",
+              alignSelf: isMobile ? "stretch" : "flex-start",
             }}
           >
             Back to Reports
           </Button>
-          
-          <Box sx={{ display: 'flex', gap: 1 }}>
+
+          <Box sx={{ display: "flex", gap: 1 }}>
             <Button
               variant="contained"
               startIcon={<PictureAsPdf />}
               onClick={handleExportPDF}
               sx={{
-                borderRadius: '8px',
-                textTransform: 'none',
-                boxShadow: 'none'
+                borderRadius: "8px",
+                textTransform: "none",
+                boxShadow: "none",
               }}
             >
-              {isMobile ? 'PDF' : 'Export PDF'}
+              {isMobile ? "PDF" : "Export PDF"}
             </Button>
             <IconButton
               aria-label="more"
@@ -355,7 +380,7 @@ function DesignDetail() {
               onClick={handleMenuClick}
               sx={{
                 border: `1px solid ${theme.palette.divider}`,
-                borderRadius: '8px'
+                borderRadius: "8px",
               }}
             >
               <MoreVert />
@@ -369,8 +394,8 @@ function DesignDetail() {
               PaperProps={{
                 style: {
                   width: 200,
-                  borderRadius: '12px',
-                  boxShadow: theme.shadows[3]
+                  borderRadius: "12px",
+                  boxShadow: theme.shadows[3],
                 },
               }}
             >
@@ -388,16 +413,14 @@ function DesignDetail() {
 
         {/* Design Header */}
         <Box sx={{ mb: 4 }}>
-          <Chip 
-            label="Costing Sheet" 
-            size="small" 
-            color="primary" 
+          <Chip
+            label="Costing Sheet"
+            size="small"
+            color="primary"
             variant="outlined"
             sx={{ mb: 1 }}
           />
-          <DesignTitle variant="h4">
-            {design.designname}
-          </DesignTitle>
+          <DesignTitle variant="h4">{design.designname}</DesignTitle>
           <DesignSubtitle variant="body2">
             <span>Created on {formatDate(design.created_date)}</span>
             <span>•</span>
@@ -414,43 +437,57 @@ function DesignDetail() {
           <Grid container spacing={2} sx={{ mb: 2 }}>
             <Grid item xs={6} sm={4} md={3}>
               <SpecCard>
-                <Typography variant="subtitle2" color="textSecondary">Width</Typography>
+                <Typography variant="subtitle2" color="textSecondary">
+                  Width
+                </Typography>
                 <Typography variant="h6">{design.width} cm</Typography>
               </SpecCard>
             </Grid>
             <Grid item xs={6} sm={4} md={3}>
               <SpecCard>
-                <Typography variant="subtitle2" color="textSecondary">Warp Count</Typography>
+                <Typography variant="subtitle2" color="textSecondary">
+                  Warp Count
+                </Typography>
                 <Typography variant="h6">{design.warpcount}</Typography>
               </SpecCard>
             </Grid>
             <Grid item xs={6} sm={4} md={3}>
               <SpecCard>
-                <Typography variant="subtitle2" color="textSecondary">Reed</Typography>
+                <Typography variant="subtitle2" color="textSecondary">
+                  Reed
+                </Typography>
                 <Typography variant="h6">{design.reed}</Typography>
               </SpecCard>
             </Grid>
             <Grid item xs={6} sm={4} md={3}>
               <SpecCard>
-                <Typography variant="subtitle2" color="textSecondary">Warp Weight</Typography>
+                <Typography variant="subtitle2" color="textSecondary">
+                  Warp Weight
+                </Typography>
                 <Typography variant="h6">{design.warpweight}</Typography>
               </SpecCard>
             </Grid>
             <Grid item xs={6} sm={4} md={3}>
               <SpecCard>
-                <Typography variant="subtitle2" color="textSecondary">Weft Count</Typography>
+                <Typography variant="subtitle2" color="textSecondary">
+                  Weft Count
+                </Typography>
                 <Typography variant="h6">{design.weftcount}</Typography>
               </SpecCard>
             </Grid>
             <Grid item xs={6} sm={4} md={3}>
               <SpecCard>
-                <Typography variant="subtitle2" color="textSecondary">Pick</Typography>
+                <Typography variant="subtitle2" color="textSecondary">
+                  Pick
+                </Typography>
                 <Typography variant="h6">{design.pick}</Typography>
               </SpecCard>
             </Grid>
             <Grid item xs={6} sm={4} md={3}>
               <SpecCard>
-                <Typography variant="subtitle2" color="textSecondary">Weft Weight</Typography>
+                <Typography variant="subtitle2" color="textSecondary">
+                  Weft Weight
+                </Typography>
                 <Typography variant="h6">{design.weftweight}</Typography>
               </SpecCard>
             </Grid>
@@ -463,10 +500,10 @@ function DesignDetail() {
             <Palette fontSize="small" />
             Dyeing Costs
           </SectionHeader>
-          <TableContainer 
-            component={Paper} 
+          <TableContainer
+            component={Paper}
             variant="outlined"
-            sx={{ borderRadius: '8px' }}
+            sx={{ borderRadius: "8px" }}
           >
             <CostTable>
               <TableHead>
@@ -478,19 +515,27 @@ function DesignDetail() {
               <TableBody>
                 <TableRow hover>
                   <TableCell>Initial Warp Cost</TableCell>
-                  <TableCell align="right">{formatCurrency(design.initwarpcost)}</TableCell>
+                  <TableCell align="right">
+                    {formatCurrency(design.initwarpcost)}
+                  </TableCell>
                 </TableRow>
                 <TableRow hover>
                   <TableCell>Warp Dyeing</TableCell>
-                  <TableCell align="right">{formatCurrency(design.warpdyeing)}</TableCell>
+                  <TableCell align="right">
+                    {formatCurrency(design.warpdyeing)}
+                  </TableCell>
                 </TableRow>
                 <TableRow hover>
                   <TableCell>Initial Weft Cost</TableCell>
-                  <TableCell align="right">{formatCurrency(design.initweftcost)}</TableCell>
+                  <TableCell align="right">
+                    {formatCurrency(design.initweftcost)}
+                  </TableCell>
                 </TableRow>
                 <TableRow hover>
                   <TableCell>Weft Dyeing</TableCell>
-                  <TableCell align="right">{formatCurrency(design.weftdyeing)}</TableCell>
+                  <TableCell align="right">
+                    {formatCurrency(design.weftdyeing)}
+                  </TableCell>
                 </TableRow>
               </TableBody>
             </CostTable>
@@ -503,10 +548,10 @@ function DesignDetail() {
             <AttachMoney fontSize="small" />
             Cost Breakdown
           </SectionHeader>
-          <TableContainer 
-            component={Paper} 
+          <TableContainer
+            component={Paper}
             variant="outlined"
-            sx={{ borderRadius: '8px' }}
+            sx={{ borderRadius: "8px" }}
           >
             <CostTable>
               <TableHead>
@@ -518,34 +563,48 @@ function DesignDetail() {
               <TableBody>
                 <TableRow hover>
                   <TableCell>Warp Cost</TableCell>
-                  <TableCell align="right">{formatCurrency(design.warpcost)}</TableCell>
+                  <TableCell align="right">
+                    {formatCurrency(design.warpcost)}
+                  </TableCell>
                 </TableRow>
                 <TableRow hover>
                   <TableCell>Weft Cost</TableCell>
-                  <TableCell align="right">{formatCurrency(design.weftcost)}</TableCell>
+                  <TableCell align="right">
+                    {formatCurrency(design.weftcost)}
+                  </TableCell>
                 </TableRow>
                 <TableRow hover>
                   <TableCell>Weaving Cost</TableCell>
-                  <TableCell align="right">{formatCurrency(design.weavingcost)}</TableCell>
+                  <TableCell align="right">
+                    {formatCurrency(design.weavingcost)}
+                  </TableCell>
                 </TableRow>
                 <TableRow hover>
                   <TableCell>Washing Cost</TableCell>
-                  <TableCell align="right">{formatCurrency(design.washingcost)}</TableCell>
+                  <TableCell align="right">
+                    {formatCurrency(design.washingcost)}
+                  </TableCell>
                 </TableRow>
                 <TableRow hover>
                   <TableCell>Transport Cost</TableCell>
-                  <TableCell align="right">{formatCurrency(design.transportcost)}</TableCell>
+                  <TableCell align="right">
+                    {formatCurrency(design.transportcost)}
+                  </TableCell>
                 </TableRow>
                 {design.mendingcost > 0 && (
                   <TableRow hover>
                     <TableCell>Mending Cost</TableCell>
-                    <TableCell align="right">{formatCurrency(design.mendingcost)}</TableCell>
+                    <TableCell align="right">
+                      {formatCurrency(design.mendingcost)}
+                    </TableCell>
                   </TableRow>
                 )}
                 {design.twistingcost > 0 && (
                   <TableRow hover>
                     <TableCell>Twisting Cost</TableCell>
-                    <TableCell align="right">{formatCurrency(design.twistingcost)}</TableCell>
+                    <TableCell align="right">
+                      {formatCurrency(design.twistingcost)}
+                    </TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -559,10 +618,10 @@ function DesignDetail() {
             <Receipt fontSize="small" />
             Financial Summary
           </SectionHeader>
-          <TableContainer 
-            component={Paper} 
+          <TableContainer
+            component={Paper}
             variant="outlined"
-            sx={{ borderRadius: '8px' }}
+            sx={{ borderRadius: "8px" }}
           >
             <CostTable>
               <TableHead>
@@ -574,19 +633,29 @@ function DesignDetail() {
               <TableBody>
                 <TableRow hover>
                   <TableCell>Total Cost</TableCell>
-                  <TableCell align="right">{formatCurrency(design.totalcost)}</TableCell>
+                  <TableCell align="right">
+                    {formatCurrency(design.totalcost)}
+                  </TableCell>
                 </TableRow>
                 <TableRow hover>
-                  <TableCell>Profit ({formatCurrency(design.profitpercent * 100)}%)</TableCell>
-                  <TableCell align="right">{formatCurrency(design.profit)}</TableCell>
+                  <TableCell>
+                    Profit ({formatCurrency(design.profitpercent * 100)}%)
+                  </TableCell>
+                  <TableCell align="right">
+                    {formatCurrency(design.profit)}
+                  </TableCell>
                 </TableRow>
                 <TableRow hover>
                   <TableCell>GST</TableCell>
-                  <TableCell align="right">{formatCurrency(design.gst)}</TableCell>
+                  <TableCell align="right">
+                    {formatCurrency(design.gst)}
+                  </TableCell>
                 </TableRow>
                 <FinalTotalRow>
                   <TableCell>Final Total</TableCell>
-                  <TableCell align="right">{formatCurrency(design.finaltotal)}</TableCell>
+                  <TableCell align="right">
+                    {formatCurrency(design.finaltotal)}
+                  </TableCell>
                 </FinalTotalRow>
               </TableBody>
             </CostTable>
@@ -594,16 +663,18 @@ function DesignDetail() {
         </Box>
 
         {/* Footer Note */}
-        <Box sx={{ 
-          mt: 4, 
-          p: 2, 
-          backgroundColor: theme.palette.grey[100], 
-          borderRadius: '8px',
-          textAlign: 'center'
-        }}>
+        <Box
+          sx={{
+            mt: 4,
+            p: 2,
+            backgroundColor: theme.palette.grey[100],
+            borderRadius: "8px",
+            textAlign: "center",
+          }}
+        >
           <Typography variant="caption" color="textSecondary">
-            © {new Date().getFullYear()} Texel. All rights reserved. 
-            This is a proprietary application owned by Mithileshwaran.
+            © {new Date().getFullYear()} Texel. All rights reserved. This is a
+            proprietary application owned by Mithileshwaran.
           </Typography>
         </Box>
       </CostingSheetContainer>
