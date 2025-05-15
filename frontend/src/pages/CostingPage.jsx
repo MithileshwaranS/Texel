@@ -149,12 +149,12 @@ function CostingPage() {
   const [warpWeights, setWarpWeights] = useState([]);
   const [weftWeights, setWeftWeights] = useState([]);
 
-  useEffect(() => {
-    console.log("🔍 Warps:", warps);
-    console.log("🔍 Warp Weights:", warpWeights);
-    console.log("🔍 Wefts:", wefts);
-    console.log("🔍 Weft Weights:", weftWeights);
-  }, [warps, warpWeights, wefts, weftWeights]);
+  // useEffect(() => {
+  //   console.log("🔍 Warps:", warps);
+  //   console.log("🔍 Warp Weights:", warpWeights);
+  //   console.log("🔍 Wefts:", wefts);
+  //   console.log("🔍 Weft Weights:", weftWeights);
+  // }, [warps, warpWeights, wefts, weftWeights]);
 
   // Calculated costs
   const [warpCost, setWarpCost] = useState("");
