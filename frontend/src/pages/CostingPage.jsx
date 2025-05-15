@@ -289,7 +289,7 @@ function CostingPage() {
         weftWeights
       };
 
-      const response = await fetch(`https://texel.onrender.com/api/submit`, {
+      const response = await fetch(`http://localhost:3000/api/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
@@ -421,11 +421,11 @@ function CostingPage() {
   // Calculate profit, total cost, GST, and final total
   useEffect(() => {
     if (warpCost!=null && weftCost!=null && weaving!=null && washing!=null && mending!=null && twisting!=null) {
-      const profitVal = (toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing) + toNum(mending) + toNum(twisting)) * profitPercent;
+      const profitVal = (toNum(warpCost) + toNum(weftCost) + toNum(weaving) + toNum(washing) + toNum(mending) + toNum(twisting) +toNum(transport)) * profitPercent;
       setProfit(profitVal.toFixed(3));
       setSaveProfit(profitVal.toFixed(3));
     }
-  }, [warpCost, weftCost, weaving, washing, profitPercent, mending, twisting]);
+  }, [warpCost, weftCost, weaving, washing, profitPercent, mending, twisting,transport]);
 
   useEffect(() => {
     if (warpCost!=null && weftCost!=null && weaving!=null && washing!=null && saveprofit!=null && transport!=null && mending!=null && twisting!=null) {
@@ -450,49 +450,47 @@ function CostingPage() {
 
   // Fetch yarn data
   useEffect(() => {
-    fetch(`https://texel.onrender.com/api/yarnCounts`)
+    fetch(`http://localhost:3000/api/yarnCounts`)
       .then(response => response.json())
       .then(data => setYarnCount(data))
       .catch(error => console.error('Error fetching data:', error));
 
-    fetch(`https://texel.onrender.com/api/yarnPrice`)
+    fetch(`http://localhost:3000/api/yarnPrice`)
       .then(response => response.json())
       .then(data => setYarnPrice(data))
       .catch(error => console.error('Error fetching data', error));
   }, []);
 
   // Set initial costs when counts are selected
-  useEffect(() => {
-    const newWarps = [...warps];
-    let updated = false;
-    
-    newWarps.forEach((warp, index) => {
-      if (warp.count && !warp.cost) {
-        newWarps[index].cost = getYarnPrice(warp.count);
-        updated = true;
-      }
-    });
-    
-    if (updated) {
-      setWarps(newWarps);
+ useEffect(() => {
+  const newWarps = warps.map((warp) => {
+    if (warp.count) {
+      return {
+        ...warp,
+        cost: getYarnPrice(warp.count),
+      };
     }
-  }, [warps]);
+    return warp;
+  });
 
-  useEffect(() => {
-    const newWefts = [...wefts];
-    let updated = false;
-    
-    newWefts.forEach((weft, index) => {
-      if (weft.count && !weft.cost) {
-        newWefts[index].cost = getYarnPrice(weft.count);
-        updated = true;
-      }
-    });
-    
-    if (updated) {
-      setWefts(newWefts);
+  setWarps(newWarps);
+}, [warps.map(w => w.count).join(',')]);
+
+
+useEffect(() => {
+  const newWefts = wefts.map((weft) => {
+    if (weft.count) {
+      return {
+        ...weft,
+        cost: getYarnPrice(weft.count), // always update based on count
+      };
     }
-  }, [wefts]);
+    return weft;
+  });
+
+  setWefts(newWefts);
+}, [wefts.map(w => w.count).join(',')]); // depend only on counts
+
 
   // Get yarn count options
   const warpCountOptions = yarnCount?.map(y => y?.yarn_count) || [];

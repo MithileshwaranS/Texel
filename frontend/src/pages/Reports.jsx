@@ -21,7 +21,7 @@ function Reports() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`https://texel.onrender.com/api/designdetails`);
+        const response = await fetch(`http://localhost:3000/api/designdetails`);
         
         const data = await response.json();
         setDesign(data);
