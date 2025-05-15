@@ -286,8 +286,12 @@ function CostingPage() {
         twisting,
         profitPercent,
         warpWeights,
-        weftWeights
+        weftWeights,
+        warpCost,
+        weftCost
+        
       };
+      console.log(body)
 
       const response = await fetch(`http://localhost:3000/api/submit`, {
         method: "POST",
@@ -327,6 +331,7 @@ function CostingPage() {
         setMending(10);
         setTwisting(0);
         setDesignDate(new Date().toISOString().split('T')[0]);
+        
       } else {
         setToast({
           message: 'Failed to submit design. Please try again.',
@@ -405,7 +410,7 @@ function CostingPage() {
       }
       return sum;
     }, 0);
-    setWarpCost(totalWarpCost.toFixed(3));
+    setWarpCost(toNum(totalWarpCost.toFixed(3)));
   }, [warps, warpWeights]);
 
   useEffect(() => {

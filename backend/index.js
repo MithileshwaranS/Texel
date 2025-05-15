@@ -23,7 +23,7 @@ const port = process.env.PORT || 3000;
 // 1. Get all design details
 app.get('/api/designdetails', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM designdetails');
+    const { rows } = await pool.query('SELECT * FROM designs');
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -113,10 +113,10 @@ app.get('/api/yarnDetails', async (req, res) => {
 
 // 9. Submit costing form
 app.post('/api/submit', async (req, res) => {
-  const body = req.body;
+   const body = req.body;
   try {
     const { rows: existing } = await pool.query(
-      'SELECT * FROM designdetails WHERE designname = $1',
+      'SELECT * FROM designs WHERE designname = $1',
       [body.designName]
     );
 
@@ -125,29 +125,50 @@ app.post('/api/submit', async (req, res) => {
     }
 
     const insertQuery = `
-      INSERT INTO designdetails (
-        designname, width, reed, pick, warpweight, weftweight,
-        warpcost, weftcost, weavingcost, washingcost, profit, totalcost,
-        gst, warpcount, weftcount, transportcost, finaltotal, warpdyeing,
-        weftdyeing, initweftcost, initwarpcost, mendingcost, twistingcost,
-        created_date, profitpercent
+      INSERT INTO designs (
+        designname,created_date,profitpercent,weavingcost
+        , washingcost, mendingcost, transportcost,gst, width,warpcost
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
-        $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+      )
+    `;
+
+    const insertQueryWarp = `
+    INSERT INTO warps (
+        design_id,warpcount,warpweight
+        , initwarpcost, warpdyeing,reed
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6
       )
     `;
 
     const values = [
-      body.designName, body.width, body.reed, body.pick, body.warpweight, body.weftweight,
-      body.warpCost, body.weftCost, body.weaving, body.washing, body.profit, body.totalCost,
-      body.gst, body.warpCount, body.weftCount, body.transport, body.finaltotal, body.warpDyeing,
-      body.weftDyeing, body.initWeftCost, body.initWarpCost, body.mending, body.twisting,
-      body.designDate, body.profitPercent
+      body.designName,body.designDate,body.profitPercent,body.weaving, body.washing,
+      body.mending,body.transport,body.gst, body.width,parseFloat(body.warpCost)
     ];
-
     await pool.query(insertQuery, values);
+    const { rows: designRows } = await pool.query('SELECT design_id from designs where designname = $1',[body.designName]);
+    const designId = designRows[0].design_id;
+    console.log(designId);
+    for (let i = 0; i < body.warps.length; i++) {
+      const warp = body.warps[i];
+      const warpWeight = parseFloat(body.warpWeights[i]);
+
+      await pool.query(insertQueryWarp, [
+        designId,
+        warp.count,
+        warpWeight,
+        warp.cost,
+        warp.dyeing,
+        parseFloat(warp.reed)
+      ]);
+      console.log("warp",i);
+      console.log(designId,warp.count,warpWeight,warp.cost,warp.dyeing,warp.reed);
+ 
+    }
     res.status(200).json({ message: 'Design inserted successfully' });
   } catch (err) {
+    console.error("error messgae",err)
     res.status(500).json({ message: 'Insert failed', error: err.message });
   }
 });
