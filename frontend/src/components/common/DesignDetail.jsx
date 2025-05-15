@@ -148,7 +148,7 @@ function DesignDetail() {
 
       setLoading(true);
       const response = await fetch(
-        `https://texel.onrender.com/api/designdetails/${designId}`
+        `http://localhost:3000/api/designdetails/${designId}`
       );
       if (!response.ok) throw new Error("Design not found");
       const data = await response.json();

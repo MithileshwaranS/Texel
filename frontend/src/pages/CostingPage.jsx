@@ -327,7 +327,7 @@ function CostingPage() {
       };
       console.log(body);
 
-      const response = await fetch(`https://texel.onrender.com/api/submit`, {
+      const response = await fetch(`http://localhost:3000/api/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -564,12 +564,12 @@ function CostingPage() {
 
   // Fetch yarn data
   useEffect(() => {
-    fetch(`https://texel.onrender.com/api/yarnCounts`)
+    fetch(`http://localhost:3000/api/yarnCounts`)
       .then((response) => response.json())
       .then((data) => setYarnCount(data))
       .catch((error) => console.error("Error fetching data:", error));
 
-    fetch(`https://texel.onrender.com/api/yarnPrice`)
+    fetch(`http://localhost:3000/api/yarnPrice`)
       .then((response) => response.json())
       .then((data) => setYarnPrice(data))
       .catch((error) => console.error("Error fetching data", error));
