@@ -151,7 +151,7 @@ function Settings() {
     if (window.confirm("Are you sure you want to delete this yarn?")) {
       try {
         const response = await fetch(
-          `http://localhost:3000/api/deleteYarn/${id}`,
+          `https://texel.onrender.com/api/deleteYarn/${id}`,
           {
             method: "DELETE",
           }
@@ -171,7 +171,9 @@ function Settings() {
   const fetchYarnData = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("http://localhost:3000/api/yarnDetails");
+      const res = await fetch(
+        "https://texel.onrender.com:3000/api/yarnDetails"
+      );
       const data = await res.json();
       setRows(data);
       setFilteredRows(data);
