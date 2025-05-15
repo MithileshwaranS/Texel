@@ -1,34 +1,33 @@
 import React, { useState, useEffect } from "react";
 import { FaChartLine, FaSearch } from "react-icons/fa";
-import YarnCard from '../components/common/CardComponent';
+import YarnCard from "../components/common/CardComponent";
 import DesignDetail from "../components/common/DesignDetail";
 import { useNavigate } from "react-router-dom";
 
-
 function Reports() {
-   const navigate = useNavigate();
+  const navigate = useNavigate();
   const [design, setDesign] = useState([]);
   const [filteredDesigns, setFilteredDesigns] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  const options = { year: 'numeric', month: 'long', day: 'numeric' };
-  return date.toLocaleDateString(undefined, options); // e.g., "12 May 2025"
-};
+    const date = new Date(dateString);
+    const options = { year: "numeric", month: "long", day: "numeric" };
+    return date.toLocaleDateString(undefined, options); // e.g., "12 May 2025"
+  };
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
         const response = await fetch(`http://localhost:3000/api/designdetails`);
-        
+
         const data = await response.json();
         setDesign(data);
         console.log("Fetched data:", data);
         setFilteredDesigns(data);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error("Error fetching data:", error);
       } finally {
         setIsLoading(false);
       }
@@ -38,16 +37,13 @@ function Reports() {
   }, []);
 
   useEffect(() => {
-    const filtered = design.filter(item =>
+    const filtered = design.filter((item) =>
       item.designname.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredDesigns(filtered);
   }, [searchTerm, design]);
 
-
-  
   const handleViewMore = (id) => {
-   
     console.log("View More clicked for designno:", id);
     navigate(`/designdetails/${id}`);
   };
@@ -61,7 +57,7 @@ function Reports() {
             <FaChartLine className="text-indigo-600 text-3xl mr-3" />
             <h1 className="text-3xl font-bold text-gray-800">Design Reports</h1>
           </div>
-          
+
           {/* Search Bar */}
           <div className="relative w-full md:w-64 lg:w-96">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -92,7 +88,9 @@ function Reports() {
             {/* No Results Message */}
             {filteredDesigns.length === 0 && !isLoading && (
               <div className="bg-white p-8 rounded-lg shadow text-center">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No designs found</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No designs found
+                </h3>
                 <p className="text-gray-500">Try adjusting your search query</p>
               </div>
             )}
@@ -102,9 +100,9 @@ function Reports() {
               {filteredDesigns.map((item) => (
                 <YarnCard
                   key={item.designname}
-                  date = {formatDate(item.created_date)}
+                  date={formatDate(item.created_date)}
                   title={item.designname}
-                  onViewMore={() => handleViewMore(item.designno)}
+                  onViewMore={() => handleViewMore(item.design_id)}
                 />
               ))}
             </div>
