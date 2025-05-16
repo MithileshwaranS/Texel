@@ -20,7 +20,9 @@ function Reports() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`http://localhost:3000/api/designdetails`);
+        const response = await fetch(
+          `${import.meta.env.VITE_API_BACKEND_URL}/api/designdetails`
+        );
 
         const data = await response.json();
         setDesign(data);

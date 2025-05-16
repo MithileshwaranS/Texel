@@ -121,8 +121,8 @@ function Settings() {
 
     try {
       const endpoint = isEditing
-        ? `http://localhost:3000/api/editYarn/${currentId}`
-        : "http://localhost:3000/api/addYarn";
+        ? `${import.meta.env.VITE_API_BACKEND_URL}/api/editYarn/${currentId}`
+        : `${import.meta.env.VITE_API_BACKEND_URL}/api/addYarn`;
 
       const method = isEditing ? "PUT" : "POST";
 
@@ -151,7 +151,7 @@ function Settings() {
     if (window.confirm("Are you sure you want to delete this yarn?")) {
       try {
         const response = await fetch(
-          `http://localhost:3000/api/deleteYarn/${id}`,
+          `${import.meta.env.VITE_API_BACKEND_URL}/api/deleteYarn/${id}`,
           {
             method: "DELETE",
           }
@@ -171,7 +171,9 @@ function Settings() {
   const fetchYarnData = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("http://localhost:3000/api/yarnDetails");
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BACKEND_URL}/api/yarnDetails`
+      );
       const data = await res.json();
       setRows(data);
       setFilteredRows(data);

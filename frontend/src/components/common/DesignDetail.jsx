@@ -149,7 +149,7 @@ function DesignDetail() {
 
       setLoading(true);
       const response = await fetch(
-        `http://localhost:3000/api/designdetails/${designId}`
+        `${import.meta.env.VITE_API_BACKEND_URL}/api/designdetails/${designId}`
       );
       if (!response.ok) throw new Error("Design not found");
       const data = await response.json();

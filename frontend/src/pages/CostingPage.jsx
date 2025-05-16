@@ -240,11 +240,16 @@ function CostingPage() {
     setUploading(true);
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", "texel_designs");
+    formData.append(
+      "upload_preset",
+      `${import.meta.env.VITE_API_CLOUD_PRESET}`
+    );
 
     try {
       const response = await fetch(
-        `https://api.cloudinary.com/v1_1/dw85urg0v/image/upload`,
+        `https://api.cloudinary.com/v1_1/${
+          import.meta.env.VITE_API_CLOUD_NAME
+        }/image/upload`,
         {
           method: "POST",
           body: formData,
@@ -427,11 +432,14 @@ function CostingPage() {
       };
       console.log(body);
 
-      const response = await fetch(`http://localhost:3000/api/submit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BACKEND_URL}/api/submit`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }
+      );
       const result = await response.json();
 
       if (response.status === 409) {
@@ -665,12 +673,12 @@ function CostingPage() {
 
   // Fetch yarn data
   useEffect(() => {
-    fetch(`http://localhost:3000/api/yarnCounts`)
+    fetch(`${import.meta.env.VITE_API_BACKEND_URL}/api/yarnCounts`)
       .then((response) => response.json())
       .then((data) => setYarnCount(data))
       .catch((error) => console.error("Error fetching data:", error));
 
-    fetch(`http://localhost:3000/api/yarnPrice`)
+    fetch(`${import.meta.env.VITE_API_BACKEND_URL}/api/yarnPrice`)
       .then((response) => response.json())
       .then((data) => setYarnPrice(data))
       .catch((error) => console.error("Error fetching data", error));
