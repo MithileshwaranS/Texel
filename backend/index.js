@@ -42,12 +42,10 @@ app.get("/api/designdetails/:id", async (req, res) => {
   ]);
 
   if (design.error || wefts.error || warps.error) {
-    return res
-      .status(500)
-      .json({
-        error:
-          design.error?.message || wefts.error?.message || warps.error?.message,
-      });
+    return res.status(500).json({
+      error:
+        design.error?.message || wefts.error?.message || warps.error?.message,
+    });
   }
 
   if (!design.data.length)
@@ -159,7 +157,10 @@ app.post("/api/submit", async (req, res) => {
       .from("designs")
       .insert({
         designname: body.designName,
-        created_date: body.designDate,
+        created_date: new Date(body.designDate.split("/").reverse().join("/"))
+          .toISOString()
+          .split("T")[0],
+
         profitpercent: body.profitPercent,
         weavingcost: body.weaving,
         washingcost: body.washing,
