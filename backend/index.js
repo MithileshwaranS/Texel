@@ -31,16 +31,53 @@ app.get("/api/designdetails", async (req, res) => {
 });
 
 // 2. Get a design detail by ID
+// In your Express backend route
 app.get("/api/designdetails/:id", async (req, res) => {
-  const { id } = req.params;
   try {
-    const { rows } = await pool.query(
-      "SELECT * FROM designs WHERE design_id = $1",
-      [id]
-    );
+    const { id } = req.params;
+
+    // Query to join designs with warps and wefts tables
+    const query = `
+      SELECT 
+        d.design_id,
+        d.designname,
+        d.created_date,
+        d.width,
+        d.warpcost,
+        d.weftcost,
+        d.weavingcost,
+        d.washingcost,
+        d.transportcost,
+        d.mendingcost,
+        d.profitpercent,
+        d.gst,
+        d.designimage,
+        w.warpcount,
+        w.warpweight,
+        w.initwarpcost,
+        w.warpdyeing,
+        w.reed,
+        wf.weftcount,
+        wf.weftweight,
+        wf.initweftcost,
+        wf.weftdyeing,
+        wf.pick
+      FROM designs d
+      LEFT JOIN warps w ON d.design_id = w.design_id
+      LEFT JOIN wefts wf ON d.design_id = wf.design_id
+      WHERE d.design_id = $1
+    `;
+
+    const { rows } = await pool.query(query, [id]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Design not found" });
+    }
+
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
@@ -136,9 +173,9 @@ app.post("/api/submit", async (req, res) => {
     const insertQuery = `
       INSERT INTO designs (
         designname,created_date,profitpercent,weavingcost
-        , washingcost, mendingcost, transportcost,gst, width,warpcost,weftcost
+        , washingcost, mendingcost, transportcost,gst, width,warpcost,weftcost,designimage
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,$11
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
       )
     `;
 
@@ -171,6 +208,7 @@ app.post("/api/submit", async (req, res) => {
       body.width,
       parseFloat(body.warpCost),
       parseFloat(body.weftCost),
+      body.designImage,
     ];
     await pool.query(insertQuery, values);
     const { rows: designRows } = await pool.query(

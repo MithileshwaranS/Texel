@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 import {
   Box,
   Typography,
@@ -31,7 +33,6 @@ import {
   Palette,
   Receipt,
 } from "@mui/icons-material";
-import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
 // Modern styled components
@@ -172,114 +173,47 @@ function DesignDetail() {
     setAnchorEl(null);
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     handleMenuClose();
 
-    const doc = new jsPDF();
+    const content = document.getElementById("design-content");
 
-    // Title
-    doc.setFontSize(18);
-    doc.setTextColor(40);
-    doc.text(
-      `${design.designname} - Fabric Costing Sheet`,
-      105,
-      15,
-      null,
-      null,
-      "center"
-    );
+    try {
+      // Create canvas from the DOM content
+      const canvas = await html2canvas(content, {
+        scale: 2, // Higher scale for better quality
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
 
-    // Basic Specifications
-    doc.setFontSize(12);
-    doc.text("Basic Specifications", 14, 25);
-    doc.autoTable({
-      startY: 30,
-      head: [["Specification", "Value"]],
-      body: [
-        ["Design Name", design.designname],
-        ["Width", `${design.width} cm`],
-        ["Reed", design.reed],
-        ["Pick", design.pick],
-        ["Warp Count", design.warpcount],
-        ["Weft Count", design.weftcount],
-        ["Warp Weight", design.warpweight],
-      ],
-      theme: "grid",
-      headStyles: {
-        fillColor: [25, 118, 210],
-        textColor: 255,
-      },
-    });
+      // Calculate dimensions to fit A4
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      // Create PDF
+      const pdf = new jsPDF({
+        orientation: imgHeight > pageHeight ? "portrait" : "portrait",
+        unit: "mm",
+      });
 
-    // Cost Breakdown
-    doc.text("Cost Breakdown", 14, doc.autoTable.previous.finalY + 15);
-    doc.autoTable({
-      startY: doc.autoTable.previous.finalY + 20,
-      head: [["Cost Type", "Amount (₹)"]],
-      body: [
-        ["Warp Cost", formatCurrency(design.warpcost)],
-        ["Weft Cost", formatCurrency(design.weftcost)],
-        ["Weaving Cost", formatCurrency(design.weavingcost)],
-        ["Washing Cost", formatCurrency(design.washingcost)],
-        ["Transport Cost", formatCurrency(design.transportcost)],
-        ["Mending Cost", formatCurrency(design.mendingcost || 0)],
-        ["Twisting Cost", formatCurrency(design.twistingcost || 0)],
-      ],
-      theme: "grid",
-      headStyles: {
-        fillColor: [25, 118, 210],
-        textColor: 255,
-      },
-    });
+      // Add image to PDF
+      pdf.addImage(
+        canvas.toDataURL("image/jpeg", 1.0),
+        "JPEG",
+        0,
+        0,
+        imgWidth,
+        imgHeight,
+        "",
+        "FAST"
+      );
 
-    // Dyeing Costs
-    doc.text("Dyeing Costs", 14, doc.autoTable.previous.finalY + 15);
-    doc.autoTable({
-      startY: doc.autoTable.previous.finalY + 20,
-      head: [["Cost Type", "Amount (₹)"]],
-      body: [
-        ["Warp Dyeing", formatCurrency(design.warpdyeing)],
-        ["Weft Dyeing", formatCurrency(design.weftdyeing)],
-        ["Initial Warp Cost", formatCurrency(design.initwarpcost)],
-        ["Initial Weft Cost", formatCurrency(design.initweftcost)],
-      ],
-      theme: "grid",
-      headStyles: {
-        fillColor: [25, 118, 210],
-        textColor: 255,
-      },
-    });
-
-    // Financial Summary
-    doc.text("Financial Summary", 14, doc.autoTable.previous.finalY + 15);
-    doc.autoTable({
-      startY: doc.autoTable.previous.finalY + 20,
-      head: [["Item", "Amount (₹)"]],
-      body: [
-        ["Profit Percentage", `${formatCurrency(design.profitpercent * 100)}%`],
-        ["Profit Amount", formatCurrency(design.profit)],
-        ["Total Cost", formatCurrency(design.totalcost)],
-        ["GST", formatCurrency(design.gst)],
-        [
-          "Final Total",
-          {
-            content: formatCurrency(design.finaltotal),
-            styles: {
-              fontStyle: "bold",
-              fillColor: [46, 125, 50],
-              textColor: 255,
-            },
-          },
-        ],
-      ],
-      theme: "grid",
-      headStyles: {
-        fillColor: [25, 118, 210],
-        textColor: 255,
-      },
-    });
-
-    doc.save(`${design.designname || "design"}-costing-sheet.pdf`);
+      // Save PDF
+      pdf.save(`${design.designname || "design"}-costing-sheet.pdf`);
+    } catch (err) {
+      console.error("PDF Export failed:", err);
+    }
   };
 
   const formatCurrency = (value) => {
@@ -334,6 +268,7 @@ function DesignDetail() {
         minHeight: "100vh",
         py: 4,
       }}
+      id="design-content"
     >
       <CostingSheetContainer maxWidth="lg">
         {/* Header with actions */}
@@ -410,7 +345,6 @@ function DesignDetail() {
             </Menu>
           </Box>
         </Box>
-
         {/* Design Header */}
         <Box sx={{ mb: 4 }}>
           <Chip

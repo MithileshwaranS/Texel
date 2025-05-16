@@ -12,6 +12,8 @@ import {
   FaCalendarAlt,
   FaTimes,
   FaPlus,
+  FaImage,
+  FaExpand,
 } from "react-icons/fa";
 import { Grid } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
@@ -164,6 +166,103 @@ function CostingPage() {
     new Date().toISOString().split("T")[0]
   );
   const [twisting, setTwisting] = useState(0);
+
+  //Image States
+  const [designImage, setDesignImage] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  // Image Components
+  const ImagePreview = ({ url, onClose }) => (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center"
+      onClick={onClose}
+    >
+      <button
+        className="absolute top-4 right-4 text-white hover:text-gray-300"
+        onClick={onClose}
+      >
+        <FaTimes size={24} />
+      </button>
+      <img
+        src={url}
+        alt="Design Preview"
+        className="max-w-[90%] max-h-[90vh] object-contain"
+        onClick={(e) => e.stopPropagation()}
+      />
+    </motion.div>
+  );
+
+  const ImageUploader = ({ value, onChange, uploading }) => (
+    <div className="relative border-2 border-dashed border-gray-300 rounded-xl p-4 hover:border-blue-500 transition-colors">
+      <input
+        type="file"
+        accept="image/*"
+        onChange={onChange}
+        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+      />
+      <div className="text-center">
+        {value ? (
+          <div className="relative">
+            <img
+              src={value}
+              alt="Design Preview"
+              className="max-h-[200px] mx-auto rounded-lg"
+            />
+            <button
+              onClick={() => setPreviewOpen(true)}
+              className="absolute top-2 right-2 p-2 bg-black bg-opacity-50 rounded-full text-white hover:bg-opacity-70 transition-opacity"
+            >
+              <FaExpand size={14} />
+            </button>
+          </div>
+        ) : (
+          <div className="py-4">
+            <FaImage className="mx-auto text-gray-400 mb-2" size={24} />
+            <p className="text-sm text-gray-500">
+              {uploading
+                ? "Uploading..."
+                : "Click or drag to upload design image"}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", "texel_designs"); // Replace with your upload preset
+
+    try {
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/dw85urg0v/image/upload`, // Replace with your cloud name
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+      setDesignImage(data.secure_url);
+    } catch (error) {
+      console.error("Upload failed:", error);
+      setToast({
+        message: "Image upload failed. Please try again.",
+        type: "error",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // Warp and Weft states
   const [warps, setWarps] = useState([
@@ -324,6 +423,7 @@ function CostingPage() {
         weftWeights,
         warpCost,
         weftCost,
+        designImage,
       };
       console.log(body);
 
@@ -369,6 +469,7 @@ function CostingPage() {
         setMending(10);
         setTwisting(0);
         setDesignDate(new Date().toISOString().split("T")[0]);
+        setDesignImage("");
       } else {
         setToast({
           message: "Failed to submit design. Please try again.",
@@ -962,6 +1063,27 @@ function CostingPage() {
                 />
               </div>
             </SectionCard>
+
+            <SectionCard
+              title="Design Image"
+              icon={FaImage}
+              color="text-pink-600"
+            >
+              <ImageUploader
+                value={designImage}
+                onChange={handleImageUpload}
+                uploading={uploading}
+              />
+            </SectionCard>
+
+            <AnimatePresence>
+              {previewOpen && (
+                <ImagePreview
+                  url={designImage}
+                  onClose={() => setPreviewOpen(false)}
+                />
+              )}
+            </AnimatePresence>
 
             <motion.div whileHover={{ scale: 1.005 }}>
               <SubmitButton
