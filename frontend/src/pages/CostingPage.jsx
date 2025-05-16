@@ -240,11 +240,11 @@ function CostingPage() {
     setUploading(true);
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", "texel_designs"); // Replace with your upload preset
+    formData.append("upload_preset", "texel_designs");
 
     try {
       const response = await fetch(
-        `https://api.cloudinary.com/v1_1/dw85urg0v/image/upload`, // Replace with your cloud name
+        `https://api.cloudinary.com/v1_1/dw85urg0v/image/upload`,
         {
           method: "POST",
           body: formData,
