@@ -102,6 +102,7 @@ function Reports() {
                   key={item.designname}
                   date={formatDate(item.created_date)}
                   title={item.designname}
+                  imageURL={item.designimage}
                   onViewMore={() => handleViewMore(item.design_id)}
                 />
               ))}
