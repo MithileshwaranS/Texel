@@ -145,6 +145,12 @@ const SubmitButton = ({ disabled, onClick }) => (
 );
 
 function CostingPage() {
+  const kolkataDate = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date());
   // State
   const [designName, setDesignName] = useState("");
   const [displayedName, setDisplayName] = useState("");
@@ -162,9 +168,7 @@ function CostingPage() {
   const [yarnPrice, setYarnPrice] = useState([]);
   const [toast, setToast] = useState(null);
   const [profitPercent, setprofitPercent] = useState(0.15);
-  const [designDate, setDesignDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
+  const [designDate, setDesignDate] = useState(kolkataDate);
   const [twisting, setTwisting] = useState(0);
 
   //Image States
@@ -476,7 +480,7 @@ function CostingPage() {
         setFinalTotal("");
         setMending(10);
         setTwisting(0);
-        setDesignDate(new Date().toISOString().split("T")[0]);
+        setDesignDate(kolkataDate);
         setDesignImage("");
       } else {
         setToast({
@@ -485,6 +489,7 @@ function CostingPage() {
         });
       }
     } catch (err) {
+      console.error(err);
       console.log(err.message);
       setToast({
         message: "An error occurred. Please try again.",

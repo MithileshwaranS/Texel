@@ -34,22 +34,29 @@ app.get("/api/designdetails", async (req, res) => {
 app.get("/api/designdetails/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const query = `
-      SELECT 
-        d.design_id, d.designname, d.created_date, d.width, d.warpcost,
-        d.weftcost, d.weavingcost, d.washingcost, d.transportcost,
-        d.mendingcost, d.profitpercent, d.gst, d.designimage,
-        w.warpcount, w.warpweight, w.initwarpcost, w.warpdyeing, w.reed,
-        wf.weftcount, wf.weftweight, wf.initweftcost, wf.weftdyeing, wf.pick
-      FROM designs d
-      LEFT JOIN warps w ON d.design_id = w.design_id
-      LEFT JOIN wefts wf ON d.design_id = wf.design_id
-      WHERE d.design_id = $1
-    `;
-    const { rows } = await pool.query(query, [id]);
-    if (rows.length === 0)
+
+    const queryDesigns = `SELECT * FROM designs WHERE design_id = $1 `;
+    const queryWeft = `SELECT * FROM wefts WHERE design_id = $1 ORDER BY weft_id ASC`;
+    const queryWarp = `SELECT * FROM warps WHERE design_id = $1 ORDER BY warp_id ASC`;
+
+    const designResult = await pool.query(queryDesigns, [id]);
+    const weftResult = await pool.query(queryWeft, [id]);
+    const warpResult = await pool.query(queryWarp, [id]);
+
+    if (designResult.rows.length === 0)
       return res.status(404).json({ message: "Design not found" });
-    res.json(rows);
+
+    res.json({
+      design: designResult.rows,
+      wefts: weftResult.rows,
+      warps: warpResult.rows,
+    });
+
+    console.log({
+      design: designResult.rows,
+      wefts: weftResult.rows,
+      warps: warpResult.rows,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
@@ -148,8 +155,8 @@ app.post("/api/submit", async (req, res) => {
       INSERT INTO designs (
         designname, created_date, profitpercent, weavingcost,
         washingcost, mendingcost, transportcost, gst, width,
-        warpcost, weftcost, designimage
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        warpcost, weftcost, designimage,subtotal,finaltotal,profit
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,$13,$14,$15)
     `;
 
     const insertQueryWarp = `
@@ -177,6 +184,9 @@ app.post("/api/submit", async (req, res) => {
       parseFloat(body.warpCost),
       parseFloat(body.weftCost),
       body.designImage,
+      body.totalCost,
+      body.finaltotal,
+      body.profit,
     ];
 
     await pool.query(insertQuery, values);
@@ -218,7 +228,7 @@ app.post("/api/submit", async (req, res) => {
 
     res.status(200).json({ message: "Design inserted successfully" });
   } catch (err) {
-    console.error("error message", err);
+    console.error("Server Error:", err);
     res.status(500).json({ message: "Insert failed", error: err.message });
   }
 });
