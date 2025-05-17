@@ -465,9 +465,22 @@ function DesignDetail() {
               </Menu>
             </Box>
           </Box>
-
           {/* Design Header */}
-          <Box sx={{ mb: 4, textAlign: "center" }}>
+
+          <Box sx={{ mb: 4, position: "relative" }}>
+            <Typography
+              variant="body1"
+              sx={{
+                position: "absolute",
+                top: 0,
+                right: 0,
+                fontWeight: 600,
+                fontSize: "1.25rem",
+              }}
+            >
+              Date: {formatDate(design.created_date)}
+            </Typography>
+
             <Chip
               className="hide-on-pdf"
               label="Costing Sheet"
@@ -481,13 +494,10 @@ function DesignDetail() {
                 fontSize: "0.8rem",
               }}
             />
-            <DesignTitle variant="h4">{design.designname}</DesignTitle>
-
-            <span style={{ fontSize: "1.2rem", fontWeight: "500" }}>
-              Date: {formatDate(design.created_date)}
-            </span>
+            <DesignTitle variant="h4" sx={{ textAlign: "center" }}>
+              {design.designname}
+            </DesignTitle>
           </Box>
-
           {/* Basic Specifications */}
           <Box sx={{ mb: 4 }}>
             <SectionHeader variant="h6">
@@ -505,7 +515,6 @@ function DesignDetail() {
               </CostTable>
             </StyledTableContainer>
           </Box>
-
           {/* Warp Details */}
           {warps.length > 0 && (
             <Box sx={{ mb: 4 }}>
@@ -556,7 +565,6 @@ function DesignDetail() {
               </StyledTableContainer>
             </Box>
           )}
-
           {/* Weft Details */}
           {wefts.length > 0 && (
             <Box sx={{ mb: 4 }}>
@@ -608,7 +616,6 @@ function DesignDetail() {
               </StyledTableContainer>
             </Box>
           )}
-
           {/* Cost Breakdown */}
           <Box sx={{ mb: 4 }}>
             <SectionHeader variant="h6">
@@ -636,12 +643,6 @@ function DesignDetail() {
                       {formatCurrency(design.washingcost)}
                     </TableCell>
                   </TableRow>
-                  <TableRow hover>
-                    <TableCell>Transport Cost</TableCell>
-                    <TableCell align="right">
-                      {formatCurrency(design.transportcost)}
-                    </TableCell>
-                  </TableRow>
                   {design.mendingcost > 0 && (
                     <TableRow hover>
                       <TableCell>Mending Cost</TableCell>
@@ -662,7 +663,6 @@ function DesignDetail() {
               </CostTable>
             </StyledTableContainer>
           </Box>
-
           {/* Financial Summary */}
           <Box sx={{ mb: 4 }}>
             <SectionHeader variant="h6">
@@ -687,6 +687,12 @@ function DesignDetail() {
                     </TableCell>
                   </TableRow>
                   <TableRow hover>
+                    <TableCell>Transport</TableCell>
+                    <TableCell align="right">
+                      {formatCurrency(design.transportcost)}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow hover>
                     <TableCell>Subtotal</TableCell>
                     <TableCell align="right">
                       {formatCurrency(design.subtotal)}
@@ -699,6 +705,7 @@ function DesignDetail() {
                       {formatCurrency(design.gst)}
                     </TableCell>
                   </TableRow>
+
                   <FinalTotalRow>
                     <TableCell>Final Total</TableCell>
                     <TableCell align="right">
@@ -709,7 +716,6 @@ function DesignDetail() {
               </CostTable>
             </StyledTableContainer>
           </Box>
-
           {/* Footer Note */}
           <Box
             sx={{

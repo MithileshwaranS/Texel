@@ -612,22 +612,12 @@ function CostingPage() {
           toNum(weaving) +
           toNum(washing) +
           toNum(mending) +
-          toNum(twisting) +
-          toNum(transport)) *
+          toNum(twisting)) *
         profitPercent;
       setProfit(profitVal.toFixed(3));
       setSaveProfit(profitVal.toFixed(3));
     }
-  }, [
-    warpCost,
-    weftCost,
-    weaving,
-    washing,
-    profitPercent,
-    mending,
-    twisting,
-    transport,
-  ]);
+  }, [warpCost, weftCost, weaving, washing, profitPercent, mending, twisting]);
 
   useEffect(() => {
     if (
@@ -657,9 +647,9 @@ function CostingPage() {
     weaving,
     washing,
     saveprofit,
-    transport,
     mending,
     twisting,
+    transport,
   ]);
 
   useEffect(() => {
