@@ -4,6 +4,11 @@ import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 
 dotenv.config();
+app.use(
+  cors({
+    origin: "https://texel-frontend.onrender.com",
+  })
+);
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
