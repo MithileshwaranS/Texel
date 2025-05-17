@@ -4,11 +4,6 @@ import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 
 dotenv.config();
-app.use(
-  cors({
-    origin: "https://texel-frontend.onrender.com",
-  })
-);
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -16,7 +11,11 @@ const supabase = createClient(
 );
 
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: "https://texel-frontend.onrender.com",
+  })
+);
 app.use(express.json());
 
 const port = process.env.PORT || 3000;
