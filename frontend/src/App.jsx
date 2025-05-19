@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { 
+import {
   FaHome,
   FaChartLine,
   FaCog,
@@ -8,9 +8,15 @@ import {
   FaBars,
   FaTimes,
   FaIndustry,
-  FaCalculator
+  FaCalculator,
 } from "react-icons/fa";
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
 import HeaderItem from "./components/common/HeaderItem";
 import Dashboard from "./pages/Dashboard";
 import Costing from "./pages/CostingPage";
@@ -28,10 +34,15 @@ function App() {
   const navItems = [
     { id: "dashboard", icon: FaHome, label: "Dashboard", path: "/" },
     { id: "costing", icon: FaCalculator, label: "Costing", path: "/costing" },
-    { id: "inventory", icon: FaBoxOpen, label: "Inventory", path: "/inventory" },
+    {
+      id: "inventory",
+      icon: FaBoxOpen,
+      label: "Inventory",
+      path: "/inventory",
+    },
     { id: "reports", icon: FaChartLine, label: "Reports", path: "/reports" },
     { id: "customers", icon: FaUsers, label: "Customers", path: "/customers" },
-    { id: "settings", icon: FaCog, label: "Settings", path: "/settings" }
+    { id: "settings", icon: FaCog, label: "Settings", path: "/settings" },
   ];
 
   const toggleMobileMenu = () => {
