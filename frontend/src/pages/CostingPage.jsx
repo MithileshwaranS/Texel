@@ -17,6 +17,7 @@ import {
 } from "react-icons/fa";
 import { Grid } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocation } from "react-router-dom";
 
 // Custom Components
 const TextInput = ({
@@ -172,9 +173,114 @@ function CostingPage() {
   const [twisting, setTwisting] = useState(0);
 
   //Image States
+  const [designImagePublicId, setDesignImagePublicId] = useState("");
   const [designImage, setDesignImage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [prefillData, setPrefillData] = useState([]);
+
+  // Warp and Weft states
+  const [warps, setWarps] = useState([
+    { count: "", reed: "", cost: "", dyeing: 300, constant: 1.35 },
+  ]);
+
+  const [wefts, setWefts] = useState([
+    { count: "", pick: "", cost: "", dyeing: 300, constant: 1.35 },
+  ]);
+
+  // Calculated weights
+  const [warpWeights, setWarpWeights] = useState([]);
+  const [weftWeights, setWeftWeights] = useState([]);
+
+  // useEffect(() => {
+  //   console.log("🔍 Warps:", warps);
+  //   console.log("🔍 Warp Weights:", warpWeights);
+  //   console.log("🔍 Wefts:", wefts);
+  //   console.log("🔍 Weft Weights:", weftWeights);
+  // }, [warps, warpWeights, wefts, weftWeights]);
+
+  // Calculated costs
+  const [warpCost, setWarpCost] = useState("");
+  const [weftCost, setWeftCost] = useState("");
+
+  const location = useLocation();
+  const stateValues = location.state || {};
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+
+        if (!stateValues?.design_id) {
+          console.warn("Missing design_id in stateValues");
+          return;
+        }
+
+        const response = await fetch(
+          `${import.meta.env.VITE_API_BACKEND_URL}/api/designdetails/${
+            stateValues.design_id
+          }`
+        );
+
+        const data = await response.json();
+        console.log("Fetched data:", data);
+        setPrefillData(data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [stateValues]);
+
+  useEffect(() => {
+    if (prefillData?.design && prefillData.design[0]) {
+      console.log("Prefill Data");
+      console.log(prefillData);
+      setDesignName(prefillData.design[0].designname || "");
+      setWidth(prefillData.design[0].width || "");
+      setWarps(
+        (prefillData.warps || [{ count: "", reed: "", cost: "" }]).map(
+          (warp) => ({
+            ...warp,
+            dyeing: 300,
+            constant: 1.45,
+            cost: prefillData.design[0].warpcost,
+          })
+        )
+      );
+      setWefts(
+        (prefillData.wefts || [{ count: "", pick: "", cost: "" }]).map(
+          (weft) => ({
+            ...weft,
+            dyeing: 300,
+            constant: 1.45,
+            cost: prefillData.design[0].weftcost,
+          })
+        )
+      );
+      setWarpWeights(prefillData.warps.map((warp) => warp.warpweight));
+      setWarpWeights(prefillData.wefts.map((weft) => weft.weftweight));
+      setWeaving(prefillData.design[0].weavingcost || "");
+      setWashing(prefillData.design[0].washingcost || 8);
+      setProfit(prefillData.design[0].profit || "");
+      setTotalCost(stateValues.totalCost || "");
+      setSaveProfit(stateValues.saveprofit || "");
+      setGst(prefillData.design[0].gst || "");
+      setTransport(prefillData.design[0].transportcost || 7);
+      setFinalTotal(prefillData.design[0].finaltotal || "");
+      setMending(prefillData.design[0].mendingcost || 10);
+      setTwisting(prefillData.design[0].twistingcost || 0);
+      setDesignDate(kolkataDate);
+      setDesignImage(prefillData.design[0].designimage || "");
+    }
+
+    if (stateValues) {
+    }
+  }, [prefillData, stateValues]);
 
   // Image Components
   const ImagePreview = ({ url, onClose }) => (
@@ -262,6 +368,7 @@ function CostingPage() {
 
       const data = await response.json();
       setDesignImage(data.secure_url);
+      setDesignImagePublicId(data.public_id);
     } catch (error) {
       console.error("Upload failed:", error);
       setToast({
@@ -272,30 +379,6 @@ function CostingPage() {
       setUploading(false);
     }
   };
-
-  // Warp and Weft states
-  const [warps, setWarps] = useState([
-    { count: "", reed: "", cost: "", dyeing: 300, constant: 1.35 },
-  ]);
-
-  const [wefts, setWefts] = useState([
-    { count: "", pick: "", cost: "", dyeing: 300, constant: 1.35 },
-  ]);
-
-  // Calculated weights
-  const [warpWeights, setWarpWeights] = useState([]);
-  const [weftWeights, setWeftWeights] = useState([]);
-
-  // useEffect(() => {
-  //   console.log("🔍 Warps:", warps);
-  //   console.log("🔍 Warp Weights:", warpWeights);
-  //   console.log("🔍 Wefts:", wefts);
-  //   console.log("🔍 Weft Weights:", weftWeights);
-  // }, [warps, warpWeights, wefts, weftWeights]);
-
-  // Calculated costs
-  const [warpCost, setWarpCost] = useState("");
-  const [weftCost, setWeftCost] = useState("");
 
   const Toast = ({ message, type, onClose }) => (
     <motion.div
@@ -433,6 +516,7 @@ function CostingPage() {
         warpCost,
         weftCost,
         designImage,
+        designImagePublicId,
       };
       console.log(body);
 
@@ -499,19 +583,48 @@ function CostingPage() {
   };
 
   const checkAllFieldsFilled = () => {
+    console.log("Checking fields...");
+    console.log({
+      designName,
+      width,
+      warps: warps.map((w) => ({
+        count: w.count || w.warpcount,
+        reed: w.reed,
+        cost: w.cost,
+        dyeing: w.dyeing,
+      })),
+      wefts: wefts.map((w) => ({
+        count: w.count || w.weftcount,
+        pick: w.pick,
+        cost: w.cost,
+        dyeing: w.dyeing,
+      })),
+      weaving,
+      washing,
+      transport,
+    });
+
     if (!designName || !width) return false;
 
     // Check all warps
     for (const warp of warps) {
-      if (!warp.count || !warp.reed || !warp.cost || !warp.dyeing) return false;
+      const count = warp.count || warp.warpcount; // Check both count and warpcount
+      if (!count || !warp.reed || !warp.cost || !warp.dyeing) {
+        console.log("Missing warp values:", warp);
+        return false;
+      }
     }
 
     // Check all wefts
     for (const weft of wefts) {
-      if (!weft.count || !weft.pick || !weft.cost || !weft.dyeing) return false;
+      const count = weft.count || weft.weftcount; // Check both count and weftcount
+      if (!count || !weft.pick || !weft.cost || !weft.dyeing) {
+        console.log("Missing weft values:", weft);
+        return false;
+      }
     }
 
-    return weaving !== "" && washing !== "" && transport !== "";
+    return Boolean(weaving) && Boolean(washing) && Boolean(transport);
   };
 
   // Effects
@@ -715,6 +828,12 @@ function CostingPage() {
   const sortedWarpCountOptions = sortYarnCounts([...warpCountOptions]);
   const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
 
+  if (isLoading) {
+    return <div>Loading...</div>; // or a spinner component
+  }
+
+  console.log("warpWeights", warpWeights);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -819,7 +938,7 @@ function CostingPage() {
 
                       <DropdownField
                         label="Warp Count"
-                        value={warp.count}
+                        value={warp.count || warp.warpcount}
                         onChange={(e) =>
                           handleWarpChange(index, "count", e.target.value)
                         }
@@ -884,7 +1003,7 @@ function CostingPage() {
 
                       <DropdownField
                         label="Weft Count"
-                        value={weft.count}
+                        value={weft.count || weft.weftcount}
                         onChange={(e) =>
                           handleWeftChange(index, "count", e.target.value)
                         }
@@ -918,6 +1037,7 @@ function CostingPage() {
                 </div>
               </div>
             </SectionCard>
+            {console.log(prefillData)}
 
             <SectionCard
               title="Material Costs"
@@ -1095,8 +1215,8 @@ function CostingPage() {
               />
             </motion.div>
           </div>
-
           {/* Right Column - Results */}
+
           <div className="space-y-6">
             <SectionCard
               title="Weight Calculations"
