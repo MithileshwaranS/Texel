@@ -285,6 +285,30 @@ app.get("/ping", async (req, res) => {
   res.send("Server is alive!");
 });
 
+//Login api
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const query = await pool.query("SELECT * FROM login WHERE email = $1", [
+      email,
+    ]);
+
+    if (query.rows.length === 0) {
+      return res.status(401).json({ error: "User not found" });
+    }
+
+    const user = query.rows[0];
+    if (user.password !== password) {
+      return res.status(401).json({ error: "Invalid password" });
+    }
+
+    res.json({ message: "login successful", userId: user.id });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
