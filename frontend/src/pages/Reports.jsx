@@ -16,25 +16,26 @@ function Reports() {
     const options = { year: "numeric", month: "long", day: "numeric" };
     return date.toLocaleDateString(undefined, options); // e.g., "12 May 2025"
   };
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BACKEND_URL}/api/designdetails`
+      );
+
+      const data = await response.json();
+      setDesign(data);
+      console.log("Fetched data:", data);
+      setFilteredDesigns(data);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch(
-          `${import.meta.env.VITE_API_BACKEND_URL}/api/designdetails`
-        );
-
-        const data = await response.json();
-        setDesign(data);
-        console.log("Fetched data:", data);
-        setFilteredDesigns(data);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchData();
   }, []);
 
@@ -48,6 +49,29 @@ function Reports() {
   const handleViewMore = (id) => {
     console.log("View More clicked for designno:", id);
     navigate(`/designdetails/${id}`);
+  };
+
+  const handleDeleteDesign = async (id) => {
+    if (window.confirm("Are you sure you want to delete this Design?")) {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_API_BACKEND_URL}/api/deleteDesign/${id}`,
+          {
+            method: "DELETE",
+          }
+        );
+
+        if (response.ok) {
+          fetchData();
+        }
+
+        alert("Design deleted successfully");
+        // Optional: refresh data or update UI here
+      } catch (error) {
+        console.error("Error deleting design:", error);
+        alert("An error occurred while deleting the design");
+      }
+    }
   };
 
   return (
@@ -106,6 +130,7 @@ function Reports() {
                   title={item.designname}
                   imageURL={item.designimage}
                   onViewMore={() => handleViewMore(item.design_id)}
+                  onDelete={() => handleDeleteDesign(item.design_id)}
                 />
               ))}
             </div>

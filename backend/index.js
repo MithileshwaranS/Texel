@@ -231,8 +231,29 @@ app.post("/api/submit", async (req, res) => {
   }
 });
 
-//api to keep the server alive
+// 10. Delete the report using Supabase
+app.delete("/api/deleteDesign/:id", async (req, res) => {
+  const { id } = req.params;
 
+  try {
+    const { data, error } = await supabase
+      .from("designs")
+      .delete()
+      .eq("design_id", id)
+      .select(); // <-- Add this to return the deleted rows
+
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      return res.status(404).json({ message: "Design not found" });
+    }
+
+    res.json({ message: "Design deleted successfully" });
+  } catch (error) {
+    console.error("Delete Error:", error);
+    res.status(500).json({ message: "Delete failed", error: error.message });
+  }
+});
+//api to keep the server alive
 app.get("/ping", async (req, res) => {
   res.send("Server is alive!");
 });
