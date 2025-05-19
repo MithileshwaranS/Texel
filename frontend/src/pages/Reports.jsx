@@ -75,10 +75,12 @@ function Reports() {
   };
 
   const handleDuplicate = (design) => {
-    const { designName, ...prefillData } = design; // exclude designName
+    const { design_id } = design;
 
     console.log("Duplicate clicked for designno:", design);
-    navigate("/costing", { state: { ...prefillData } });
+    setTimeout(() => {
+      navigate("/costing", { state: { design_id } });
+    }, 500);
   };
 
   return (
@@ -138,7 +140,7 @@ function Reports() {
                   imageURL={item.designimage}
                   onViewMore={() => handleViewMore(item.design_id)}
                   onDelete={() => handleDeleteDesign(item.design_id)}
-                  onDuplicate={() => handleDuplicate(item.design_id)}
+                  onDuplicate={() => handleDuplicate(item)}
                 />
               ))}
             </div>

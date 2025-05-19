@@ -3,8 +3,16 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { Pool } from "pg";
 import fetch from "node-fetch";
+import { v2 as cloudinary } from "cloudinary";
 
 dotenv.config();
+
+// Cloudinary config
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const pool = new Pool({
   user: process.env.PG_USER,
@@ -191,8 +199,8 @@ app.post("/api/submit", async (req, res) => {
     const insertDesignRes = await queryDB(
       `INSERT INTO designs (
         designname, created_date, profitpercent, weavingcost, washingcost, mendingcost,
-        transportcost, gst, width, warpcost, weftcost, designimage, subtotal, finaltotal, profit
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING design_id`,
+        transportcost, gst, width, warpcost, weftcost, designimage, designImagePublicId, subtotal, finaltotal, profit
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING design_id`,
       [
         body.designName,
         designDate,
@@ -206,6 +214,7 @@ app.post("/api/submit", async (req, res) => {
         parseFloat(body.warpCost),
         parseFloat(body.weftCost),
         body.designImage,
+        body.designImagePublicId,
         body.totalCost,
         body.finaltotal,
         body.profit,
@@ -264,14 +273,25 @@ app.delete("/api/deleteDesign/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
+    const designRes = await queryDB(
+      "SELECT designImagePublicId FROM designs WHERE design_id=$1",
+      [id]
+    );
+
+    if (designRes.rows.length === 0) {
+      return res.status(404).json({ message: "Design not found" });
+    }
+
+    const publicId = designRes.rows[0].designimagepublicid;
+
+    if (publicId) {
+      await cloudinary.uploader.destroy(publicId);
+    }
+
     const result = await queryDB(
       "DELETE FROM designs WHERE design_id=$1 RETURNING *",
       [id]
     );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Design not found" });
-    }
 
     res.json({ message: "Design deleted successfully" });
   } catch (error) {
