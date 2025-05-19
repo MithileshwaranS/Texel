@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
+import fetch from "node-fetch";
 
 dotenv.config();
 
@@ -11,16 +12,19 @@ const supabase = createClient(
 );
 
 const app = express();
-const https = require("https");
+
 app.use(cors());
 app.use(express.json());
 
 const port = process.env.PORT || 3000;
 
+import fetch from "node-fetch";
+
 setInterval(() => {
-  https.get(`${process.env.BACKEND_URL}/ping`);
-  console.log("Pinged self to keep server alive");
-}, 1000 * 60 * 13); // every 5 minutes
+  fetch(`${process.env.BACKEND_URL}/ping`)
+    .then((res) => console.log(`Self-ping status: ${res.status}`))
+    .catch((err) => console.error("Ping failed:", err));
+}, 1000 * 60 * 5); // every 5 minutes
 
 // 1. Get all design details
 app.get("/api/designdetails", async (req, res) => {
