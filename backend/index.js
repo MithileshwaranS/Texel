@@ -1,14 +1,18 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { createClient } from "@supabase/supabase-js";
+import { Pool } from "pg";
+import fetch from "node-fetch";
 
 dotenv.config();
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
+const pool = new Pool({
+  user: process.env.PG_USER,
+  host: process.env.PG_HOST,
+  database: process.env.PG_DATABASE,
+  password: process.env.PG_PASSWORD,
+  port: process.env.PG_PORT,
+});
 
 const app = express();
 
@@ -17,72 +21,86 @@ app.use(express.json());
 
 const port = process.env.PORT || 3000;
 
-import fetch from "node-fetch";
-
 setInterval(() => {
   fetch(`${process.env.BACKEND_URL}/ping`)
     .then((res) => console.log(`Self-ping status: ${res.status}`))
     .catch((err) => console.error("Ping failed:", err));
-}, 1000 * 60 * 14); // every 5 minutes
+}, 1000 * 60 * 14); // every 14 minutes
+
+// Helper function to query
+async function queryDB(text, params) {
+  const client = await pool.connect();
+  try {
+    const res = await client.query(text, params);
+    return res;
+  } finally {
+    client.release();
+  }
+}
 
 // 1. Get all design details
 app.get("/api/designdetails", async (req, res) => {
-  const { data, error } = await supabase.from("designs").select("*");
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+  try {
+    const result = await queryDB("SELECT * FROM designs");
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-// 2. Get design detail by ID
+// 2. Get design detail by ID (including wefts and warps)
 app.get("/api/designdetails/:id", async (req, res) => {
   const { id } = req.params;
+  try {
+    const designRes = await queryDB(
+      "SELECT * FROM designs WHERE design_id = $1",
+      [id]
+    );
+    const weftsRes = await queryDB(
+      "SELECT * FROM wefts WHERE design_id = $1 ORDER BY weft_id ASC",
+      [id]
+    );
+    const warpsRes = await queryDB(
+      "SELECT * FROM warps WHERE design_id = $1 ORDER BY warp_id ASC",
+      [id]
+    );
 
-  const [design, wefts, warps] = await Promise.all([
-    supabase.from("designs").select("*").eq("design_id", id),
-    supabase
-      .from("wefts")
-      .select("*")
-      .eq("design_id", id)
-      .order("weft_id", { ascending: true }),
-    supabase
-      .from("warps")
-      .select("*")
-      .eq("design_id", id)
-      .order("warp_id", { ascending: true }),
-  ]);
+    if (designRes.rows.length === 0) {
+      return res.status(404).json({ message: "Design not found" });
+    }
 
-  if (design.error || wefts.error || warps.error) {
-    return res.status(500).json({
-      error:
-        design.error?.message || wefts.error?.message || warps.error?.message,
+    res.json({
+      design: designRes.rows,
+      wefts: weftsRes.rows,
+      warps: warpsRes.rows,
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
-
-  if (!design.data.length)
-    return res.status(404).json({ message: "Design not found" });
-
-  res.json({
-    design: design.data,
-    wefts: wefts.data,
-    warps: warps.data,
-  });
 });
 
 // 3. Get yarn counts
 app.get("/api/yarnCounts", async (req, res) => {
-  const { data, error } = await supabase
-    .from("yarndetails")
-    .select("yarn_count, hanks_wt");
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+  try {
+    const result = await queryDB(
+      "SELECT yarn_count, hanks_wt FROM yarndetails"
+    );
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // 4. Get yarn prices
 app.get("/api/yarnPrice", async (req, res) => {
-  const { data, error } = await supabase
-    .from("yarndetails")
-    .select("yarn_count, yarnprice");
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+  try {
+    const result = await queryDB(
+      "SELECT yarn_count, yarnprice FROM yarndetails"
+    );
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // 5. Edit/Update Yarn
@@ -90,61 +108,67 @@ app.put("/api/editYarn/:id", async (req, res) => {
   const { id } = req.params;
   const { yarnCount, hanksWt, yarnPrice } = req.body;
 
-  const { data, error } = await supabase
-    .from("yarndetails")
-    .update({
-      yarn_count: yarnCount,
-      hanks_wt: hanksWt,
-      yarnprice: yarnPrice,
-    })
-    .eq("id", id)
-    .select();
+  try {
+    const result = await queryDB(
+      `UPDATE yarndetails SET yarn_count=$1, hanks_wt=$2, yarnprice=$3 WHERE id=$4 RETURNING *`,
+      [yarnCount, hanksWt, yarnPrice, id]
+    );
 
-  if (error)
-    return res
-      .status(500)
-      .json({ message: "Update failed", error: error.message });
+    if (result.rows.length === 0)
+      return res.status(404).json({ message: "Yarn not found" });
 
-  res.json({ message: "Yarn updated successfully", updatedYarn: data[0] });
+    res.json({
+      message: "Yarn updated successfully",
+      updatedYarn: result.rows[0],
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Update failed", error: error.message });
+  }
 });
 
 // 6. Delete Yarn
 app.delete("/api/deleteYarn/:id", async (req, res) => {
   const { id } = req.params;
+  try {
+    const result = await queryDB(
+      "DELETE FROM yarndetails WHERE id=$1 RETURNING *",
+      [id]
+    );
 
-  const { error } = await supabase.from("yarndetails").delete().eq("id", id);
-  if (error)
-    return res
-      .status(500)
-      .json({ message: "Delete failed", error: error.message });
+    if (result.rows.length === 0)
+      return res.status(404).json({ message: "Yarn not found" });
 
-  res.json({ message: "Yarn deleted successfully" });
+    res.json({ message: "Yarn deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Delete failed", error: error.message });
+  }
 });
 
 // 7. Add new yarn
 app.post("/api/addYarn", async (req, res) => {
   const { yarnCount, hanksWt, yarnPrice } = req.body;
+  try {
+    const result = await queryDB(
+      `INSERT INTO yarndetails (yarn_count, hanks_wt, yarnprice) VALUES ($1, $2, $3) RETURNING *`,
+      [yarnCount, hanksWt, yarnPrice]
+    );
 
-  const { data, error } = await supabase
-    .from("yarndetails")
-    .insert({ yarn_count: yarnCount, hanks_wt: hanksWt, yarnprice: yarnPrice })
-    .select();
-
-  if (error)
-    return res
-      .status(500)
-      .json({ error: "Insertion failed", details: error.message });
-
-  res.status(201).json(data[0]);
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: "Insertion failed", details: error.message });
+  }
 });
 
 // 8. Get all yarn details
 app.get("/api/yarnDetails", async (req, res) => {
-  const { data, error } = await supabase
-    .from("yarndetails")
-    .select("yarn_count, hanks_wt, yarnprice, id");
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+  try {
+    const result = await queryDB(
+      "SELECT yarn_count, hanks_wt, yarnprice, id FROM yarndetails"
+    );
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // 9. Submit costing form
@@ -152,59 +176,61 @@ app.post("/api/submit", async (req, res) => {
   const body = req.body;
 
   try {
-    const { data: existing, error: checkError } = await supabase
-      .from("designs")
-      .select("*")
-      .eq("designname", body.designName);
-
-    if (checkError) throw checkError;
-    if (existing.length > 0) {
+    const existingRes = await queryDB(
+      "SELECT * FROM designs WHERE designname = $1",
+      [body.designName]
+    );
+    if (existingRes.rows.length > 0) {
       return res.status(409).json({ message: "Design name already exists!" });
     }
 
-    const { data: designData, error: insertDesignErr } = await supabase
-      .from("designs")
-      .insert({
-        designname: body.designName,
-        created_date: new Date(body.designDate.split("/").reverse().join("/"))
-          .toISOString()
-          .split("T")[0],
+    const designDate = new Date(body.designDate.split("/").reverse().join("-"))
+      .toISOString()
+      .split("T")[0];
 
-        profitpercent: body.profitPercent,
-        weavingcost: body.weaving,
-        washingcost: body.washing,
-        mendingcost: body.mending,
-        transportcost: body.transport,
-        gst: body.gst,
-        width: body.width,
-        warpcost: parseFloat(body.warpCost),
-        weftcost: parseFloat(body.weftCost),
-        designimage: body.designImage,
-        subtotal: body.totalCost,
-        finaltotal: body.finaltotal,
-        profit: body.profit,
-      })
-      .select("design_id");
+    const insertDesignRes = await queryDB(
+      `INSERT INTO designs (
+        designname, created_date, profitpercent, weavingcost, washingcost, mendingcost,
+        transportcost, gst, width, warpcost, weftcost, designimage, subtotal, finaltotal, profit
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING design_id`,
+      [
+        body.designName,
+        designDate,
+        body.profitPercent,
+        body.weaving,
+        body.washing,
+        body.mending,
+        body.transport,
+        body.gst,
+        body.width,
+        parseFloat(body.warpCost),
+        parseFloat(body.weftCost),
+        body.designImage,
+        body.totalCost,
+        body.finaltotal,
+        body.profit,
+      ]
+    );
 
-    if (insertDesignErr) throw insertDesignErr;
-
-    const designId = designData[0].design_id;
+    const designId = insertDesignRes.rows[0].design_id;
 
     // Insert warps
     for (let i = 0; i < body.warps.length; i++) {
       const warp = body.warps[i];
       const warpWeight = parseFloat(body.warpWeights[i]);
 
-      const { error } = await supabase.from("warps").insert({
-        design_id: designId,
-        warpcount: warp.count,
-        warpweight: warpWeight,
-        initwarpcost: warp.cost,
-        warpdyeing: warp.dyeing,
-        reed: parseFloat(warp.reed),
-      });
-
-      if (error) throw error;
+      await queryDB(
+        `INSERT INTO warps (design_id, warpcount, warpweight, initwarpcost, warpdyeing, reed)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          designId,
+          warp.count,
+          warpWeight,
+          warp.cost,
+          warp.dyeing,
+          parseFloat(warp.reed),
+        ]
+      );
     }
 
     // Insert wefts
@@ -212,16 +238,18 @@ app.post("/api/submit", async (req, res) => {
       const weft = body.wefts[i];
       const weftWeight = parseFloat(body.weftWeights[i]);
 
-      const { error } = await supabase.from("wefts").insert({
-        design_id: designId,
-        weftcount: weft.count,
-        weftweight: weftWeight,
-        initweftcost: weft.cost,
-        weftdyeing: weft.dyeing,
-        pick: parseFloat(weft.pick),
-      });
-
-      if (error) throw error;
+      await queryDB(
+        `INSERT INTO wefts (design_id, weftcount, weftweight, initweftcost, weftdyeing, pick)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          designId,
+          weft.count,
+          weftWeight,
+          weft.cost,
+          weft.dyeing,
+          parseFloat(weft.pick),
+        ]
+      );
     }
 
     res.status(200).json({ message: "Design inserted successfully" });
@@ -231,19 +259,17 @@ app.post("/api/submit", async (req, res) => {
   }
 });
 
-// 10. Delete the report using Supabase
+// 10. Delete the report using Postgres
 app.delete("/api/deleteDesign/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-    const { data, error } = await supabase
-      .from("designs")
-      .delete()
-      .eq("design_id", id)
-      .select(); // <-- Add this to return the deleted rows
+    const result = await queryDB(
+      "DELETE FROM designs WHERE design_id=$1 RETURNING *",
+      [id]
+    );
 
-    if (error) throw error;
-    if (!data || data.length === 0) {
+    if (result.rows.length === 0) {
       return res.status(404).json({ message: "Design not found" });
     }
 
@@ -253,7 +279,8 @@ app.delete("/api/deleteDesign/:id", async (req, res) => {
     res.status(500).json({ message: "Delete failed", error: error.message });
   }
 });
-//api to keep the server alive
+
+// API to keep the server alive
 app.get("/ping", async (req, res) => {
   res.send("Server is alive!");
 });
