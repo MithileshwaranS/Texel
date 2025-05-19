@@ -11,14 +11,16 @@ const supabase = createClient(
 );
 
 const app = express();
-app.use(
-  cors({
-    origin: "https://texel-frontend.onrender.com",
-  })
-);
+const https = require("https");
+app.use(cors());
 app.use(express.json());
 
 const port = process.env.PORT || 3000;
+
+setInterval(() => {
+  https.get(`${process.env.BACKEND_URL}/ping`);
+  console.log("Pinged self to keep server alive");
+}, 1000 * 60 * 13); // every 5 minutes
 
 // 1. Get all design details
 app.get("/api/designdetails", async (req, res) => {
@@ -224,6 +226,12 @@ app.post("/api/submit", async (req, res) => {
     console.error("Server Error:", err);
     res.status(500).json({ message: "Insert failed", error: err.message });
   }
+});
+
+//api to keep the server alive
+
+app.get("/ping", async (req, res) => {
+  res.send("Server is alive!");
 });
 
 app.listen(port, () => {
