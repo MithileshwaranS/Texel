@@ -2,7 +2,6 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
-import fetch from "node-fetch";
 
 dotenv.config();
 
@@ -24,7 +23,7 @@ setInterval(() => {
   fetch(`${process.env.BACKEND_URL}/ping`)
     .then((res) => console.log(`Self-ping status: ${res.status}`))
     .catch((err) => console.error("Ping failed:", err));
-}, 1000 * 60 * 5); // every 5 minutes
+}, 1000 * 60 * 14); // every 5 minutes
 
 // 1. Get all design details
 app.get("/api/designdetails", async (req, res) => {
