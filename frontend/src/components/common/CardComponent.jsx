@@ -99,10 +99,8 @@ const TitleText = styled(Typography)(({ theme }) => ({
   fontSize: "1.1rem",
   color: theme.palette.text.primary,
   flex: 1,
-  whiteSpace: "nowrap",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
   marginRight: theme.spacing(1),
+  wordBreak: "break-word", // Ensures long words break properly
 }));
 
 const DateText = styled(Typography)(({ theme }) => ({
@@ -138,7 +136,7 @@ const StyledButton = styled(Button)(({ theme }) => ({
   textTransform: "none",
   letterSpacing: "0.3px",
   transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
-  flex: 1, // Makes buttons equal width
+  flex: 1,
   "&:hover": {
     transform: "translateY(-2px)",
   },

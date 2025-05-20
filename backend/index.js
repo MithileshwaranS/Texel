@@ -20,7 +20,19 @@ const pool = new Pool({
   database: process.env.PG_DATABASE,
   password: process.env.PG_PASSWORD,
   port: process.env.PG_PORT,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
+
+pool
+  .query("SELECT NOW()")
+  .then((res) => {
+    console.log("✅ DB Connected at:", res.rows[0].now);
+  })
+  .catch((err) => {
+    console.error("❌ DB Connection Error:", err);
+  });
 
 const app = express();
 

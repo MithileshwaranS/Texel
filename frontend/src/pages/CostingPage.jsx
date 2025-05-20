@@ -14,6 +14,7 @@ import {
   FaPlus,
   FaImage,
   FaExpand,
+  FaTrash,
 } from "react-icons/fa";
 import { Grid } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
@@ -176,17 +177,18 @@ function CostingPage() {
   const [designImagePublicId, setDesignImagePublicId] = useState("");
   const [designImage, setDesignImage] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [uploadController, setUploadController] = useState(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [prefillData, setPrefillData] = useState([]);
 
   // Warp and Weft states
   const [warps, setWarps] = useState([
-    { count: "", reed: "", cost: "", dyeing: 300, constant: 1.35 },
+    { count: "", reed: "", cost: "", dyeing: 300, constant: 1.45 },
   ]);
 
   const [wefts, setWefts] = useState([
-    { count: "", pick: "", cost: "", dyeing: 300, constant: 1.35 },
+    { count: "", pick: "", cost: "", dyeing: 300, constant: 1.45 },
   ]);
 
   // Calculated weights
@@ -245,25 +247,29 @@ function CostingPage() {
       setWarps(
         (prefillData.warps || [{ count: "", reed: "", cost: "" }]).map(
           (warp) => ({
-            ...warp,
+            count: warp.count || warp.warpcount || "", // this change
             dyeing: 300,
             constant: 1.45,
-            cost: prefillData.design[0].warpcost,
+            cost: warp.initwarpcost,
+            ...warp,
           })
         )
       );
       setWefts(
         (prefillData.wefts || [{ count: "", pick: "", cost: "" }]).map(
           (weft) => ({
-            ...weft,
+            count: weft.count || weft.weftcount || "",
             dyeing: 300,
             constant: 1.45,
-            cost: prefillData.design[0].weftcost,
+            cost: weft.initweftcost,
+            ...weft,
           })
         )
       );
       setWarpWeights(prefillData.warps.map((warp) => warp.warpweight));
-      setWarpWeights(prefillData.wefts.map((weft) => weft.weftweight));
+      setWeftWeights(prefillData.wefts.map((weft) => weft.weftweight)); //it was setWarp twice
+      setWarpCost(prefillData.design[0].warpcost);
+      setWeftCost(prefillData.design[0].weftcost); //checking here
       setWeaving(prefillData.design[0].weavingcost || "");
       setWashing(prefillData.design[0].washingcost || 8);
       setProfit(prefillData.design[0].profit || "");
@@ -306,28 +312,73 @@ function CostingPage() {
     </motion.div>
   );
 
-  const ImageUploader = ({ value, onChange, uploading }) => (
+  const ImageUploader = ({
+    value,
+    onChange,
+    uploading,
+    onRemove,
+    required = true,
+  }) => (
     <div className="relative border-2 border-dashed border-gray-300 rounded-xl p-4 hover:border-blue-500 transition-colors">
       <input
         type="file"
         accept="image/*"
         onChange={onChange}
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+        disabled={uploading}
       />
       <div className="text-center">
         {value ? (
-          <div className="relative">
+          <div className="relative group max-w-[200px] mx-auto">
             <img
               src={value}
               alt="Design Preview"
-              className="max-h-[200px] mx-auto rounded-lg"
+              className={`max-h-[200px] mx-auto rounded-lg transition-opacity ${
+                uploading ? "opacity-50" : "opacity-100"
+              }`}
             />
-            <button
-              onClick={() => setPreviewOpen(true)}
-              className="absolute top-2 right-2 p-2 bg-black bg-opacity-50 rounded-full text-white hover:bg-opacity-70 transition-opacity"
-            >
-              <FaExpand size={14} />
-            </button>
+
+            {uploading && (
+              <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
+                <div className="text-center p-4 bg-white rounded-md shadow-lg">
+                  <p className="mb-3 text-gray-700">Uploading your image...</p>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemove();
+                    }}
+                    className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+                  >
+                    Cancel Upload
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!uploading && (
+              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPreviewOpen(true);
+                  }}
+                  className="p-2 bg-black bg-opacity-50 rounded-full text-white hover:bg-opacity-70 transition-opacity"
+                  title="Expand"
+                >
+                  <FaExpand size={14} />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemove();
+                  }}
+                  className="p-2 bg-black bg-opacity-50 rounded-full text-white hover:bg-opacity-70 transition-opacity"
+                  title="Remove"
+                >
+                  <FaTrash size={14} />
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="py-4">
@@ -348,12 +399,16 @@ function CostingPage() {
     if (!file) return;
 
     setUploading(true);
+
     const formData = new FormData();
     formData.append("file", file);
     formData.append(
       "upload_preset",
       `${import.meta.env.VITE_API_CLOUD_PRESET}`
     );
+
+    const controller = new AbortController();
+    setUploadController(controller);
 
     try {
       const response = await fetch(
@@ -363,6 +418,7 @@ function CostingPage() {
         {
           method: "POST",
           body: formData,
+          signal: controller.signal,
         }
       );
 
@@ -370,13 +426,24 @@ function CostingPage() {
       setDesignImage(data.secure_url);
       setDesignImagePublicId(data.public_id);
     } catch (error) {
-      console.error("Upload failed:", error);
-      setToast({
-        message: "Image upload failed. Please try again.",
-        type: "error",
-      });
+      if (error.name === "AbortError") {
+        console.log("Upload cancelled");
+      } else {
+        console.error("Upload failed:", error);
+        setToast({
+          message: "Image upload failed. Please try again.",
+          type: "error",
+        });
+      }
     } finally {
       setUploading(false);
+      setUploadController(null);
+    }
+  };
+
+  const cancelUpload = () => {
+    if (uploadController) {
+      uploadController.abort();
     }
   };
 
@@ -443,7 +510,7 @@ function CostingPage() {
   const addWarp = () => {
     setWarps([
       ...warps,
-      { count: "", reed: "", cost: "", dyeing: 300, constant: 1.35 },
+      { count: "", reed: "", cost: "", dyeing: 300, constant: 1.45 },
     ]);
   };
 
@@ -458,7 +525,7 @@ function CostingPage() {
   const addWeft = () => {
     setWefts([
       ...wefts,
-      { count: "", pick: "", cost: "", dyeing: 300, constant: 1.35 },
+      { count: "", pick: "", cost: "", dyeing: 300, constant: 1.45 },
     ]);
   };
 
@@ -547,10 +614,10 @@ function CostingPage() {
         setDesignName("");
         setWidth("");
         setWarps([
-          { count: "", reed: "", cost: "", dyeing: 300, constant: 1.35 },
+          { warpcount: "", reed: "", cost: "", dyeing: 300, constant: 1.45 },
         ]);
         setWefts([
-          { count: "", pick: "", cost: "", dyeing: 300, constant: 1.35 },
+          { weftcount: "", pick: "", cost: "", dyeing: 300, constant: 1.45 },
         ]);
         setWarpWeights([]);
         setWeftWeights([]);
@@ -580,6 +647,14 @@ function CostingPage() {
         type: "error",
       });
     }
+  };
+  const removeImage = () => {
+    setDesignImage(null);
+    setDesignImagePublicId(null);
+    setToast({
+      message: "Image removed. You can upload another.",
+      type: "info",
+    });
   };
 
   const checkAllFieldsFilled = () => {
@@ -1196,6 +1271,7 @@ function CostingPage() {
                 value={designImage}
                 onChange={handleImageUpload}
                 uploading={uploading}
+                onRemove={removeImage}
               />
             </SectionCard>
 

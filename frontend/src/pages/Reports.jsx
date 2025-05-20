@@ -3,6 +3,7 @@ import { FaChartLine, FaSearch } from "react-icons/fa";
 import YarnCard from "../components/common/CardComponent";
 import DesignDetail from "../components/common/DesignDetail";
 import { useNavigate } from "react-router-dom";
+import ConfirmDialog from "../components/common/ConfirmDialog";
 
 function Reports() {
   const navigate = useNavigate();
@@ -10,11 +11,13 @@ function Reports() {
   const [filteredDesigns, setFilteredDesigns] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedDesignId, setSelectedDesignId] = useState(null);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const options = { year: "numeric", month: "long", day: "numeric" };
-    return date.toLocaleDateString(undefined, options); // e.g., "12 May 2025"
+    return date.toLocaleDateString(undefined, options);
   };
 
   const fetchData = async () => {
@@ -23,10 +26,8 @@ function Reports() {
       const response = await fetch(
         `${import.meta.env.VITE_API_BACKEND_URL}/api/designdetails`
       );
-
       const data = await response.json();
       setDesign(data);
-      console.log("Fetched data:", data);
       setFilteredDesigns(data);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -47,37 +48,40 @@ function Reports() {
   }, [searchTerm, design]);
 
   const handleViewMore = (id) => {
-    console.log("View More clicked for designno:", id);
     navigate(`/designdetails/${id}`);
   };
 
-  const handleDeleteDesign = async (id) => {
-    if (window.confirm("Are you sure you want to delete this Design?")) {
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_API_BACKEND_URL}/api/deleteDesign/${id}`,
-          {
-            method: "DELETE",
-          }
-        );
+  const handleDeleteClick = (id) => {
+    setSelectedDesignId(id);
+    setConfirmOpen(true);
+  };
 
-        if (response.ok) {
-          fetchData();
+  const handleDeleteConfirm = async () => {
+    if (!selectedDesignId) return;
+
+    try {
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_BACKEND_URL
+        }/api/deleteDesign/${selectedDesignId}`,
+        {
+          method: "DELETE",
         }
+      );
 
-        alert("Design deleted successfully");
-        // Optional: refresh data or update UI here
-      } catch (error) {
-        console.error("Error deleting design:", error);
-        alert("An error occurred while deleting the design");
+      if (response.ok) {
+        fetchData();
       }
+    } catch (error) {
+      console.error("Error deleting design:", error);
+    } finally {
+      setConfirmOpen(false);
+      setSelectedDesignId(null);
     }
   };
 
   const handleDuplicate = (design) => {
     const { design_id } = design;
-
-    console.log("Duplicate clicked for designno:", design);
     setTimeout(() => {
       navigate("/costing", { state: { design_id } });
     }, 500);
@@ -139,13 +143,20 @@ function Reports() {
                   title={item.designname}
                   imageURL={item.designimage}
                   onViewMore={() => handleViewMore(item.design_id)}
-                  onDelete={() => handleDeleteDesign(item.design_id)}
+                  onDelete={() => handleDeleteClick(item.design_id)}
                   onDuplicate={() => handleDuplicate(item)}
                 />
               ))}
             </div>
           </>
         )}
+
+        {/* Confirm Dialog */}
+        <ConfirmDialog
+          open={confirmOpen}
+          onClose={() => setConfirmOpen(false)}
+          onConfirm={handleDeleteConfirm}
+        />
       </div>
     </div>
   );
