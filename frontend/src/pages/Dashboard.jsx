@@ -9,7 +9,6 @@ import {
   FaCalendarAlt,
   FaTshirt,
   FaSearch,
-  FaBars,
 } from "react-icons/fa";
 import {
   BarChart,
@@ -120,103 +119,51 @@ const Dashboard = () => {
     { title: "New Collection Launch", date: "July 15", location: "Showroom" },
   ];
 
-  // State for mobile menu
-  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
-
   return (
     <div className="bg-gray-50 min-h-screen">
-      {/* Mobile Header */}
-      <div className="lg:hidden bg-white shadow-sm p-4 flex justify-between items-center">
-        <div className="flex items-center">
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="mr-4 text-gray-600"
-          >
-            <FaBars size={20} />
-          </button>
-          <h1 className="text-xl font-bold flex items-center">
-            <FaHome className="mr-2" />
-            Dashboard
-          </h1>
-        </div>
-        <button className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm">
-          New Order
-        </button>
-      </div>
-
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden bg-white shadow-md p-4">
-          <div className="relative mb-4">
-            <input
-              type="text"
-              placeholder="Search..."
-              className="pl-10 pr-4 py-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <FaSearch className="absolute left-3 top-3 text-gray-400" />
-          </div>
-          <nav className="space-y-2">
-            <a href="#" className="block px-3 py-2 rounded bg-gray-100">
-              Dashboard
-            </a>
-            <a href="#" className="block px-3 py-2 rounded hover:bg-gray-100">
-              Orders
-            </a>
-            <a href="#" className="block px-3 py-2 rounded hover:bg-gray-100">
-              Inventory
-            </a>
-            <a href="#" className="block px-3 py-2 rounded hover:bg-gray-100">
-              Customers
-            </a>
-            <a href="#" className="block px-3 py-2 rounded hover:bg-gray-100">
-              Reports
-            </a>
-          </nav>
-        </div>
-      )}
-
-      <div className="p-4 lg:p-6">
-        {/* Desktop Header */}
-        <div className="hidden lg:flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold flex items-center">
+      {/* Header - Responsive for all screens */}
+      <div className="bg-white shadow-sm p-4">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+          <h1 className="text-xl md:text-2xl font-bold flex items-center">
             <FaHome className="mr-2" />
             Textile Management Dashboard
           </h1>
-          <div className="flex items-center space-x-4">
-            <div className="relative">
+          <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
               <input
                 type="text"
                 placeholder="Search..."
-                className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="pl-10 pr-4 py-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
               />
               <FaSearch className="absolute left-3 top-3 text-gray-400" />
             </div>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+            <button className="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition w-full sm:w-auto text-sm md:text-base">
               New Order
             </button>
           </div>
         </div>
+      </div>
 
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto p-4 md:p-6">
         {/* Metrics Cards - Responsive Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
           {metrics.map((metric, index) => (
             <div
               key={index}
-              className="bg-white p-4 lg:p-6 rounded-lg shadow hover:shadow-md transition"
+              className="bg-white p-3 sm:p-4 lg:p-5 rounded-lg shadow hover:shadow-md transition"
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-gray-500 text-sm font-medium">
+                  <p className="text-xs sm:text-sm text-gray-500 font-medium">
                     {metric.title}
                   </p>
-                  <p className="text-xl lg:text-2xl font-bold mt-1 lg:mt-2">
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold mt-1">
                     {metric.value}
                   </p>
-                  <p className="text-xs lg:text-sm text-gray-400 mt-1">
-                    {metric.change}
-                  </p>
+                  <p className="text-xs text-gray-400 mt-1">{metric.change}</p>
                 </div>
-                <div className="text-2xl lg:text-3xl p-2 rounded-full bg-gray-100">
+                <div className="text-xl sm:text-2xl lg:text-3xl p-2 rounded-full bg-gray-100">
                   {metric.icon}
                 </div>
               </div>
@@ -224,16 +171,16 @@ const Dashboard = () => {
           ))}
         </div>
 
-        {/* Charts Section - Stack on mobile, side by side on larger screens */}
+        {/* Charts Section - Responsive Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6">
           {/* Revenue Chart */}
-          <div className="bg-white p-4 lg:p-6 rounded-lg shadow">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4">
-              <h2 className="text-lg font-semibold flex items-center mb-2 sm:mb-0">
+          <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg shadow">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 sm:mb-4">
+              <h2 className="text-base sm:text-lg font-semibold flex items-center mb-2 sm:mb-0">
                 <FaChartLine className="mr-2 text-blue-500" />
                 Monthly Revenue
               </h2>
-              <select className="border rounded px-3 py-1 text-sm w-full sm:w-auto">
+              <select className="border rounded px-2 sm:px-3 py-1 text-xs sm:text-sm w-full sm:w-auto">
                 <option>Last 6 Months</option>
                 <option>Last Year</option>
                 <option>Last 3 Years</option>
@@ -254,8 +201,8 @@ const Dashboard = () => {
           </div>
 
           {/* Fabric Types Chart */}
-          <div className="bg-white p-4 lg:p-6 rounded-lg shadow">
-            <h2 className="text-lg font-semibold flex items-center mb-4">
+          <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg shadow">
+            <h2 className="text-base sm:text-lg font-semibold flex items-center mb-3 sm:mb-4">
               <FaTshirt className="mr-2 text-green-500" />
               Fabric Type Distribution
             </h2>
@@ -289,16 +236,16 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Recent Orders and Upcoming Events - Stack on mobile, side by side on larger screens */}
+        {/* Recent Orders and Upcoming Events - Responsive Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mb-6">
           {/* Recent Orders - Full width on mobile, 2/3 on larger screens */}
-          <div className="bg-white p-4 lg:p-6 rounded-lg shadow lg:col-span-2">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4">
-              <h2 className="text-lg font-semibold flex items-center mb-2 sm:mb-0">
+          <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg shadow lg:col-span-2">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 sm:mb-4">
+              <h2 className="text-base sm:text-lg font-semibold flex items-center mb-2 sm:mb-0">
                 <FaShoppingCart className="mr-2 text-purple-500" />
                 Recent Orders
               </h2>
-              <button className="text-blue-600 text-sm font-medium hover:underline">
+              <button className="text-blue-600 text-xs sm:text-sm font-medium hover:underline">
                 View All
               </button>
             </div>
@@ -306,19 +253,19 @@ const Dashboard = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Order ID
                     </th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Customer
                     </th>
-                    <th className="hidden sm:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="hidden sm:table-cell px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Date
                     </th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Amount
                     </th>
-                    <th className="hidden xs:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="hidden xs:table-cell px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
                   </tr>
@@ -326,19 +273,19 @@ const Dashboard = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {recentOrders.map((order, index) => (
                     <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-blue-600">
+                      <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm font-medium text-blue-600">
                         {order.id}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 truncate max-w-[120px]">
+                      <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-gray-500 truncate max-w-[100px] sm:max-w-[150px]">
                         {order.customer}
                       </td>
-                      <td className="hidden sm:table-cell px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                      <td className="hidden sm:table-cell px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                         {order.date}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-2 sm:px-3 py-2 whitespace-nowrap text-xs sm:text-sm text-gray-500">
                         {order.amount}
                       </td>
-                      <td className="hidden xs:table-cell px-4 py-3 whitespace-nowrap">
+                      <td className="hidden xs:table-cell px-2 sm:px-3 py-2 whitespace-nowrap">
                         <span
                           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                           ${
@@ -360,21 +307,21 @@ const Dashboard = () => {
           </div>
 
           {/* Upcoming Events - Full width on mobile, 1/3 on larger screens */}
-          <div className="bg-white p-4 lg:p-6 rounded-lg shadow">
-            <h2 className="text-lg font-semibold flex items-center mb-4">
+          <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg shadow">
+            <h2 className="text-base sm:text-lg font-semibold flex items-center mb-3 sm:mb-4">
               <FaCalendarAlt className="mr-2 text-orange-500" />
               Upcoming Events
             </h2>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {upcomingEvents.map((event, index) => (
                 <div
                   key={index}
-                  className="border-l-4 border-blue-500 pl-3 py-2"
+                  className="border-l-4 border-blue-500 pl-2 sm:pl-3 py-1 sm:py-2"
                 >
-                  <h3 className="font-medium text-sm lg:text-base">
+                  <h3 className="font-medium text-xs sm:text-sm lg:text-base">
                     {event.title}
                   </h3>
-                  <p className="text-xs lg:text-sm text-gray-500">
+                  <p className="text-xs text-gray-500">
                     {event.date} • {event.location}
                   </p>
                   <button className="mt-1 text-blue-600 text-xs hover:underline">
@@ -383,18 +330,18 @@ const Dashboard = () => {
                 </div>
               ))}
             </div>
-            <div className="mt-6">
-              <h3 className="text-sm font-medium text-gray-500 mb-2">
+            <div className="mt-4 sm:mt-6">
+              <h3 className="text-xs sm:text-sm font-medium text-gray-500 mb-2">
                 Quick Actions
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
-                <button className="text-left px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm transition">
+                <button className="text-left px-2 sm:px-3 py-1 sm:py-2 bg-gray-100 hover:bg-gray-200 rounded text-xs sm:text-sm transition">
                   Generate Inventory Report
                 </button>
-                <button className="text-left px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm transition">
+                <button className="text-left px-2 sm:px-3 py-1 sm:py-2 bg-gray-100 hover:bg-gray-200 rounded text-xs sm:text-sm transition">
                   Contact Top Buyers
                 </button>
-                <button className="text-left px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm transition">
+                <button className="text-left px-2 sm:px-3 py-1 sm:py-2 bg-gray-100 hover:bg-gray-200 rounded text-xs sm:text-sm transition">
                   Schedule Production
                 </button>
               </div>
@@ -403,65 +350,59 @@ const Dashboard = () => {
         </div>
 
         {/* Top Buyers - Responsive grid */}
-        <div className="bg-white p-4 lg:p-6 rounded-lg shadow mb-6">
-          <h2 className="text-lg font-semibold flex items-center mb-4">
+        <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-lg shadow mb-6">
+          <h2 className="text-base sm:text-lg font-semibold flex items-center mb-3 sm:mb-4">
             <FaUsers className="mr-2 text-indigo-500" />
             Top Buyers
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
-            <div className="border rounded-lg p-3 lg:p-4 hover:shadow-md transition">
-              <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 lg:h-10 lg:w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm lg:text-base">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="border rounded-lg p-2 sm:p-3 lg:p-4 hover:shadow-md transition">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs sm:text-sm lg:text-base">
                   FT
                 </div>
                 <div>
-                  <h3 className="font-medium text-sm lg:text-base">
+                  <h3 className="font-medium text-xs sm:text-sm lg:text-base">
                     Fashion Trends Inc.
                   </h3>
-                  <p className="text-xs lg:text-sm text-gray-500">
-                    $42,500 total spent
-                  </p>
+                  <p className="text-xs text-gray-500">$42,500 total spent</p>
                 </div>
               </div>
-              <div className="mt-2 lg:mt-3 flex justify-between text-xs lg:text-sm">
+              <div className="mt-1 sm:mt-2 lg:mt-3 flex justify-between text-xs">
                 <span>12 orders</span>
                 <span className="text-green-600">+15% from last year</span>
               </div>
             </div>
-            <div className="border rounded-lg p-3 lg:p-4 hover:shadow-md transition">
-              <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 lg:h-10 lg:w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm lg:text-base">
+            <div className="border rounded-lg p-2 sm:p-3 lg:p-4 hover:shadow-md transition">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs sm:text-sm lg:text-base">
                   UW
                 </div>
                 <div>
-                  <h3 className="font-medium text-sm lg:text-base">
+                  <h3 className="font-medium text-xs sm:text-sm lg:text-base">
                     Urban Wear Co.
                   </h3>
-                  <p className="text-xs lg:text-sm text-gray-500">
-                    $38,750 total spent
-                  </p>
+                  <p className="text-xs text-gray-500">$38,750 total spent</p>
                 </div>
               </div>
-              <div className="mt-2 lg:mt-3 flex justify-between text-xs lg:text-sm">
+              <div className="mt-1 sm:mt-2 lg:mt-3 flex justify-between text-xs">
                 <span>9 orders</span>
                 <span className="text-green-600">+22% from last year</span>
               </div>
             </div>
-            <div className="border rounded-lg p-3 lg:p-4 hover:shadow-md transition">
-              <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 lg:h-10 lg:w-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold text-sm lg:text-base">
+            <div className="border rounded-lg p-2 sm:p-3 lg:p-4 hover:shadow-md transition">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold text-xs sm:text-sm lg:text-base">
                   ET
                 </div>
                 <div>
-                  <h3 className="font-medium text-sm lg:text-base">
+                  <h3 className="font-medium text-xs sm:text-sm lg:text-base">
                     Elite Textiles
                   </h3>
-                  <p className="text-xs lg:text-sm text-gray-500">
-                    $31,200 total spent
-                  </p>
+                  <p className="text-xs text-gray-500">$31,200 total spent</p>
                 </div>
               </div>
-              <div className="mt-2 lg:mt-3 flex justify-between text-xs lg:text-sm">
+              <div className="mt-1 sm:mt-2 lg:mt-3 flex justify-between text-xs">
                 <span>7 orders</span>
                 <span className="text-green-600">+8% from last year</span>
               </div>
