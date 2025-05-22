@@ -1,5 +1,8 @@
 {
   "devDependencies": {
     "nodemon": "^3.1.10"
+  },
+  "dependencies": {
+    "styled-components": "^6.1.18"
   }
 }

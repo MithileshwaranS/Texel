@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
+import Spinner from "./Spinner";
 import {
   Box,
   Typography,
@@ -361,13 +362,7 @@ function DesignDetail() {
   }
 
   if (loading) {
-    return (
-      <Container maxWidth="lg" sx={{ py: 4, textAlign: "center" }}>
-        <Typography variant="h6" gutterBottom>
-          Loading Costing Sheet...
-        </Typography>
-      </Container>
-    );
+    return <Spinner variant="gradient" size="large" fullscreen />;
   }
 
   if (!design) {

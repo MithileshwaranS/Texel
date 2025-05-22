@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Spinner from "../components/common/Spinner";
 import {
   FaWeight,
   FaMoneyBillWave,
@@ -930,7 +931,7 @@ function CostingPage() {
   const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
 
   if (isLoading) {
-    return <div>Loading...</div>; // or a spinner component
+    return <Spinner variant="orbit" color="#ff5722" size="small" />; // or a spinner component
   }
 
   // console.log("warpWeights", warpWeights);

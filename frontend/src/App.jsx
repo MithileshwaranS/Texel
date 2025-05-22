@@ -10,6 +10,7 @@ import {
   FaIndustry,
   FaCalculator,
 } from "react-icons/fa";
+import { MdOutlineDesignServices } from "react-icons/md";
 import {
   BrowserRouter,
   Routes,
@@ -35,6 +36,12 @@ function App() {
   const navItems = [
     { id: "dashboard", icon: FaHome, label: "Dashboard", path: "/" },
     { id: "costing", icon: FaCalculator, label: "Costing", path: "/costing" },
+    {
+      id: "design",
+      icon: MdOutlineDesignServices,
+      label: "Design",
+      path: "/design",
+    },
     {
       id: "inventory",
       icon: FaBoxOpen,

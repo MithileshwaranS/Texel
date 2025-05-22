@@ -10,7 +10,13 @@ import {
   Chip,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import { Favorite, Share, MoreVert, ContentCopy } from "@mui/icons-material";
+import {
+  Favorite,
+  Share,
+  MoreVert,
+  ContentCopy,
+  Check,
+} from "@mui/icons-material";
 
 const StyledCard = styled(Card)(({ theme }) => ({
   maxWidth: 320,
@@ -88,12 +94,12 @@ const StatusBadge = styled(Chip)(({ theme, status }) => ({
     color: theme.palette.warning.dark,
   }),
   ...(status === "completed" && {
-    backgroundColor: theme.palette.info.light,
-    color: theme.palette.info.dark,
-  }),
-  ...(status === "sent" && {
     backgroundColor: theme.palette.success.light,
     color: theme.palette.success.dark,
+  }),
+  ...(status === "sent" && {
+    backgroundColor: theme.palette.info.light,
+    color: theme.palette.info.dark,
   }),
 }));
 
@@ -196,6 +202,51 @@ const TertiaryButton = styled(StyledButton)(({ theme }) => ({
   },
 }));
 
+const CompleteButton = styled(StyledButton)(({ theme }) => ({
+  background: `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.success.light} 100%)`,
+  color: theme.palette.common.white,
+  boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+  position: "relative",
+  overflow: "hidden",
+  zIndex: 1,
+  "&::before": {
+    content: '""',
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: `linear-gradient(135deg, ${theme.palette.success.dark} 0%, ${theme.palette.success.main} 100%)`,
+    opacity: 0,
+    transition: "opacity 0.3s ease",
+    zIndex: -1,
+  },
+  "&:hover": {
+    transform: "translateY(-2px) scale(1.02)",
+    boxShadow: "0 6px 16px rgba(0,0,0,0.15)",
+    "&::before": {
+      opacity: 1,
+    },
+    "& .check-icon": {
+      transform: "translateX(0) rotate(0deg)",
+      opacity: 1,
+    },
+    "& .button-text": {
+      transform: "translateX(6px)",
+    },
+  },
+  "& .check-icon": {
+    transition: "all 0.3s ease",
+    transform: "translateX(-10px) rotate(-30deg)",
+    opacity: 0,
+    marginRight: theme.spacing(0.5),
+  },
+  "& .button-text": {
+    transition: "transform 0.3s ease",
+    display: "inline-block",
+  },
+}));
+
 const YarnCard = ({
   title,
   description,
@@ -243,9 +294,10 @@ const YarnCard = ({
         </DescriptionText>
         <ActionButtons>
           {onComplete && (
-            <PrimaryButton onClick={onComplete} variant="contained">
-              Complete
-            </PrimaryButton>
+            <CompleteButton onClick={onComplete} variant="contained">
+              <Check className="check-icon" fontSize="small" />
+              <span className="button-text">Complete</span>
+            </CompleteButton>
           )}
           {onViewMore && (
             <PrimaryButton onClick={onViewMore} variant="contained">
