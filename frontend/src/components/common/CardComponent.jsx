@@ -7,6 +7,7 @@ import {
   Button,
   Box,
   IconButton,
+  Chip,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { Favorite, Share, MoreVert, ContentCopy } from "@mui/icons-material";
@@ -71,6 +72,31 @@ const CardActions = styled(Box)(({ theme }) => ({
   zIndex: 2,
 }));
 
+const StatusBadge = styled(Chip)(({ theme, status }) => ({
+  position: "absolute",
+  top: "12px",
+  left: "12px",
+  zIndex: 2,
+  fontWeight: 600,
+  fontSize: "0.7rem",
+  textTransform: "uppercase",
+  letterSpacing: "0.5px",
+  padding: "4px 8px",
+  borderRadius: "12px",
+  ...(status === "pending" && {
+    backgroundColor: theme.palette.warning.light,
+    color: theme.palette.warning.dark,
+  }),
+  ...(status === "completed" && {
+    backgroundColor: theme.palette.info.light,
+    color: theme.palette.info.dark,
+  }),
+  ...(status === "sent" && {
+    backgroundColor: theme.palette.success.light,
+    color: theme.palette.success.dark,
+  }),
+}));
+
 const ActionIconButton = styled(IconButton)(({ theme }) => ({
   backgroundColor: "rgba(255,255,255,0.9)",
   color: theme.palette.text.primary,
@@ -100,7 +126,7 @@ const TitleText = styled(Typography)(({ theme }) => ({
   color: theme.palette.text.primary,
   flex: 1,
   marginRight: theme.spacing(1),
-  wordBreak: "break-word", // Ensures long words break properly
+  wordBreak: "break-word",
 }));
 
 const DateText = styled(Typography)(({ theme }) => ({
@@ -177,7 +203,9 @@ const YarnCard = ({
   onViewMore,
   onDelete,
   onDuplicate,
+  onComplete,
   imageURL,
+  status = "pending", // Default to pending if not provided
 }) => {
   return (
     <StyledCard>
@@ -191,6 +219,7 @@ const YarnCard = ({
           }
           alt="Yarn sample"
         />
+        <StatusBadge label={status} status={status} size="small" />
         <CardActions className="card-actions">
           <ActionIconButton aria-label="add to favorites" size="small">
             <Favorite fontSize="small" />
@@ -213,18 +242,30 @@ const YarnCard = ({
           {description || "Premium quality yarn for all your crafting needs."}
         </DescriptionText>
         <ActionButtons>
-          <PrimaryButton onClick={onViewMore} variant="contained">
-            View
-          </PrimaryButton>
-          <TertiaryButton
-            onClick={onDuplicate}
-            startIcon={<ContentCopy fontSize="small" />}
-          >
-            Duplicate
-          </TertiaryButton>
-          <SecondaryButton onClick={onDelete} variant="outlined">
-            Delete
-          </SecondaryButton>
+          {onComplete && (
+            <PrimaryButton onClick={onComplete} variant="contained">
+              Complete
+            </PrimaryButton>
+          )}
+          {onViewMore && (
+            <PrimaryButton onClick={onViewMore} variant="contained">
+              View
+            </PrimaryButton>
+          )}
+
+          {onDuplicate && (
+            <TertiaryButton
+              onClick={onDuplicate}
+              startIcon={<ContentCopy fontSize="small" />}
+            >
+              Duplicate
+            </TertiaryButton>
+          )}
+          {onDelete && (
+            <SecondaryButton onClick={onDelete} variant="outlined">
+              Delete
+            </SecondaryButton>
+          )}
         </ActionButtons>
       </BottomContent>
     </StyledCard>

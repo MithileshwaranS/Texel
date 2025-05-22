@@ -41,12 +41,13 @@ function Settings() {
     if (searchTerm === "") {
       setFilteredRows(rows);
     } else {
-      const filtered = rows.filter((row) =>
-        Object.values(row).some(
-          (value) =>
-            value &&
-            value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-        )
+      const filtered = rows.filter(
+        (row) =>
+          row.yarn_count &&
+          row.yarn_count
+            .toString()
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
       );
       setFilteredRows(filtered);
     }

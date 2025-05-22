@@ -19,6 +19,7 @@ import {
 import { Grid } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
+import { ApiOutlined } from "@mui/icons-material";
 
 // Custom Components
 const TextInput = ({
@@ -209,25 +210,33 @@ function CostingPage() {
   const location = useLocation();
   const stateValues = location.state || {};
 
+  console.log("state values : ", stateValues);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
 
-        if (!stateValues?.design_id) {
-          console.warn("Missing design_id in stateValues");
-          return;
-        }
+        // if (!stateValues?.design_id && !stateValues?.designid) {
+        //   console.warn("Missing design_id in stateValues");
+        //   return;
+        // }
 
-        const response = await fetch(
-          `${import.meta.env.VITE_API_BACKEND_URL}/api/designdetails/${
-            stateValues.design_id
-          }`
-        );
+        const apiUrl = stateValues.useAlternate
+          ? `${import.meta.env.VITE_API_BACKEND_URL}/api/samplingdetails/${
+              stateValues.designid
+            }`
+          : `${import.meta.env.VITE_API_BACKEND_URL}/api/designdetails/${
+              stateValues.design_id
+            }`;
+
+        const response = await fetch(apiUrl);
 
         const data = await response.json();
+
         console.log("Fetched data:", data);
         setPrefillData(data);
+        console.log(data);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -236,9 +245,10 @@ function CostingPage() {
     };
 
     fetchData();
-  }, [stateValues]);
+  }, []);
 
   useEffect(() => {
+    console.log(prefillData);
     if (prefillData?.design && prefillData.design[0]) {
       console.log("Prefill Data");
       console.log(prefillData);
@@ -282,6 +292,10 @@ function CostingPage() {
       setTwisting(prefillData.design[0].twistingcost || 0);
       setDesignDate(kolkataDate);
       setDesignImage(prefillData.design[0].designimage || "");
+    }
+    if (prefillData && prefillData.length > 0) {
+      setDesignName(prefillData[0].design_name || "");
+      setDesignImage(prefillData[0].designimage_url || "");
     }
 
     if (stateValues) {
@@ -584,6 +598,7 @@ function CostingPage() {
         weftCost,
         designImage,
         designImagePublicId,
+        designStatus: "completed",
       };
       console.log(body);
 
@@ -595,6 +610,7 @@ function CostingPage() {
           body: JSON.stringify(body),
         }
       );
+
       const result = await response.json();
 
       if (response.status === 409) {
@@ -633,6 +649,16 @@ function CostingPage() {
         setTwisting(0);
         setDesignDate(kolkataDate);
         setDesignImage("");
+
+        const body = { designid: stateValues.designid };
+        const response = await fetch(
+          `${import.meta.env.VITE_API_BACKEND_URL}/api/deleteDesign`,
+          {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          }
+        );
       } else {
         setToast({
           message: "Failed to submit design. Please try again.",
@@ -658,26 +684,26 @@ function CostingPage() {
   };
 
   const checkAllFieldsFilled = () => {
-    console.log("Checking fields...");
-    console.log({
-      designName,
-      width,
-      warps: warps.map((w) => ({
-        count: w.count || w.warpcount,
-        reed: w.reed,
-        cost: w.cost,
-        dyeing: w.dyeing,
-      })),
-      wefts: wefts.map((w) => ({
-        count: w.count || w.weftcount,
-        pick: w.pick,
-        cost: w.cost,
-        dyeing: w.dyeing,
-      })),
-      weaving,
-      washing,
-      transport,
-    });
+    // console.log("Checking fields...");
+    // console.log({
+    //   designName,
+    //   width,
+    //   warps: warps.map((w) => ({
+    //     count: w.count || w.warpcount,
+    //     reed: w.reed,
+    //     cost: w.cost,
+    //     dyeing: w.dyeing,
+    //   })),
+    //   wefts: wefts.map((w) => ({
+    //     count: w.count || w.weftcount,
+    //     pick: w.pick,
+    //     cost: w.cost,
+    //     dyeing: w.dyeing,
+    //   })),
+    //   weaving,
+    //   washing,
+    //   transport,
+    // });
 
     if (!designName || !width) return false;
 
@@ -907,7 +933,7 @@ function CostingPage() {
     return <div>Loading...</div>; // or a spinner component
   }
 
-  console.log("warpWeights", warpWeights);
+  // console.log("warpWeights", warpWeights);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1112,7 +1138,7 @@ function CostingPage() {
                 </div>
               </div>
             </SectionCard>
-            {console.log(prefillData)}
+            {/* {console.log(prefillData)} */}
 
             <SectionCard
               title="Material Costs"

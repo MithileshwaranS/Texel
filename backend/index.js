@@ -211,8 +211,8 @@ app.post("/api/submit", async (req, res) => {
     const insertDesignRes = await queryDB(
       `INSERT INTO designs (
         designname, created_date, profitpercent, weavingcost, washingcost, mendingcost,
-        transportcost, gst, width, warpcost, weftcost, designimage, designImagePublicId, subtotal, finaltotal, profit
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING design_id`,
+        transportcost, gst, width, warpcost, weftcost, designimage, designImagePublicId, subtotal, finaltotal, profit,design_status
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16 ,$17) RETURNING design_id`,
       [
         body.designName,
         designDate,
@@ -230,6 +230,7 @@ app.post("/api/submit", async (req, res) => {
         body.totalCost,
         body.finaltotal,
         body.profit,
+        body.designStatus,
       ]
     );
 
@@ -315,6 +316,71 @@ app.delete("/api/deleteDesign/:id", async (req, res) => {
 // API to keep the server alive
 app.get("/ping", async (req, res) => {
   res.send("Server is alive!");
+});
+
+//New Costing API
+app.post("/api/newDesign", async (req, res) => {
+  try {
+    const { designName, designImage, designImagePublicId, designDate } =
+      req.body;
+    console.log(req.body);
+
+    const existingRes = await queryDB(
+      "SELECT * FROM design_sampling WHERE design_name = $1",
+      [designName]
+    );
+    if (existingRes.rows.length > 0) {
+      return res.status(409).json({ message: "Design name already exists!" });
+    }
+
+    const status = "pending";
+
+    await pool.query(
+      "INSERT INTO design_sampling (design_name,designimage_url, status,designImagePublicId,created_at) VALUES ($1, $2,$3,$4,$5)",
+      [designName, designImage, status, designImagePublicId, designDate] // Corrected order
+    );
+
+    res.status(200).send({ message: "Design added successfully" }); // Send success response
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).send({ message: "Server error" }); // Send error response
+  }
+});
+
+//getting all the sampling to costing details
+app.get("/api/samplingdetails", async (req, res) => {
+  try {
+    const result = await queryDB("SELECT * from design_sampling");
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/samplingdetails/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await queryDB(
+      "SELECT * from design_sampling where designid = $1",
+      [id]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+//delete sampling_details
+app.delete("/api/deleteDesign", async (req, res) => {
+  try {
+    const { designid } = req.body;
+    const query = await queryDB(
+      "DELETE FROM design_sampling where designid = $1",
+      [designid]
+    );
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 //Login api

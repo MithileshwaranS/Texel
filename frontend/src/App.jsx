@@ -25,6 +25,7 @@ import Reports from "./pages/Reports";
 import Customers from "./pages/Customers";
 import Settings from "./pages/Settings";
 import DesignDetail from "./components/common/DesignDetail";
+import NewDesign from "./pages/NewDesign";
 
 function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -116,6 +117,7 @@ function App() {
           <Route path="/costing" element={<Costing />} />
           <Route path="/inventory" element={<Inventory />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/new-design" element={<NewDesign />} />
           <Route path="/designdetails/:designId" element={<DesignDetail />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/settings" element={<Settings />} />
