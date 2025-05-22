@@ -126,20 +126,24 @@ const SectionCard = ({
   </motion.div>
 );
 
-const SubmitButton = ({ disabled, onClick }) => (
+const SubmitButton = ({ disabled, onClick, formLoading }) => (
   <motion.button
-    whileHover={!disabled ? { scale: 1.02 } : {}}
-    whileTap={!disabled ? { scale: 0.98 } : {}}
+    whileHover={!disabled && !formLoading ? { scale: 1.02 } : {}}
+    whileTap={!disabled && !formLoading ? { scale: 0.98 } : {}}
     onClick={onClick}
-    disabled={disabled}
+    disabled={disabled || formLoading}
     className={`w-full py-3 px-6 rounded-xl font-medium text-white transition-all ${
-      disabled
+      disabled || formLoading
         ? "bg-gray-300 cursor-not-allowed"
         : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md"
     } relative overflow-hidden`}
   >
-    <span className="relative z-10">Submit Design</span>
-    {!disabled && (
+    <div className="flex items-center justify-center">
+      <span className="relative z-10">
+        {formLoading ? "Submitting..." : "Submit Design"}
+      </span>
+    </div>
+    {!disabled && !formLoading && (
       <motion.span
         className="absolute inset-0 bg-white opacity-0 hover:opacity-10 transition-opacity"
         whileHover={{ opacity: 0.1 }}
@@ -182,6 +186,7 @@ function CostingPage() {
   const [uploadController, setUploadController] = useState(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const [prefillData, setPrefillData] = useState([]);
 
   // Warp and Weft states
@@ -567,6 +572,7 @@ function CostingPage() {
   // Form submission
   const onSubmitForm = async (e) => {
     try {
+      setFormLoading(true);
       e.preventDefault();
       if (!checkAllFieldsFilled()) {
         setToast({
@@ -623,6 +629,7 @@ function CostingPage() {
       }
 
       if (response.ok) {
+        setFormLoading(false);
         setToast({
           message: "Design submitted successfully!",
           type: "success",
@@ -673,8 +680,11 @@ function CostingPage() {
         message: "An error occurred. Please try again.",
         type: "error",
       });
+    } finally {
+      setFormLoading(false);
     }
   };
+
   const removeImage = () => {
     setDesignImage(null);
     setDesignImagePublicId(null);
@@ -1315,6 +1325,7 @@ function CostingPage() {
               <SubmitButton
                 disabled={!checkAllFieldsFilled()}
                 onClick={onSubmitForm}
+                formLoading={formLoading}
               />
             </motion.div>
           </div>

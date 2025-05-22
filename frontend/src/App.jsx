@@ -19,6 +19,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import HeaderItem from "./components/common/HeaderItem";
+import Design from "./pages/DesingSheet";
 import Dashboard from "./pages/Dashboard";
 import Costing from "./pages/CostingPage";
 import Inventory from "./pages/Inventory";
@@ -122,6 +123,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/costing" element={<Costing />} />
+          <Route path="/design" element={<Design />} />
           <Route path="/inventory" element={<Inventory />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/new-design" element={<NewDesign />} />

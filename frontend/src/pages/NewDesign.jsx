@@ -31,6 +31,7 @@ function NewDesign() {
   const [uploading, setUploading] = useState(false);
   const [uploadController, setUploadController] = useState(null);
   const [fileName, setFileName] = useState("");
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const showToast = (message, type = "success") => {
     setToast({ message, type, visible: true });
@@ -259,10 +260,11 @@ function NewDesign() {
                               <motion.img
                                 src={designImage}
                                 alt="Preview"
-                                className="h-40 object-contain rounded-lg shadow-sm"
+                                className="h-40 object-contain rounded-lg shadow-sm cursor-pointer"
                                 initial={{ scale: 0.9 }}
                                 animate={{ scale: 1 }}
                                 transition={{ duration: 0.3 }}
+                                onClick={() => setIsPreviewOpen(true)}
                               />
                               <motion.div
                                 className="absolute -top-3 -right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -397,6 +399,47 @@ function NewDesign() {
           </form>
         </motion.div>
       </div>
+      {isPreviewOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setIsPreviewOpen(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0.95 }}
+            className="relative max-w-[90vw] max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={designImage}
+              alt="Full Preview"
+              className="w-auto h-auto max-w-full max-h-[90vh] object-contain rounded-lg"
+            />
+            <button
+              onClick={() => setIsPreviewOpen(false)}
+              className="absolute -top-4 -right-4 bg-white cursor-pointer rounded-full p-2 shadow-lg hover:bg-gray-100 hover:scale-105 transition-colors"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 }
