@@ -257,10 +257,11 @@ const YarnCard = ({
   onComplete,
   imageURL,
   status = "pending", // Default to pending if not provided
+  onImageClick,
 }) => {
   return (
     <StyledCard>
-      <MediaWrapper>
+      <MediaWrapper onClick={onImageClick}>
         <StyledCardMedia
           className="card-media"
           component="img"

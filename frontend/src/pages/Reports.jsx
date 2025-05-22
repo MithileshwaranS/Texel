@@ -5,6 +5,30 @@ import YarnCard from "../components/common/CardComponent";
 import { useNavigate } from "react-router-dom";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 
+const ImagePreview = ({ imageUrl, onClose }) => {
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xl bg-opacity-90 flex items-center justify-center"
+      onClick={onClose}
+    >
+      <div className="relative max-w-[90vw] max-h-[90vh]">
+        <button
+          className="absolute top-4 right-4 text-white hover:text-gray-300 text-xl cursor-pointer"
+          onClick={onClose}
+        >
+          <FaTimes />
+        </button>
+        <img
+          src={imageUrl}
+          alt="Preview"
+          className="max-w-full max-h-[90vh] object-contain rounded-2xl"
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+    </div>
+  );
+};
+
 function Reports() {
   const navigate = useNavigate();
   const [design, setDesign] = useState([]);
@@ -18,6 +42,7 @@ function Reports() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [samplingdesign, setSamplingDesign] = useState([]);
   const [samplingfilteredDesigns, setSamplingFilteredDesigns] = useState([]);
+  const [previewImage, setPreviewImage] = useState(null);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -400,6 +425,7 @@ function Reports() {
                     <YarnCard
                       key={item.design_id || item.designid}
                       {...commonProps}
+                      onImageClick={() => setPreviewImage(imageURL)}
                       onViewMore={() => handleViewMore(itemKey)}
                       onDelete={() => handleDeleteClick(itemKey)}
                       onDuplicate={() => handleDuplicate(itemKey)}
@@ -411,6 +437,7 @@ function Reports() {
                     <YarnCard
                       key={item.design_id || item.designid}
                       {...commonProps}
+                      onImageClick={() => setPreviewImage(imageURL)}
                       onComplete={() => handleComplete(item)}
                     />
                   );
@@ -420,6 +447,7 @@ function Reports() {
                     <YarnCard
                       key={item.design_id || item.designid}
                       {...commonProps}
+                      onImageClick={() => setPreviewImage(imageURL)}
                       onViewMore={() => handleViewMore(itemKey)}
                       onDelete={() => handleDeleteClick(itemKey)}
                       onDuplicate={() => handleDuplicate(itemKey)}
@@ -429,6 +457,14 @@ function Reports() {
               })}
             </div>
           </>
+        )}
+
+        {/* Image Preview Modal */}
+        {previewImage && (
+          <ImagePreview
+            imageUrl={previewImage}
+            onClose={() => setPreviewImage(null)}
+          />
         )}
 
         {/* Confirm Dialog */}
