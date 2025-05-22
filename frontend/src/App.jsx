@@ -43,7 +43,7 @@ function App() {
     },
     { id: "reports", icon: FaChartLine, label: "Reports", path: "/reports" },
     { id: "customers", icon: FaUsers, label: "Customers", path: "/customers" },
-    { id: "settings", icon: FaCog, label: "Settings", path: "/settings" },
+    { id: "settings", icon: FaCog, label: "YarnDetails", path: "/settings" },
   ];
 
   const toggleMobileMenu = () => {

@@ -679,6 +679,19 @@ function DesignDetail() {
                 </TableHead>
                 <TableBody>
                   <TableRow hover>
+                    <TableCell>Subtotal</TableCell>
+                    <TableCell align="right">
+                      {formatCurrency(
+                        parseFloat(design.warpcost) +
+                          parseFloat(design.weftcost) +
+                          parseFloat(design.weavingcost) +
+                          parseFloat(design.washingcost) +
+                          parseFloat(design.mendingcost)
+                      )}
+                    </TableCell>
+                  </TableRow>
+
+                  <TableRow hover>
                     <TableCell>
                       Profit ({formatCurrency(design.profitpercent * 100)}%)
                     </TableCell>
@@ -690,12 +703,6 @@ function DesignDetail() {
                     <TableCell>Transport</TableCell>
                     <TableCell align="right">
                       {formatCurrency(design.transportcost)}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow hover>
-                    <TableCell>Subtotal</TableCell>
-                    <TableCell align="right">
-                      {formatCurrency(design.subtotal)}
                     </TableCell>
                   </TableRow>
 
