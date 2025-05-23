@@ -125,12 +125,20 @@ const ColorInput = ({ value, onChange, label }) => {
         <span className="text-red-500 ml-1">*</span>
       </label>
 
-      <div className="grid grid-cols-1 gap-2">
+      <div className="flex items-center gap-2">
+        {/* Color input */}
+        <input
+          type="color"
+          value={value}
+          onChange={handleColorChange}
+          className="w-8 h-8 rounded cursor-pointer"
+        />
+
         {/* Predefined color dropdown */}
         <select
           value={value}
           onChange={handleColorChange}
-          className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm appearance-none"
+          className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm appearance-none"
         >
           <option value="">Select a color</option>
           {predefinedColors.map((color, index) => (
@@ -140,31 +148,8 @@ const ColorInput = ({ value, onChange, label }) => {
           ))}
         </select>
 
-        {/* Color picker and hex input */}
-        <div className="flex items-center">
-          <input
-            type="color"
-            value={value}
-            onChange={handleColorChange}
-            className="w-8 h-8 rounded cursor-pointer mr-2"
-          />
-          {/* <input
-            type="text"
-            value={value}
-            onChange={handleTextChange}
-            placeholder="#RRGGBB"
-            className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm flex-1"
-          /> */}
-        </div>
-
-        {/* Color preview */}
-        {/* <div className="flex items-center mt-1"> */}
-        {/* <span className="text-xs text-gray-500 mr-2">Preview:</span>
-          <div
-            className="w-6 h-6 rounded border border-gray-300"
-            style={{ backgroundColor: value || "#FFFFFF" }}
-          ></div> */}
-        {/* </div> */}
+        {/* Add any third element here if needed */}
+        {/* <div className="...">Third element</div> */}
       </div>
     </div>
   );
@@ -285,6 +270,10 @@ function DesignSheet() {
   const addWarpDesign = () => {
     setWarpDesigns([...warpDesigns, { color: "#000000", threadCount: "" }]);
   };
+
+  useEffect(() => {
+    console.log("Warp pattern Details", warpDesigns);
+  }, [warpDesigns]);
 
   const removeWarpDesign = (index) => {
     if (warpDesigns.length > 1) {
@@ -489,67 +478,97 @@ function DesignSheet() {
 
             {/* Warp Design Section */}
             <SectionCard
-              title="Warp Design"
-              icon={FaPalette}
-              color="text-green-600"
+              title={
+                <div className="flex items-center gap-2">
+                  <FaPalette className="text-green-500" />
+                  <span className="text-gray-800 font-semibold">
+                    Warp Design
+                  </span>
+                </div>
+              }
+              noPadding
             >
               <div className="space-y-4">
-                <div className="space-y-4">
+                {/* Column headings with subtle styling */}
+                <div className="grid grid-cols-12 gap-4 px-4 pt-3">
+                  <div className="col-span-6 md:col-span-8 text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    Color
+                  </div>
+                  <div className="col-span-6 md:col-span-4 text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    Threads
+                  </div>
+                </div>
+
+                {/* Designs list */}
+                <div className="divide-y divide-gray-100">
                   {warpDesigns.map((design, index) => (
                     <div
                       key={`design-${index}`}
-                      className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 relative"
+                      className="grid grid-cols-10 gap-4 px-4 py-3 hover:bg-gray-50 transition-colors relative group"
                     >
-                      <div className="absolute -top-2 -left-2 bg-green-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                      {/* Index badge */}
+                      <div className="absolute -left-3 top-1/2 transform -translate-y-1/2 bg-green-100 text-green-800 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border border-green-200">
                         {index + 1}
                       </div>
+
+                      {/* Color input */}
+                      <div className="col-span-6 md:col-span-5">
+                        <ColorInput
+                          value={design.color}
+                          onChange={(e) =>
+                            handleWarpDesignChange(index, "color", e)
+                          }
+                          compact
+                          hideLabel
+                        />
+                      </div>
+
+                      {/* Thread count input */}
+                      <div className="col-span-6 md:col-span-5">
+                        <TextInput
+                          value={design.threadCount}
+                          onChange={(e) =>
+                            handleWarpDesignChange(
+                              index,
+                              "threadCount",
+                              e.target.value
+                            )
+                          }
+                          type="number"
+                          icon={FaSlidersH}
+                          min={0}
+                          step="1"
+                          compact
+                          hideLabel
+                        />
+                      </div>
+
+                      {/* Delete button - only appears on hover */}
                       {warpDesigns.length > 1 && (
                         <button
                           onClick={() => removeWarpDesign(index)}
-                          className="absolute top-2 right-2 text-gray-400 hover:text-red-500 transition-colors"
+                          className="absolute -right-2 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-red-50"
+                          aria-label="Remove design"
                         >
                           <FaTimes size={14} />
                         </button>
                       )}
-
-                      <ColorInput
-                        label="Color"
-                        value={design.color}
-                        onChange={(e) =>
-                          handleWarpDesignChange(index, "color", e)
-                        }
-                      />
-                      <TextInput
-                        label="Thread Count"
-                        value={design.threadCount}
-                        onChange={(e) =>
-                          handleWarpDesignChange(
-                            index,
-                            "threadCount",
-                            e.target.value
-                          )
-                        }
-                        type="number"
-                        icon={FaSlidersH}
-                        min={0}
-                        step="1"
-                      />
                     </div>
                   ))}
                 </div>
-              </div>
 
-              {/* Hover Add Button at Bottom */}
-              <div className="absolute -bottom-5 left-1/2 transform -translate-x-1/2">
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={addWarpDesign}
-                  className="p-3 bg-green-500 text-white rounded-full shadow-lg hover:bg-green-600 transition-colors"
-                  aria-label="Add warp design"
-                >
-                  <FaPlus size={16} />
-                </motion.button>
+                {/* Add button with better styling */}
+                <div className="px-4 pb-3">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={addWarpDesign}
+                    className="w-full py-2 bg-green-50 text-green-600 rounded-lg border border-green-200 hover:bg-green-100 transition-all flex items-center justify-center gap-2 font-medium text-sm"
+                  >
+                    <FaPlus size={14} />
+                    Add Design
+                  </motion.button>
+                </div>
               </div>
             </SectionCard>
           </div>

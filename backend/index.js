@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { Pool } from "pg";
 import fetch from "node-fetch";
 import { v2 as cloudinary } from "cloudinary";
+import ExcelJS from "exceljs";
 
 dotenv.config();
 
@@ -404,6 +405,102 @@ app.post("/login", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Server error" });
+  }
+});
+
+//excel generation
+
+// Excel download route
+app.get("/api/excel", async (req, res) => {
+  try {
+    const resultDesigns = await pool.query("SELECT * FROM designs");
+    const designs = resultDesigns.rows;
+    const resultWarps = await pool.query("SELECT * FROM warps");
+    const warps = resultWarps.rows;
+    const resultWefts = await pool.query("SELECT * FROM wefts");
+    const wefts = resultWefts.rows;
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Design Report");
+
+    worksheet.columns = [
+      { header: "Design ID", key: "design_id" },
+      { header: "Design Name", key: "designname" },
+      { header: "Width", key: "width" },
+      { header: "Warp Count", key: "warpcount" },
+      { header: "Weft Count", key: "weftcount" },
+      { header: "Reed", key: "reed" },
+      { header: "Pick", key: "pick" },
+      { header: "initWarpCost", key: "initwarpcost" },
+      { header: "initWeftCost", key: "initweftcost" },
+      { header: "Warp Dyeing", key: "warpdyeing" },
+      { header: "Weft Dyeing", key: "weftdyeing" },
+      { header: "Warp Wt", key: "warpweight" },
+      { header: "Weft Wt", key: "weftweight" },
+      { header: "Warp Cost", key: "warpcost" },
+      { header: "Weft Cost", key: "weftcost" },
+      { header: "Weaving", key: "weavingcost" },
+      { header: "Mending", key: "mendingcost" },
+      { header: "Washing", key: "washingcost" },
+      { header: "Transport", key: "transportcost" },
+      { header: "Profit ", key: "profit" },
+      { header: "Subtotal", key: "subtotal" },
+      { header: "GST", key: "gst" },
+      { header: "Final Total", key: "finaltotal" },
+    ];
+
+    designs.forEach((design) => {
+      const relatedWarps = warps.filter(
+        (w) => w.design_id === design.design_id
+      );
+      const relatedWefts = wefts.filter(
+        (w) => w.design_id === design.design_id
+      );
+
+      for (const warp of relatedWarps) {
+        for (const weft of relatedWefts) {
+          worksheet.addRow({
+            design_id: design.design_id,
+            designname: design.designname,
+            width: design.width,
+            warpcount: warp.warpcount,
+            weftcount: weft.weftcount,
+            reed: warp.reed,
+            pick: weft.pick,
+            initwarpcost: warp.initwarpcost,
+            initweftcost: weft.initweftcost,
+            warpdyeing: warp.warpdyeing,
+            weftdyeing: weft.weftdyeing,
+            warpweight: warp.warpweight,
+            weftweight: weft.weftweight,
+            warpcost: design.warpcost,
+            weftcost: design.weftcost,
+            weavingcost: design.weavingcost,
+            mendingcost: design.mendingcost,
+            washingcost: design.washingcost,
+            transportcost: design.transportcost,
+            profit: design.profit,
+            subtotal: design.subtotal,
+            gst: design.gst,
+            finaltotal: design.finaltotal,
+          });
+        }
+      }
+    });
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=Design_Report.xlsx`
+    );
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Excel generation error:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
