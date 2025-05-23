@@ -759,7 +759,7 @@ function CostingPage() {
       const newWarpWeights = warps.map((warp) => {
         if (warp.count && warp.reed) {
           return (
-            ((toNum(width) * toNum(warp.reed) * toNum(warp.constant || 1.35)) /
+            ((toNum(width) * toNum(warp.reed) * toNum(warp.constant || 1.45)) /
               840) *
             getHanksWt(warp.count)
           ).toFixed(3);
@@ -775,7 +775,7 @@ function CostingPage() {
       const newWeftWeights = wefts.map((weft) => {
         if (weft.count && weft.pick) {
           return (
-            ((toNum(width) * toNum(weft.pick) * toNum(weft.constant || 1.35)) /
+            ((toNum(width) * toNum(weft.pick) * toNum(weft.constant || 1.45)) /
               840) *
             getHanksWt(weft.count)
           ).toFixed(3);
