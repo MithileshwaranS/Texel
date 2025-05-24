@@ -495,7 +495,7 @@ function DesignSheet() {
                     Color
                   </div>
                   <div className="col-span-6 md:col-span-4 text-sm font-medium text-gray-500 uppercase tracking-wider">
-                    Threads
+                    No of Threads
                   </div>
                 </div>
 

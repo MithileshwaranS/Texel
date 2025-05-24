@@ -528,6 +528,7 @@ function DesignDetail() {
                       <TableCell align="right">Weight</TableCell>
                       <TableCell align="right">Warp Cost</TableCell>
                       <TableCell align="right">Dyeing Cost</TableCell>
+                      <TableCell align="right">Warp Cost per Yarn</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -545,10 +546,13 @@ function DesignDetail() {
                         <TableCell align="right">
                           {formatCurrency(warp.warpdyeing)}
                         </TableCell>
+                        <TableCell align="right">
+                          {formatCurrency(warp.individualwarpcost)}
+                        </TableCell>
                       </TableRow>
                     ))}
                     <TotalRow>
-                      <TableCell colSpan={5} align="right">
+                      <TableCell colSpan={6} align="right">
                         Total Warp Cost
                       </TableCell>
                       <TableCell align="right" sx={{ fontWeight: 700 }}>
@@ -578,6 +582,7 @@ function DesignDetail() {
                       <TableCell align="right">Weight</TableCell>
                       <TableCell align="right">Weft Cost</TableCell>
                       <TableCell align="right">Dyeing Cost</TableCell>
+                      <TableCell align="right">Weft Cost per Yarn</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -596,10 +601,13 @@ function DesignDetail() {
                         <TableCell align="right">
                           {formatCurrency(weft.weftdyeing)}
                         </TableCell>
+                        <TableCell align="right">
+                          {formatCurrency(weft.individualweftcost)}
+                        </TableCell>
                       </TableRow>
                     ))}
                     <TotalRow>
-                      <TableCell colSpan={5} align="right">
+                      <TableCell colSpan={6} align="right">
                         Total Weft Cost
                       </TableCell>
                       <TableCell align="right" sx={{ fontWeight: 700 }}>

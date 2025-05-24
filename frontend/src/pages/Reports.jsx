@@ -102,14 +102,17 @@ function Reports() {
 
     // Apply search filter
     if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      filtered = filtered.filter((item) =>
-        item.designname.toLowerCase().includes(search)
-      );
+      const searchWords = searchTerm.toLowerCase().split(/\s+/); // split by space
 
-      sampleFiltered = sampleFiltered.filter((item) =>
-        item.design_name.toLowerCase().includes(search)
-      );
+      filtered = filtered.filter((item) => {
+        const name = item.designname.toLowerCase();
+        return searchWords.every((word) => name.includes(word));
+      });
+
+      sampleFiltered = sampleFiltered.filter((item) => {
+        const name = item.design_name.toLowerCase();
+        return searchWords.every((word) => name.includes(word));
+      });
     }
 
     // Apply status filter

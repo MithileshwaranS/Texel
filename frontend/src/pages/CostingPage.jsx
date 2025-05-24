@@ -178,6 +178,8 @@ function CostingPage() {
   const [profitPercent, setprofitPercent] = useState(0.15);
   const [designDate, setDesignDate] = useState(kolkataDate);
   const [twisting, setTwisting] = useState(0);
+  const [individualWarpCosts, setIndividualWarpCosts] = useState([]);
+  const [individualWeftCosts, setIndividualWeftCosts] = useState([]);
 
   //Image States
   const [designImagePublicId, setDesignImagePublicId] = useState("");
@@ -606,6 +608,8 @@ function CostingPage() {
         designImage,
         designImagePublicId,
         designStatus: "completed",
+        individualWarpCosts,
+        individualWeftCosts,
       };
       console.log(body);
 
@@ -788,38 +792,57 @@ function CostingPage() {
 
   // Calculate costs whenever weights or prices change
   useEffect(() => {
+    const individualWarpCosts = []; // Array to hold individual warp costs
+
     const totalWarpCost = warps.reduce((sum, warp, index) => {
       if (
         warp.cost != null &&
         warp.dyeing != null &&
         warpWeights[index] != null
       ) {
-        return (
-          sum +
-          (toNum(warp.cost) + toNum(warp.dyeing)) * toNum(warpWeights[index])
-        );
+        const cost =
+          (toNum(warp.cost) + toNum(warp.dyeing)) * toNum(warpWeights[index]);
+        individualWarpCosts.push(toNum(cost.toFixed(3))); // Save individual cost
+        return sum + cost;
+      } else {
+        individualWarpCosts.push(0); // Save 0 for invalid data
+        return sum;
       }
-      return sum;
     }, 0);
+
     setWarpCost(toNum(totalWarpCost.toFixed(3)));
+    setIndividualWarpCosts(individualWarpCosts); // Optional: store for use/display
   }, [warps, warpWeights]);
 
   useEffect(() => {
+    console.log("Warp Costs:", individualWarpCosts);
+  });
+
+  useEffect(() => {
+    const individualWeftCosts = []; // Array to hold individual weft costs
+
     const totalWeftCost = wefts.reduce((sum, weft, index) => {
       if (
         weft.cost != null &&
         weft.dyeing != null &&
         weftWeights[index] != null
       ) {
-        return (
-          sum +
-          (toNum(weft.cost) + toNum(weft.dyeing)) * toNum(weftWeights[index])
-        );
+        const cost =
+          (toNum(weft.cost) + toNum(weft.dyeing)) * toNum(weftWeights[index]);
+        individualWeftCosts.push(toNum(cost.toFixed(3))); // Save individual cost
+        return sum + cost;
+      } else {
+        individualWeftCosts.push(0); // Save 0 for invalid data
+        return sum;
       }
-      return sum;
     }, 0);
+
     setWeftCost(totalWeftCost.toFixed(3));
+    setIndividualWeftCosts(individualWeftCosts); // Optional: store for use/display
   }, [wefts, weftWeights]);
+  useEffect(() => {
+    console.log("Weft Costs:", individualWeftCosts);
+  });
 
   // Calculate profit, total cost, GST, and final total
   useEffect(() => {

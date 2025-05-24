@@ -243,8 +243,8 @@ app.post("/api/submit", async (req, res) => {
       const warpWeight = parseFloat(body.warpWeights[i]);
 
       await queryDB(
-        `INSERT INTO warps (design_id, warpcount, warpweight, initwarpcost, warpdyeing, reed)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
+        `INSERT INTO warps (design_id, warpcount, warpweight, initwarpcost, warpdyeing, reed,individualwarpcost)
+         VALUES ($1, $2, $3, $4, $5, $6,$7)`,
         [
           designId,
           warp.count,
@@ -252,6 +252,7 @@ app.post("/api/submit", async (req, res) => {
           warp.cost,
           warp.dyeing,
           parseFloat(warp.reed),
+          body.individualWarpCosts[i],
         ]
       );
     }
@@ -262,8 +263,8 @@ app.post("/api/submit", async (req, res) => {
       const weftWeight = parseFloat(body.weftWeights[i]);
 
       await queryDB(
-        `INSERT INTO wefts (design_id, weftcount, weftweight, initweftcost, weftdyeing, pick)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
+        `INSERT INTO wefts (design_id, weftcount, weftweight, initweftcost, weftdyeing, pick,individualweftcost)
+         VALUES ($1, $2, $3, $4, $5, $6,$7)`,
         [
           designId,
           weft.count,
@@ -271,6 +272,7 @@ app.post("/api/submit", async (req, res) => {
           weft.cost,
           weft.dyeing,
           parseFloat(weft.pick),
+          body.individualWeftCosts[i],
         ]
       );
     }
@@ -415,8 +417,10 @@ app.get("/api/excel", async (req, res) => {
   try {
     const resultDesigns = await pool.query("SELECT * FROM designs");
     const designs = resultDesigns.rows;
+
     const resultWarps = await pool.query("SELECT * FROM warps");
     const warps = resultWarps.rows;
+
     const resultWefts = await pool.query("SELECT * FROM wefts");
     const wefts = resultWefts.rows;
 
@@ -437,8 +441,8 @@ app.get("/api/excel", async (req, res) => {
       { header: "Weft Dyeing", key: "weftdyeing" },
       { header: "Warp Wt", key: "warpweight" },
       { header: "Weft Wt", key: "weftweight" },
-      { header: "Warp Cost", key: "warpcost" },
-      { header: "Weft Cost", key: "weftcost" },
+      { header: "Individual Warp Cost", key: "individualwarpcost" },
+      { header: "Individual Weft Cost", key: "individualweftcost" },
       { header: "Weaving", key: "weavingcost" },
       { header: "Mending", key: "mendingcost" },
       { header: "Washing", key: "washingcost" },
@@ -450,42 +454,82 @@ app.get("/api/excel", async (req, res) => {
     ];
 
     designs.forEach((design) => {
-      const relatedWarps = warps.filter(
-        (w) => w.design_id === design.design_id
+      const relatedWarps = warps
+        .filter((w) => w.design_id === design.design_id)
+        .sort((a, b) => a.warp_id - b.warp_id);
+
+      const relatedWefts = wefts
+        .filter((w) => w.design_id === design.design_id)
+        .sort((a, b) => a.weft_id - b.weft_id);
+
+      const totalWarpCost = relatedWarps.reduce(
+        (sum, w) => sum + (parseFloat(w.individualwarpcost) || 0),
+        0
       );
-      const relatedWefts = wefts.filter(
-        (w) => w.design_id === design.design_id
+      const totalWeftCost = relatedWefts.reduce(
+        (sum, w) => sum + (parseFloat(w.individualweftcost) || 0),
+        0
       );
 
-      for (const warp of relatedWarps) {
-        for (const weft of relatedWefts) {
-          worksheet.addRow({
-            design_id: design.design_id,
-            designname: design.designname,
-            width: design.width,
-            warpcount: warp.warpcount,
-            weftcount: weft.weftcount,
-            reed: warp.reed,
-            pick: weft.pick,
-            initwarpcost: warp.initwarpcost,
-            initweftcost: weft.initweftcost,
-            warpdyeing: warp.warpdyeing,
-            weftdyeing: weft.weftdyeing,
-            warpweight: warp.warpweight,
-            weftweight: weft.weftweight,
-            warpcost: design.warpcost,
-            weftcost: design.weftcost,
-            weavingcost: design.weavingcost,
-            mendingcost: design.mendingcost,
-            washingcost: design.washingcost,
-            transportcost: design.transportcost,
-            profit: design.profit,
-            subtotal: design.subtotal,
-            gst: design.gst,
-            finaltotal: design.finaltotal,
-          });
-        }
+      const maxLen = Math.max(relatedWarps.length, relatedWefts.length);
+
+      for (let i = 0; i < maxLen; i++) {
+        const warp = relatedWarps[i];
+        const weft = relatedWefts[i];
+
+        worksheet.addRow({
+          design_id: i === 0 ? design.design_id : "",
+          designname: i === 0 ? design.designname : "",
+          width: i === 0 ? design.width : "",
+          warpcount: warp ? warp.warpcount : "",
+          weftcount: weft ? weft.weftcount : "",
+          reed: warp ? warp.reed : "",
+          pick: weft ? weft.pick : "",
+          initwarpcost: warp ? warp.initwarpcost : "",
+          initweftcost: weft ? weft.initweftcost : "",
+          warpdyeing: warp ? warp.warpdyeing : "",
+          weftdyeing: weft ? weft.weftdyeing : "",
+          warpweight: warp ? warp.warpweight : "",
+          weftweight: weft ? weft.weftweight : "",
+          individualwarpcost: warp ? warp.individualwarpcost : "",
+          individualweftcost: weft ? weft.individualweftcost : "",
+          weavingcost: i === 0 ? design.weavingcost : "",
+          mendingcost: i === 0 ? design.mendingcost : "",
+          washingcost: i === 0 ? design.washingcost : "",
+          transportcost: i === 0 ? design.transportcost : "",
+          profit: i === 0 ? design.profit : "",
+          subtotal: i === 0 ? design.subtotal : "",
+          gst: i === 0 ? design.gst : "",
+          finaltotal: i === 0 ? design.finaltotal : "",
+        });
       }
+
+      // Add a totals row after each design
+      worksheet.addRow({
+        design_id: "",
+        designname: "",
+        width: "",
+        warpcount: "",
+        weftcount: "",
+        reed: "",
+        pick: "",
+        initwarpcost: "",
+        initweftcost: "",
+        warpdyeing: "",
+        weftdyeing: "",
+        warpweight: "Total",
+        weftweight: "",
+        individualwarpcost: totalWarpCost,
+        individualweftcost: totalWeftCost,
+        weavingcost: "",
+        mendingcost: "",
+        washingcost: "",
+        transportcost: "",
+        profit: "",
+        subtotal: "",
+        gst: "",
+        finaltotal: "",
+      });
     });
 
     res.setHeader(
@@ -501,6 +545,17 @@ app.get("/api/excel", async (req, res) => {
   } catch (error) {
     console.error("Excel generation error:", error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/excel/data", async (req, res) => {
+  try {
+    const designs = (await pool.query("SELECT * FROM designs")).rows;
+    const warps = (await pool.query("SELECT * FROM warps")).rows;
+    const wefts = (await pool.query("SELECT * FROM wefts")).rows;
+    res.json({ designs, warps, wefts });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
