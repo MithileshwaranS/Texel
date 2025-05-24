@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { Toaster, toast } from "react-hot-toast";
 import {
   FaWeight,
   FaMoneyBillWave,
@@ -14,7 +15,28 @@ import {
   FaRuler,
   FaSlidersH,
   FaPalette,
+  FaSave,
 } from "react-icons/fa";
+
+// --- Predefined Colors ---
+export const predefinedColors = [
+  { value: "#000000", label: "Black" },
+  { value: "#FFFFFF", label: "White" },
+  { value: "#FF0000", label: "Red" },
+  { value: "#00FF00", label: "Green" },
+  { value: "#0000FF", label: "Blue" },
+  { value: "#FFFF00", label: "Yellow" },
+  { value: "#FF00FF", label: "Magenta" },
+  { value: "#00FFFF", label: "Cyan" },
+  { value: "#FFA500", label: "Orange" },
+  { value: "#800080", label: "Purple" },
+  { value: "#A52A2A", label: "Brown" },
+  { value: "#808080", label: "Gray" },
+  { value: "#F5F5DC", label: "Beige" },
+  { value: "#FFC0CB", label: "Pink" },
+  { value: "#008080", label: "Teal" },
+  { value: "#4B0082", label: "Indigo" },
+];
 
 // Reusable components
 const TextInput = ({
@@ -29,20 +51,26 @@ const TextInput = ({
   step,
   required = true,
   name,
+  compact = false,
+  hideLabel = false,
 }) => {
   return (
     <div className={`flex flex-col ${className}`}>
-      <label className="text-xs font-medium text-gray-500 mb-1 flex items-center uppercase tracking-wider">
-        {Icon && <Icon className="mr-2 text-gray-400" size={12} />}
-        {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
-      </label>
+      {!hideLabel && (
+        <label className="text-xs font-medium text-gray-500 mb-1 flex items-center uppercase tracking-wider">
+          {Icon && <Icon className="mr-2 text-gray-400" size={12} />}
+          {label}
+          {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+      )}
       <input
         type={type}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm"
+        className={`${
+          compact ? "py-1 text-sm" : "py-2"
+        } px-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm`}
         min={min}
         step={step}
         required={required}
@@ -86,32 +114,21 @@ const DropdownField = ({
   );
 };
 
-const ColorInput = ({ value, onChange, label }) => {
+const ColorInput = ({
+  value,
+  onChange,
+  label,
+  compact = false,
+  hideLabel = false,
+  availableColors = predefinedColors,
+}) => {
+  // Initialize with false since we want to show dropdown by default
   const [isCustomColor, setIsCustomColor] = useState(false);
   const [colorName, setColorName] = useState("");
 
-  const predefinedColors = [
-    { value: "#000000", label: "Black" },
-    { value: "#FFFFFF", label: "White" },
-    { value: "#FF0000", label: "Red" },
-    { value: "#00FF00", label: "Green" },
-    { value: "#0000FF", label: "Blue" },
-    { value: "#FFFF00", label: "Yellow" },
-    { value: "#FF00FF", label: "Magenta" },
-    { value: "#00FFFF", label: "Cyan" },
-    { value: "#FFA500", label: "Orange" },
-    { value: "#800080", label: "Purple" },
-    { value: "#A52A2A", label: "Brown" },
-    { value: "#808080", label: "Gray" },
-    { value: "#F5F5DC", label: "Beige" },
-    { value: "#FFC0CB", label: "Pink" },
-    { value: "#008080", label: "Teal" },
-    { value: "#4B0082", label: "Indigo" },
-  ];
-
   useEffect(() => {
-    // Check if selected color is predefined
-    const matchedColor = predefinedColors.find((c) => c.value === value);
+    // Check if the color exists in available colors
+    const matchedColor = availableColors.find((c) => c.value === value);
     if (matchedColor) {
       setIsCustomColor(false);
       setColorName(matchedColor.label);
@@ -119,68 +136,48 @@ const ColorInput = ({ value, onChange, label }) => {
       setIsCustomColor(true);
       setColorName("");
     }
-  }, [value]);
+  }, [value, availableColors]);
 
   const handleColorChange = (e) => {
-    onChange(e);
     if (e.target.value === "custom") {
       setIsCustomColor(true);
-    }
-  };
-
-  const handleNameChange = (e) => {
-    setColorName(e.target.value);
-    // Find color value for entered name
-    const matchedColor = predefinedColors.find(
-      (c) => c.label.toLowerCase() === e.target.value.toLowerCase()
-    );
-    if (matchedColor) {
-      onChange({ target: { value: matchedColor.value } });
+      onChange({ target: { value: "#000000" } }); // Set a default color for custom
+    } else {
       setIsCustomColor(false);
+      onChange(e);
     }
   };
 
   return (
     <div className="flex flex-col">
-      <label className="text-xs font-medium text-gray-500 mb-1 flex items-center uppercase tracking-wider">
-        <FaPalette className="mr-2 text-gray-400" size={12} />
-        {label}
-        <span className="text-red-500 ml-1">*</span>
-      </label>
-
+      {!hideLabel && (
+        <label className="text-xs font-medium text-gray-500 mb-1 flex items-center uppercase tracking-wider">
+          <FaPalette className="mr-2 text-gray-400" size={12} />
+          {label}
+          <span className="text-red-500 ml-1">*</span>
+        </label>
+      )}
       <div className="flex items-center gap-2">
-        {/* Color input */}
         <input
           type="color"
-          value={value}
+          value={value || "#000000"}
           onChange={handleColorChange}
           className="w-8 h-8 rounded cursor-pointer"
         />
-
-        {/* Dynamic input/select field */}
-        {isCustomColor ? (
-          <input
-            type="text"
-            value={colorName}
-            onChange={handleNameChange}
-            placeholder="Enter color name"
-            className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm"
-          />
-        ) : (
-          <select
-            value={value}
-            onChange={handleColorChange}
-            className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm appearance-none"
-          >
-            <option value="">Select a color</option>
-            {predefinedColors.map((color, index) => (
-              <option key={index} value={color.value}>
-                {color.label}
-              </option>
-            ))}
-            <option value="custom">Custom Color...</option>
-          </select>
-        )}
+        <select
+          value={value || ""}
+          onChange={handleColorChange}
+          className={`${
+            compact ? "py-1 text-sm" : "py-2"
+          } flex-1 px-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm appearance-none`}
+        >
+          <option value="">Select a color</option>
+          {availableColors.map((color, index) => (
+            <option key={index} value={color.value}>
+              {color.label}
+            </option>
+          ))}
+        </select>
       </div>
     </div>
   );
@@ -214,59 +211,171 @@ const SectionCard = ({
   icon: Icon,
   children,
   color = "text-blue-600",
+  noPadding = false,
 }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative"
+      className="bg-white rounded-xl shadow-sm border border-gray-100 relative"
     >
-      <div className="flex items-center border-b border-gray-100 pb-4 mb-4">
-        {Icon && <Icon className={`mr-3 ${color}`} size={16} />}
-        <h2
-          className={`text-base font-semibold ${color} uppercase tracking-wider`}
-        >
-          {title}
-        </h2>
+      <div className={`${noPadding ? "p-4" : "p-6"}`}>
+        <div className="flex items-center border-b border-gray-100 pb-4 mb-4">
+          {Icon && <Icon className={`mr-3 ${color}`} size={16} />}
+          <h2
+            className={`text-base font-semibold ${color} uppercase tracking-wider`}
+          >
+            {title}
+          </h2>
+        </div>
+        <div className="space-y-5">{children}</div>
       </div>
-      <div className="space-y-5">{children}</div>
     </motion.div>
   );
 };
 
-const getColorSerialNumber = (designs, currentIndex) => {
-  const currentColor = designs[currentIndex].color;
-  const uniqueColors = new Map();
-  let serialNumber = 1;
-
-  designs.forEach((design) => {
-    if (!uniqueColors.has(design.color)) {
-      uniqueColors.set(design.color, serialNumber++);
-    }
-  });
-
-  return uniqueColors.get(currentColor);
+const getLegendNumberForColor = (colorLegend, color) => {
+  const found = colorLegend.find((item) => item.color === color);
+  return found ? found.serial : null;
 };
 
-const updateColorSerials = (designs) => {
-  const uniqueColors = new Map();
-  let serialNumber = 1;
+const ColorLegendInput = ({ value, onChange, label, colorLegend }) => {
+  const [inputMode, setInputMode] = useState("select"); // 'select' or 'input'
+  const [customName, setCustomName] = useState("");
+  const [selectedColor, setSelectedColor] = useState("");
 
-  // First pass: assign serial numbers to unique colors
-  designs.forEach((design) => {
-    if (!uniqueColors.has(design.color)) {
-      uniqueColors.set(design.color, serialNumber++);
+  const isPredefinedColor = predefinedColors.some(
+    (c) => c.value === selectedColor
+  );
+
+  useEffect(() => {
+    if (value) {
+      const isPredefined = predefinedColors.some(
+        (c) => c.value === value.color
+      );
+      setInputMode(isPredefined ? "select" : "input");
+      setSelectedColor(value.color);
+      if (!isPredefined) {
+        setCustomName(value.name);
+      }
     }
-  });
+  }, [value]);
 
-  // Second pass: update all designs with their serial numbers
-  return designs.map((design) => ({
-    ...design,
-    colorSerial: uniqueColors.get(design.color),
-  }));
+  const handleColorSelect = (color) => {
+    setSelectedColor(color);
+    const predefined = predefinedColors.find((c) => c.value === color);
+    if (predefined) {
+      onChange({
+        color,
+        name: predefined.label,
+        serial: value?.serial || "",
+      });
+      setInputMode("select");
+    } else {
+      setInputMode("input");
+    }
+  };
+
+  const handleNameChange = (e) => {
+    setCustomName(e.target.value);
+    onChange({
+      color: selectedColor,
+      name: e.target.value,
+      serial: value?.serial || "",
+    });
+  };
+
+  const handleSerialChange = (e) => {
+    onChange({
+      color: selectedColor,
+      name:
+        inputMode === "select"
+          ? predefinedColors.find((c) => c.value === selectedColor)?.label || ""
+          : customName,
+      serial: e.target.value,
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="text-xs font-medium text-gray-500 mb-1 flex items-center uppercase tracking-wider">
+          <FaPalette className="mr-2 text-gray-400" size={12} />
+          {label}
+          <span className="text-red-500 ml-1">*</span>
+        </label>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            value={selectedColor}
+            onChange={(e) => handleColorSelect(e.target.value)}
+            className="w-8 h-8 rounded cursor-pointer"
+          />
+
+          <select
+            value={selectedColor}
+            onChange={(e) => handleColorSelect(e.target.value)}
+            className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm appearance-none"
+          >
+            <option value="">Select a color</option>
+            {predefinedColors.map((color, index) => (
+              <option key={index} value={color.value}>
+                {color.label}
+              </option>
+            ))}
+            <option value="custom">Custom Color...</option>
+          </select>
+        </div>
+      </div>
+
+      {inputMode === "input" && selectedColor && (
+        <div>
+          <label className="text-xs font-medium text-gray-500 mb-1 flex items-center uppercase tracking-wider">
+            Custom Color Name
+            <span className="text-red-500 ml-1">*</span>
+          </label>
+          <input
+            type="text"
+            value={customName}
+            onChange={handleNameChange}
+            placeholder="Enter color name"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm"
+          />
+        </div>
+      )}
+
+      <div>
+        <label className="text-xs font-medium text-gray-500 mb-1 flex items-center uppercase tracking-wider">
+          Legend Number
+          <span className="text-red-500 ml-1">*</span>
+        </label>
+        <input
+          type="number"
+          min="1"
+          value={value?.serial || ""}
+          onChange={handleSerialChange}
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm"
+        />
+      </div>
+    </div>
+  );
 };
 
 function DesignSheet() {
+  const [colorLegend, setColorLegend] = useState([]);
+  const getColorName = (hex) => {
+    const legendEntry = colorLegend.find((l) => l.color === hex);
+    if (legendEntry) return legendEntry.name;
+
+    const found = predefinedColors.find((c) => c.value === hex);
+    return found ? found.label : hex;
+  };
+
+  useEffect(() => {
+    console.log("Color Legend Updated:", colorLegend);
+  });
+
   // State management
   const [designName, setDesignName] = useState("");
   const [width, setWidth] = useState("");
@@ -279,9 +388,58 @@ function DesignSheet() {
     { count: "", reed: "", cost: "", dyeing: 300, constant: 1.45 },
   ]);
   const [warpDesigns, setWarpDesigns] = useState([
-    { color: "#000000", threadCount: "", colorSerial: 1 },
+    {
+      color: "#000000",
+      threadCount: "",
+      colorName: getColorName("#000000"),
+    },
   ]);
+  const [totalThreadSum, setTotalThreadSum] = useState(0);
+  const [totalOrderWidth, setTotalORderWidth] = useState("");
+  const [legendFormData, setLegendFormData] = useState({
+    color: "",
+    name: "",
+    serial: "",
+  });
+
   const [warpWeights, setWarpWeights] = useState([]);
+  const [threadSummary, setThreadSummary] = useState([]);
+  const [repeatInfo, setRepeatInfo] = useState(null);
+
+  const getAvailableColors = () => {
+    return colorLegend.map((item) => {
+      const predefined = predefinedColors.find((c) => c.value === item.color);
+      return (
+        predefined || { value: item.color, label: getColorName(item.color) }
+      );
+    });
+  };
+
+  // Calculate each color total thread
+  useEffect(() => {
+    const threadSummary = {};
+    let sum = 0;
+
+    for (const { color, threadCount } of warpDesigns) {
+      const count = parseInt(threadCount);
+      const safeCount = isNaN(count) ? 0 : count;
+      const legendNumber = getLegendNumberForColor(colorLegend, color);
+
+      if (!threadSummary[legendNumber]) {
+        threadSummary[legendNumber] = {
+          legendNumber,
+          color,
+          totalThreadCount: 0,
+        };
+      }
+
+      threadSummary[legendNumber].totalThreadCount += safeCount;
+      sum += safeCount;
+    }
+
+    setThreadSummary(Object.values(threadSummary));
+    setTotalThreadSum(sum);
+  }, [warpDesigns, colorLegend]);
 
   // Fetch yarn details
   useEffect(() => {
@@ -330,40 +488,122 @@ function DesignSheet() {
     ]);
   };
 
-  // Update the addWarpDesign function
   const addWarpDesign = () => {
-    const newDesigns = updateColorSerials([
-      ...warpDesigns,
-      { color: "#000000", threadCount: "" },
-    ]);
-    setWarpDesigns(newDesigns);
-  };
+    const availableColors = getAvailableColors();
+    const defaultColor =
+      availableColors.length > 0 ? availableColors[0].value : "#000000";
 
-  useEffect(() => {
-    console.log("Warp pattern Details", warpDesigns);
-  }, [warpDesigns]);
+    setWarpDesigns([
+      ...warpDesigns,
+      {
+        color: defaultColor,
+        threadCount: "",
+        colorName: getColorName(defaultColor),
+      },
+    ]);
+  };
 
   const removeWarpDesign = (index) => {
     if (warpDesigns.length > 1) {
       const newDesigns = [...warpDesigns];
       newDesigns.splice(index, 1);
-      const updatedDesigns = updateColorSerials(newDesigns);
-      setWarpDesigns(updatedDesigns);
+      setWarpDesigns(newDesigns);
     }
   };
 
-  // Update the handleWarpDesignChange function
   const handleWarpDesignChange = (index, field, value) => {
     const newDesigns = [...warpDesigns];
-    newDesigns[index][field] = value.target ? value.target.value : value;
+    const newValue = value.target ? value.target.value : value;
 
-    // Update all color serials if color changes
     if (field === "color") {
-      const updatedDesigns = updateColorSerials(newDesigns);
-      setWarpDesigns(updatedDesigns);
+      const availableColors = getAvailableColors();
+      const isValidColor = availableColors.some((c) => c.value === newValue);
+      if (!isValidColor && availableColors.length > 0) {
+        newDesigns[index][field] = availableColors[0].value;
+        newDesigns[index].colorName = availableColors[0].label;
+      } else {
+        newDesigns[index][field] = newValue;
+        newDesigns[index].colorName = getColorName(newValue);
+      }
     } else {
-      setWarpDesigns(newDesigns);
+      newDesigns[index][field] = newValue;
     }
+
+    setWarpDesigns(newDesigns);
+  };
+
+  // Replace the handleLegendFormSubmit function
+  const handleLegendFormSubmit = (e) => {
+    e.preventDefault();
+    if (!legendFormData.color) {
+      toast.error("Please select a color", {
+        icon: "🎨",
+      });
+      return;
+    }
+
+    const isPredefined = predefinedColors.some(
+      (c) => c.value === legendFormData.color
+    );
+    const name = isPredefined
+      ? predefinedColors.find((c) => c.value === legendFormData.color)?.label ||
+        ""
+      : legendFormData.name;
+
+    if (!name) {
+      toast.error("Please enter a color name", {
+        icon: "✏️",
+      });
+      return;
+    }
+    if (!legendFormData.serial) {
+      toast.error("Please enter a legend number", {
+        icon: "🔢",
+      });
+      return;
+    }
+
+    const serialNumber = parseInt(legendFormData.serial);
+
+    // Check if serial number already exists
+    if (colorLegend.some((item) => item.serial === serialNumber)) {
+      toast.error("This legend number is already in use", {
+        icon: "❌",
+        description: "Please choose a different number",
+      });
+      return;
+    }
+
+    // Check if color already exists (for both predefined and custom colors)
+    if (colorLegend.some((item) => item.color === legendFormData.color)) {
+      toast.error("This color is already in the legend", {
+        icon: "🎨",
+        description: "Each color can only be used once",
+      });
+      return;
+    }
+
+    // Add new color to legend
+    setColorLegend((prev) => [
+      ...prev,
+      {
+        color: legendFormData.color,
+        name,
+        serial: serialNumber,
+      },
+    ]);
+
+    // Show success message
+    toast.success("Color added to legend successfully", {
+      icon: "✅",
+    });
+
+    // Reset form
+    setLegendFormData({
+      color: "",
+      name: "",
+      serial: "",
+    });
   };
 
   const toNum = (val) => parseFloat(val || 0);
@@ -438,18 +678,72 @@ function DesignSheet() {
     }
   }, [width, warps]);
 
+  function findRepeatInfo(target, threadCounts, colors) {
+    const totalSum = threadCounts.reduce((acc, val) => acc + val, 0);
+    const repeat = Math.floor(target / totalSum);
+    let cumulative = repeat * totalSum;
+
+    for (let i = 0; i < threadCounts.length; i++) {
+      if (cumulative + threadCounts[i] >= target) {
+        const difference = cumulative + threadCounts[i] - target;
+        return {
+          repeat,
+          stoppingIndex: i,
+          color: colors[i],
+          originalValue: threadCounts[i],
+          adjustedValue: threadCounts[i] - difference,
+          difference,
+        };
+      }
+      cumulative += threadCounts[i];
+    }
+
+    return null;
+  }
+
+  useEffect(() => {
+    const threadCounts = warpDesigns.map((d) => parseInt(d.threadCount) || 0);
+    const colors = warpDesigns.map((d) => d.colorName || getColorName(d.color));
+    const target = totalYarn;
+
+    const info = findRepeatInfo(target, threadCounts, colors);
+    setRepeatInfo(info);
+  }, [warpDesigns, totalYarn]);
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-6xl mx-auto">
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: "#363636",
+              color: "#fff",
+            },
+            success: {
+              style: {
+                background: "#22c55e",
+              },
+            },
+            error: {
+              style: {
+                background: "#ef4444",
+              },
+            },
+          }}
+        />
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 md:mb-8">
           <div className="flex items-center mb-4 md:mb-0">
             <div className="p-3 rounded-lg bg-blue-50 text-blue-600 mr-4">
               <FaBoxOpen size={24} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">Design Sheet</h1>
-              <p className="text-sm text-gray-500">
+              <h1 className="text-xl md:text-2xl font-bold text-gray-800">
+                Design Sheet
+              </h1>
+              <p className="text-xs md:text-sm text-gray-500">
                 Create and manage fabric specifications
               </p>
             </div>
@@ -467,15 +761,24 @@ function DesignSheet() {
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Left Column - Specifications */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 md:space-y-6">
             <SectionCard
               title="Fabric Specifications"
               icon={FaToolbox}
               color="text-blue-600"
             >
-              <div className="space-y-6">
+              <div className="space-y-4 md:space-y-6">
+                <TextInput
+                  label="Total Order Width (inches)"
+                  value={totalOrderWidth}
+                  onChange={(e) => setTotalORderWidth(e.target.value)}
+                  type="number"
+                  icon={FaToolbox}
+                  min={0}
+                  step="0.01"
+                />
                 <TextInput
                   label="Width (inches)"
                   value={width}
@@ -553,26 +856,107 @@ function DesignSheet() {
               </div>
             </SectionCard>
 
+            <SectionCard
+              title="Color Legend"
+              icon={FaPalette}
+              color="text-green-600"
+            >
+              <form onSubmit={handleLegendFormSubmit}>
+                <ColorLegendInput
+                  value={legendFormData}
+                  onChange={setLegendFormData}
+                  label="Add to Color Legend"
+                  colorLegend={colorLegend}
+                />
+
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="submit"
+                  className="w-full mt-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all flex items-center justify-center gap-2 font-medium text-sm"
+                >
+                  <FaPlus size={14} />
+                  Add to Legend
+                </motion.button>
+              </form>
+
+              <div className="mt-6">
+                <h4 className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wider">
+                  Current Color Legend
+                </h4>
+                {colorLegend.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {colorLegend.map((l, idx) => (
+                      <motion.div
+                        key={idx}
+                        whileHover={{ scale: 1.02 }}
+                        className="p-3 rounded-lg bg-gray-50 border border-gray-200 flex items-start gap-3 relative"
+                      >
+                        <div className="flex-shrink-0 flex flex-col items-center">
+                          <span
+                            className="w-8 h-8 rounded border border-gray-300"
+                            style={{ background: l.color }}
+                          ></span>
+                          <span className="text-xs mt-1 text-gray-500">
+                            #{l.color.toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex-grow">
+                          <div className="flex justify-between items-start">
+                            <h5 className="font-medium text-gray-800">
+                              {l.name}
+                            </h5>
+                            <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded">
+                              {l.serial}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center mt-2">
+                            <span className="text-xs text-gray-500">
+                              {predefinedColors.some((c) => c.value === l.color)
+                                ? "Predefined"
+                                : "Custom"}
+                            </span>
+                            <button
+                              className="text-red-400 hover:text-red-600 transition-colors p-1"
+                              onClick={() =>
+                                setColorLegend(
+                                  colorLegend.filter((_, i) => i !== idx)
+                                )
+                              }
+                              aria-label="Remove color"
+                            >
+                              <FaTimes size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                    <p className="text-sm text-gray-500">
+                      No colors added to legend yet. Add your first color above.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </SectionCard>
+
             {/* Warp Design Section */}
             <SectionCard
-              title={
-                <div className="flex items-center gap-2">
-                  <FaPalette className="text-green-500" />
-                  <span className="text-gray-800 font-semibold">
-                    Warp Design
-                  </span>
-                </div>
-              }
+              title="Warp Design"
+              icon={FaPalette}
+              color="text-purple-600"
               noPadding
             >
               <div className="space-y-4">
-                {/* Column headings with subtle styling */}
+                {/* Column headings */}
                 <div className="grid grid-cols-12 gap-4 px-4 pt-3">
-                  <div className="col-span-6 md:col-span-8 text-sm font-medium text-gray-500 uppercase tracking-wider">
+                  <div className="col-span-6 md:col-span-8 text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Color
                   </div>
-                  <div className="col-span-6 md:col-span-4 text-sm font-medium text-gray-500 uppercase tracking-wider">
-                    No of Threads
+                  <div className="col-span-6 md:col-span-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Thread Count
                   </div>
                 </div>
 
@@ -581,23 +965,24 @@ function DesignSheet() {
                   {warpDesigns.map((design, index) => (
                     <div
                       key={`design-${index}`}
-                      className="grid grid-cols-10 gap-4 px-4 py-3 hover:bg-gray-50 transition-colors relative group"
+                      className="grid grid-cols-12 gap-4 px-4 py-3 hover:bg-gray-50 transition-colors relative group"
                     >
-                      <div className="absolute -left-3 top-1/2 transform -translate-y-1/2 bg-green-100 text-green-800 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border border-green-200">
-                        {getColorSerialNumber(warpDesigns, index)}
+                      <div className="absolute -left-3 top-1/2 transform -translate-y-1/2 bg-purple-100 text-purple-800 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border border-purple-200">
+                        {getLegendNumberForColor(colorLegend, design.color) ||
+                          "?"}
                       </div>
-                      <div className="col-span-6 md:col-span-5">
+                      <div className="col-span-7 md:col-span-8">
                         <ColorInput
                           value={design.color}
                           onChange={(e) =>
                             handleWarpDesignChange(index, "color", e)
                           }
+                          availableColors={getAvailableColors()}
                           compact
                           hideLabel
                         />
                       </div>
-
-                      <div className="col-span-6 md:col-span-5">
+                      <div className="col-span-5 md:col-span-4">
                         <TextInput
                           value={design.threadCount}
                           onChange={(e) =>
@@ -608,15 +993,12 @@ function DesignSheet() {
                             )
                           }
                           type="number"
-                          icon={FaSlidersH}
                           min={0}
                           step="1"
                           compact
                           hideLabel
                         />
                       </div>
-
-                      {/* Delete button - only appears on hover */}
                       {warpDesigns.length > 1 && (
                         <button
                           onClick={() => removeWarpDesign(index)}
@@ -630,28 +1012,37 @@ function DesignSheet() {
                   ))}
                 </div>
 
-                {/* Add button with better styling */}
-                <div className="px-4 pb-3">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={addWarpDesign}
-                    className="w-full py-2 bg-green-50 text-green-600 rounded-lg border border-green-200 hover:bg-green-100 transition-all flex items-center justify-center gap-2 font-medium text-sm"
-                  >
-                    <FaPlus size={14} />
-                    Add Design
-                  </motion.button>
-                </div>
+                {/* Add button - only show if there are colors in legend */}
+                {colorLegend.length > 0 && (
+                  <div className="px-4 pb-3">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={addWarpDesign}
+                      className="w-full py-2 bg-purple-50 text-purple-600 rounded-lg border border-purple-200 hover:bg-purple-100 transition-all flex items-center justify-center gap-2 font-medium text-sm"
+                    >
+                      <FaPlus size={14} />
+                      Add Design
+                    </motion.button>
+                  </div>
+                )}
+
+                {/* Message if no colors in legend */}
+                {colorLegend.length === 0 && (
+                  <div className="px-4 pb-3 text-center text-sm text-gray-500">
+                    Please add colors to the Color Legend first
+                  </div>
+                )}
               </div>
             </SectionCard>
           </div>
 
           {/* Right Column - Results & Summary */}
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             <SectionCard
               title="Quick Summary"
               icon={FaCalculator}
-              color="text-purple-600"
+              color="text-indigo-600"
             >
               <ResultCard
                 title="Fabric Width"
@@ -689,7 +1080,7 @@ function DesignSheet() {
                     key={`Warp-${index}-Thread`}
                     title={`Warp ${index + 1} Thread`}
                     value={threadCount}
-                    icon={FaWeight}
+                    icon={FaSlidersH}
                     color="bg-yellow-50"
                   />
                 ))}
@@ -702,6 +1093,63 @@ function DesignSheet() {
                   color="bg-green-50"
                 />
               </div>
+            </SectionCard>
+
+            <SectionCard
+              title="Threads Per Color"
+              icon={FaCalculator}
+              color="text-indigo-600"
+            >
+              <div className="grid grid-cols-2 gap-4">
+                {threadSummary.map(
+                  ({ color, legendNumber, totalThreadCount }) => (
+                    <div
+                      key={legendNumber}
+                      className="flex flex-col items-center justify-center bg-gray-50 rounded-xl p-4 border border-gray-100"
+                    >
+                      <span className="text-sm font-medium text-gray-600">
+                        {getColorName(color)}
+                      </span>
+                      <span className="text-xs text-gray-400 mb-1">
+                        (Color {legendNumber})
+                      </span>
+                      <span className="text-lg font-bold text-gray-800">
+                        {totalThreadCount} Threads
+                      </span>
+                    </div>
+                  )
+                )}
+              </div>
+              <div className="mt-4">
+                <ResultCard
+                  title="Total Threads (All Colors)"
+                  value={totalThreadSum}
+                  icon={FaSlidersH}
+                  color="bg-green-50"
+                />
+              </div>
+              {repeatInfo && (
+                <div className="mt-4">
+                  <ResultCard
+                    title="Repeat Info"
+                    value={
+                      <>
+                        Repeat: <b>{repeatInfo.repeat}</b>
+                        <br />
+                        Stop at Color: <b>{repeatInfo.color}</b> (Index{" "}
+                        {repeatInfo.stoppingIndex + 1})
+                        <br />
+                        Original: <b>{repeatInfo.originalValue}</b>, Adjusted:{" "}
+                        <b>{repeatInfo.adjustedValue}</b>
+                        <br />
+                        Difference: <b>{repeatInfo.difference}</b>
+                      </>
+                    }
+                    icon={FaCalculator}
+                    color="bg-yellow-50"
+                  />
+                </div>
+              )}
             </SectionCard>
 
             <SectionCard
@@ -724,6 +1172,72 @@ function DesignSheet() {
                 />
               </div>
             </SectionCard>
+          </div>
+        </div>
+
+        {/* Color Pattern Bar */}
+        {/* Color Pattern Bar */}
+        <div className="w-full flex justify-center mt-6 md:mt-8">
+          <div className="flex flex-row items-end h-54 w-full max-w-4xl rounded-lg border border-gray-200 overflow-hidden bg-white shadow-sm p-2">
+            {(() => {
+              let strips = [];
+
+              // First add all regular strips
+              warpDesigns.forEach((design, idx) => {
+                const count = parseInt(design.threadCount) || 0;
+                const legendNumber = getLegendNumberForColor(
+                  colorLegend,
+                  design.color
+                );
+
+                // Add all strips with full opacity
+                for (let i = 0; i < count; i++) {
+                  strips.push({
+                    color: design.color,
+                    title: `${
+                      legendNumber
+                        ? `Color ${legendNumber}`
+                        : getColorName(design.color)
+                    }`,
+                  });
+                }
+              });
+
+              // If there's a repeatInfo, add the adjusted strips at the end
+              if (repeatInfo && repeatInfo.adjustedValue > 0) {
+                const adjustedColor =
+                  warpDesigns[repeatInfo.stoppingIndex]?.color ||
+                  repeatInfo.color;
+                const legendNumber = getLegendNumberForColor(
+                  colorLegend,
+                  adjustedColor
+                );
+
+                for (let i = 0; i < repeatInfo.adjustedValue; i++) {
+                  strips.push({
+                    color: adjustedColor,
+                    title: `${
+                      legendNumber
+                        ? `Color ${legendNumber}`
+                        : getColorName(adjustedColor)
+                    }`,
+                  });
+                }
+              }
+
+              return strips.map((strip, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    width: "2px",
+                    height: "100%",
+                    background: strip.color,
+                    marginRight: "1px",
+                  }}
+                  title={strip.title}
+                />
+              ));
+            })()}
           </div>
         </div>
       </div>
