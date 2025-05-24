@@ -87,6 +87,9 @@ const DropdownField = ({
 };
 
 const ColorInput = ({ value, onChange, label }) => {
+  const [isCustomColor, setIsCustomColor] = useState(false);
+  const [colorName, setColorName] = useState("");
+
   const predefinedColors = [
     { value: "#000000", label: "Black" },
     { value: "#FFFFFF", label: "White" },
@@ -106,14 +109,34 @@ const ColorInput = ({ value, onChange, label }) => {
     { value: "#4B0082", label: "Indigo" },
   ];
 
+  useEffect(() => {
+    // Check if selected color is predefined
+    const matchedColor = predefinedColors.find((c) => c.value === value);
+    if (matchedColor) {
+      setIsCustomColor(false);
+      setColorName(matchedColor.label);
+    } else if (value) {
+      setIsCustomColor(true);
+      setColorName("");
+    }
+  }, [value]);
+
   const handleColorChange = (e) => {
     onChange(e);
+    if (e.target.value === "custom") {
+      setIsCustomColor(true);
+    }
   };
 
-  const handleTextChange = (e) => {
-    // Validate hex color format
-    if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
-      onChange(e);
+  const handleNameChange = (e) => {
+    setColorName(e.target.value);
+    // Find color value for entered name
+    const matchedColor = predefinedColors.find(
+      (c) => c.label.toLowerCase() === e.target.value.toLowerCase()
+    );
+    if (matchedColor) {
+      onChange({ target: { value: matchedColor.value } });
+      setIsCustomColor(false);
     }
   };
 
@@ -134,22 +157,30 @@ const ColorInput = ({ value, onChange, label }) => {
           className="w-8 h-8 rounded cursor-pointer"
         />
 
-        {/* Predefined color dropdown */}
-        <select
-          value={value}
-          onChange={handleColorChange}
-          className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm appearance-none"
-        >
-          <option value="">Select a color</option>
-          {predefinedColors.map((color, index) => (
-            <option key={index} value={color.value}>
-              {color.label}
-            </option>
-          ))}
-        </select>
-
-        {/* Add any third element here if needed */}
-        {/* <div className="...">Third element</div> */}
+        {/* Dynamic input/select field */}
+        {isCustomColor ? (
+          <input
+            type="text"
+            value={colorName}
+            onChange={handleNameChange}
+            placeholder="Enter color name"
+            className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm"
+          />
+        ) : (
+          <select
+            value={value}
+            onChange={handleColorChange}
+            className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm appearance-none"
+          >
+            <option value="">Select a color</option>
+            {predefinedColors.map((color, index) => (
+              <option key={index} value={color.value}>
+                {color.label}
+              </option>
+            ))}
+            <option value="custom">Custom Color...</option>
+          </select>
+        )}
       </div>
     </div>
   );
@@ -203,6 +234,38 @@ const SectionCard = ({
   );
 };
 
+const getColorSerialNumber = (designs, currentIndex) => {
+  const currentColor = designs[currentIndex].color;
+  const uniqueColors = new Map();
+  let serialNumber = 1;
+
+  designs.forEach((design) => {
+    if (!uniqueColors.has(design.color)) {
+      uniqueColors.set(design.color, serialNumber++);
+    }
+  });
+
+  return uniqueColors.get(currentColor);
+};
+
+const updateColorSerials = (designs) => {
+  const uniqueColors = new Map();
+  let serialNumber = 1;
+
+  // First pass: assign serial numbers to unique colors
+  designs.forEach((design) => {
+    if (!uniqueColors.has(design.color)) {
+      uniqueColors.set(design.color, serialNumber++);
+    }
+  });
+
+  // Second pass: update all designs with their serial numbers
+  return designs.map((design) => ({
+    ...design,
+    colorSerial: uniqueColors.get(design.color),
+  }));
+};
+
 function DesignSheet() {
   // State management
   const [designName, setDesignName] = useState("");
@@ -216,7 +279,7 @@ function DesignSheet() {
     { count: "", reed: "", cost: "", dyeing: 300, constant: 1.45 },
   ]);
   const [warpDesigns, setWarpDesigns] = useState([
-    { color: "#000000", threadCount: "" },
+    { color: "#000000", threadCount: "", colorSerial: 1 },
   ]);
   const [warpWeights, setWarpWeights] = useState([]);
 
@@ -267,8 +330,13 @@ function DesignSheet() {
     ]);
   };
 
+  // Update the addWarpDesign function
   const addWarpDesign = () => {
-    setWarpDesigns([...warpDesigns, { color: "#000000", threadCount: "" }]);
+    const newDesigns = updateColorSerials([
+      ...warpDesigns,
+      { color: "#000000", threadCount: "" },
+    ]);
+    setWarpDesigns(newDesigns);
   };
 
   useEffect(() => {
@@ -279,14 +347,23 @@ function DesignSheet() {
     if (warpDesigns.length > 1) {
       const newDesigns = [...warpDesigns];
       newDesigns.splice(index, 1);
-      setWarpDesigns(newDesigns);
+      const updatedDesigns = updateColorSerials(newDesigns);
+      setWarpDesigns(updatedDesigns);
     }
   };
 
+  // Update the handleWarpDesignChange function
   const handleWarpDesignChange = (index, field, value) => {
     const newDesigns = [...warpDesigns];
     newDesigns[index][field] = value.target ? value.target.value : value;
-    setWarpDesigns(newDesigns);
+
+    // Update all color serials if color changes
+    if (field === "color") {
+      const updatedDesigns = updateColorSerials(newDesigns);
+      setWarpDesigns(updatedDesigns);
+    } else {
+      setWarpDesigns(newDesigns);
+    }
   };
 
   const toNum = (val) => parseFloat(val || 0);
@@ -506,12 +583,9 @@ function DesignSheet() {
                       key={`design-${index}`}
                       className="grid grid-cols-10 gap-4 px-4 py-3 hover:bg-gray-50 transition-colors relative group"
                     >
-                      {/* Index badge */}
                       <div className="absolute -left-3 top-1/2 transform -translate-y-1/2 bg-green-100 text-green-800 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border border-green-200">
-                        {index + 1}
+                        {getColorSerialNumber(warpDesigns, index)}
                       </div>
-
-                      {/* Color input */}
                       <div className="col-span-6 md:col-span-5">
                         <ColorInput
                           value={design.color}
@@ -523,7 +597,6 @@ function DesignSheet() {
                         />
                       </div>
 
-                      {/* Thread count input */}
                       <div className="col-span-6 md:col-span-5">
                         <TextInput
                           value={design.threadCount}
