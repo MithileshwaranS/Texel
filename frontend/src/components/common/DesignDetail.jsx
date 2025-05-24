@@ -739,7 +739,7 @@ function DesignDetail() {
           >
             <Typography variant="caption" color="textSecondary">
               © {new Date().getFullYear()} Texel. All rights reserved. This is a
-              proprietary application owned by Mithileshwaran and Team
+              proprietary application owned by Mithileshwaran and Sanjesh
             </Typography>
           </Box>
         </CostingSheetContainer>
