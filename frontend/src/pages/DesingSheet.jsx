@@ -759,7 +759,6 @@ function DesignSheet() {
             />
           </div>
         </div>
-
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Left Column - Specifications */}
@@ -1174,68 +1173,211 @@ function DesignSheet() {
             </SectionCard>
           </div>
         </div>
+        {/* Color Pattern Bar */}
 
-        {/* Color Pattern Bar */}
-        {/* Color Pattern Bar */}
         <div className="w-full flex justify-center mt-6 md:mt-8">
-          <div className="flex flex-row items-end h-54 w-full max-w-4xl rounded-lg border border-gray-200 overflow-hidden bg-white shadow-sm p-2">
+          <div
+            className="flex flex-row items-end w-full max-w-4xl rounded-lg border border-gray-200 overflow-hidden bg-white shadow-sm p-2"
+            style={{ height: "200px" }}
+          >
             {(() => {
               let strips = [];
+              let totalThreads = 0;
 
-              // First add all regular strips
-              warpDesigns.forEach((design, idx) => {
-                const count = parseInt(design.threadCount) || 0;
-                const legendNumber = getLegendNumberForColor(
-                  colorLegend,
-                  design.color
-                );
-
-                // Add all strips with full opacity
-                for (let i = 0; i < count; i++) {
-                  strips.push({
-                    color: design.color,
-                    title: `${
-                      legendNumber
-                        ? `Color ${legendNumber}`
-                        : getColorName(design.color)
-                    }`,
+              // Build the full pattern as per repeatInfo
+              if (repeatInfo) {
+                // Full repeats
+                for (let r = 0; r < repeatInfo.repeat; r++) {
+                  warpDesigns.forEach((design) => {
+                    const count = parseInt(design.threadCount) || 0;
+                    const legendNumber = getLegendNumberForColor(
+                      colorLegend,
+                      design.color
+                    );
+                    for (let i = 0; i < count; i++) {
+                      strips.push({
+                        color: design.color,
+                        title: legendNumber
+                          ? `Color ${legendNumber}`
+                          : getColorName(design.color),
+                      });
+                    }
                   });
                 }
-              });
-
-              // If there's a repeatInfo, add the adjusted strips at the end
-              if (repeatInfo && repeatInfo.adjustedValue > 0) {
-                const adjustedColor =
-                  warpDesigns[repeatInfo.stoppingIndex]?.color ||
-                  repeatInfo.color;
-                const legendNumber = getLegendNumberForColor(
-                  colorLegend,
-                  adjustedColor
-                );
-
-                for (let i = 0; i < repeatInfo.adjustedValue; i++) {
-                  strips.push({
-                    color: adjustedColor,
-                    title: `${
-                      legendNumber
+                // Partial up to stoppingIndex
+                for (let i = 0; i < repeatInfo.stoppingIndex; i++) {
+                  const design = warpDesigns[i];
+                  const count = parseInt(design.threadCount) || 0;
+                  const legendNumber = getLegendNumberForColor(
+                    colorLegend,
+                    design.color
+                  );
+                  for (let j = 0; j < count; j++) {
+                    strips.push({
+                      color: design.color,
+                      title: legendNumber
                         ? `Color ${legendNumber}`
-                        : getColorName(adjustedColor)
-                    }`,
-                  });
+                        : getColorName(design.color),
+                    });
+                  }
                 }
+                // Adjusted value for the stopping color
+                if (repeatInfo.adjustedValue > 0) {
+                  const adjustedColor =
+                    warpDesigns[repeatInfo.stoppingIndex]?.color;
+                  const legendNumber = getLegendNumberForColor(
+                    colorLegend,
+                    adjustedColor
+                  );
+                  for (let i = 0; i < repeatInfo.adjustedValue; i++) {
+                    strips.push({
+                      color: adjustedColor,
+                      title: legendNumber
+                        ? `Color ${legendNumber}`
+                        : getColorName(adjustedColor),
+                    });
+                  }
+                }
+              } else {
+                // No repeatInfo: just show all strips as usual
+                warpDesigns.forEach((design) => {
+                  const count = parseInt(design.threadCount) || 0;
+                  const legendNumber = getLegendNumberForColor(
+                    colorLegend,
+                    design.color
+                  );
+                  for (let i = 0; i < count; i++) {
+                    strips.push({
+                      color: design.color,
+                      title: legendNumber
+                        ? `Color ${legendNumber}`
+                        : getColorName(design.color),
+                    });
+                  }
+                });
               }
 
-              return strips.map((strip, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    width: "2px",
-                    height: "100%",
-                    background: strip.color,
-                    marginRight: "1px",
-                  }}
-                  title={strip.title}
-                />
+              totalThreads = strips.length;
+
+              // Calculate the length of a single pattern repeat
+              const singlePatternLength = warpDesigns.reduce(
+                (sum, d) => sum + (parseInt(d.threadCount) || 0),
+                0
+              );
+
+              // Limit the number of boxes for display
+              const MAX_BOXES = 400;
+              let displayStrips = [];
+              let boxSize = 2; // px
+              let markerIndex = null;
+
+              if (totalThreads > MAX_BOXES) {
+                // Group threads into boxes
+                const groupSize = Math.ceil(totalThreads / MAX_BOXES);
+                let threadCounter = 0;
+                let markerPlaced = false;
+                for (let i = 0; i < totalThreads; i += groupSize) {
+                  // If marker falls within this group, split the group at the marker
+                  if (
+                    !markerPlaced &&
+                    threadCounter < singlePatternLength &&
+                    threadCounter + groupSize > singlePatternLength
+                  ) {
+                    // First part before marker
+                    const beforeMarker = strips.slice(
+                      i,
+                      i + (singlePatternLength - threadCounter)
+                    );
+                    if (beforeMarker.length > 0) {
+                      const colorCount = {};
+                      beforeMarker.forEach((s) => {
+                        colorCount[s.color] = (colorCount[s.color] || 0) + 1;
+                      });
+                      const mainColor = Object.entries(colorCount).sort(
+                        (a, b) => b[1] - a[1]
+                      )[0][0];
+                      displayStrips.push({
+                        color: mainColor,
+                        title:
+                          beforeMarker[0].title +
+                          (beforeMarker.length > 1
+                            ? ` (+${beforeMarker.length - 1})`
+                            : ""),
+                      });
+                    }
+                    // Place marker after the first repeat
+                    markerIndex = displayStrips.length;
+                    markerPlaced = true;
+                    // Second part after marker
+                    const afterMarker = strips.slice(
+                      i + (singlePatternLength - threadCounter),
+                      i + groupSize
+                    );
+                    if (afterMarker.length > 0) {
+                      const colorCount = {};
+                      afterMarker.forEach((s) => {
+                        colorCount[s.color] = (colorCount[s.color] || 0) + 1;
+                      });
+                      const mainColor = Object.entries(colorCount).sort(
+                        (a, b) => b[1] - a[1]
+                      )[0][0];
+                      displayStrips.push({
+                        color: mainColor,
+                        title:
+                          afterMarker[0].title +
+                          (afterMarker.length > 1
+                            ? ` (+${afterMarker.length - 1})`
+                            : ""),
+                      });
+                    }
+                  } else {
+                    // Normal grouping
+                    const group = strips.slice(i, i + groupSize);
+                    const colorCount = {};
+                    group.forEach((s) => {
+                      colorCount[s.color] = (colorCount[s.color] || 0) + 1;
+                    });
+                    const mainColor = Object.entries(colorCount).sort(
+                      (a, b) => b[1] - a[1]
+                    )[0][0];
+                    displayStrips.push({
+                      color: mainColor,
+                      title:
+                        group[0].title +
+                        (group.length > 1 ? ` (+${group.length - 1})` : ""),
+                    });
+                    // Place marker if the marker falls exactly after this group
+                    if (
+                      !markerPlaced &&
+                      threadCounter + group.length === singlePatternLength
+                    ) {
+                      markerIndex = displayStrips.length;
+                      markerPlaced = true;
+                    }
+                  }
+                  threadCounter += groupSize;
+                }
+                boxSize = Math.max(2, Math.floor(800 / displayStrips.length));
+              } else {
+                displayStrips = strips;
+                boxSize = Math.max(2, Math.floor(800 / totalThreads));
+                markerIndex = singlePatternLength;
+              }
+
+              return displayStrips.map((strip, idx) => (
+                <React.Fragment key={idx}>
+                  <div
+                    style={{
+                      width: `${boxSize}px`,
+                      height: "100%",
+                      background: strip.color,
+                      marginRight: "0px",
+                      minWidth: "2px",
+                      display: "inline-block",
+                    }}
+                    title={strip.title}
+                  />
+                </React.Fragment>
               ));
             })()}
           </div>

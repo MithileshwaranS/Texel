@@ -395,7 +395,6 @@ app.delete("/api/deleteDesign", async (req, res) => {
   }
 });
 
-
 app.post("/register", async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -470,30 +469,124 @@ app.get("/api/excel", async (req, res) => {
     const worksheet = workbook.addWorksheet("Design Report");
 
     // Update the worksheet columns configuration
+    // Update the worksheet columns configuration with number formats
     worksheet.columns = [
-      { header: "Design ID", key: "design_id", width: 10 },
+      {
+        header: "Design ID",
+        key: "design_id",
+        width: 10,
+        style: { numFmt: "0" },
+      },
       { header: "Design Name", key: "designname", width: 15 },
-      { header: "Width", key: "width", width: 10 },
-      { header: "Warp Count", key: "warpcount", width: 12 },
-      { header: "Weft Count", key: "weftcount", width: 12 },
-      { header: "Reed", key: "reed", width: 10 },
-      { header: "Pick", key: "pick", width: 10 },
-      { header: "initWarpCost", key: "initwarpcost", width: 12 },
-      { header: "initWeftCost", key: "initweftcost", width: 12 },
-      { header: "Warp Dyeing", key: "warpdyeing", width: 12 },
-      { header: "Weft Dyeing", key: "weftdyeing", width: 12 },
-      { header: "Warp Wt", key: "warpweight", width: 10 },
-      { header: "Weft Wt", key: "weftweight", width: 10 },
-      { header: "Individual Warp Cost", key: "individualwarpcost", width: 18 },
-      { header: "Individual Weft Cost", key: "individualweftcost", width: 18 },
-      { header: "Weaving", key: "weavingcost", width: 10 },
-      { header: "Mending", key: "mendingcost", width: 10 },
-      { header: "Washing", key: "washingcost", width: 10 },
-      { header: "Transport", key: "transportcost", width: 10 },
-      { header: "Profit", key: "individualprofit", width: 10 },
-      { header: "Subtotal", key: "individualtotalcost", width: 10 },
-      { header: "GST", key: "individualgst", width: 10 },
-      { header: "TOTAL", key: "individualfinalcost", width: 10 },
+      { header: "Width", key: "width", width: 10, style: { numFmt: "0.00" } },
+      {
+        header: "Warp Count",
+        key: "warpcount",
+        width: 12,
+      },
+      {
+        header: "Weft Count",
+        key: "weftcount",
+        width: 12,
+      },
+      { header: "Reed", key: "reed", width: 10, style: { numFmt: "0.00" } },
+      { header: "Pick", key: "pick", width: 10, style: { numFmt: "0.00" } },
+      {
+        header: "initWarpCost",
+        key: "initwarpcost",
+        width: 12,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "initWeftCost",
+        key: "initweftcost",
+        width: 12,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "Warp Dyeing",
+        key: "warpdyeing",
+        width: 12,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "Weft Dyeing",
+        key: "weftdyeing",
+        width: 12,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "Warp Wt",
+        key: "warpweight",
+        width: 10,
+        style: { numFmt: "0.000" },
+      },
+      {
+        header: "Weft Wt",
+        key: "weftweight",
+        width: 10,
+        style: { numFmt: "0.000" },
+      },
+      {
+        header: "Individual Warp Cost",
+        key: "individualwarpcost",
+        width: 18,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "Individual Weft Cost",
+        key: "individualweftcost",
+        width: 18,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "Weaving",
+        key: "weavingcost",
+        width: 10,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "Mending",
+        key: "mendingcost",
+        width: 10,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "Washing",
+        key: "washingcost",
+        width: 10,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "Transport",
+        key: "transportcost",
+        width: 10,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "Profit",
+        key: "individualprofit",
+        width: 10,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "Subtotal",
+        key: "individualtotalcost",
+        width: 10,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "GST",
+        key: "individualgst",
+        width: 10,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "TOTAL",
+        key: "individualfinalcost",
+        width: 10,
+        style: { numFmt: "0.00" },
+      },
     ];
 
     worksheet.getRow(1).eachCell((cell) => {
@@ -561,29 +654,29 @@ app.get("/api/excel", async (req, res) => {
         const weft = relatedWefts[i];
 
         worksheet.addRow({
-          design_id: i === 0 ? design.design_id : "",
+          design_id: i === 0 ? Number(design.design_id) : "",
           designname: i === 0 ? design.designname : "",
-          width: i === 0 ? design.width : "",
+          width: i === 0 ? Number(design.width) : "",
           warpcount: warp ? warp.warpcount : "",
           weftcount: weft ? weft.weftcount : "",
-          reed: warp ? warp.reed : "",
-          pick: weft ? weft.pick : "",
-          initwarpcost: warp ? warp.initwarpcost : "",
-          initweftcost: weft ? weft.initweftcost : "",
-          warpdyeing: warp ? warp.warpdyeing : "",
-          weftdyeing: weft ? weft.weftdyeing : "",
-          warpweight: warp ? warp.warpweight : "",
-          weftweight: weft ? weft.weftweight : "",
-          individualwarpcost: warp ? warp.individualwarpcost : "",
-          individualweftcost: weft ? weft.individualweftcost : "",
-          weavingcost: i === 0 ? design.weavingcost : "",
-          mendingcost: i === 0 ? design.mendingcost : "",
-          washingcost: i === 0 ? design.washingcost : "",
-          transportcost: i === 0 ? design.transportcost : "",
-          individualprofit: warp ? warp.individualprofit : "",
-          individualtotalcost: warp ? warp.individualtotalcost : "",
-          individualgst: warp ? warp.individualgst : "",
-          individualfinalcost: warp ? warp.individualfinalcost : "",
+          reed: warp ? Number(warp.reed) : "",
+          pick: weft ? Number(weft.pick) : "",
+          initwarpcost: warp ? Number(warp.initwarpcost) : "",
+          initweftcost: weft ? Number(weft.initweftcost) : "",
+          warpdyeing: warp ? Number(warp.warpdyeing) : "",
+          weftdyeing: weft ? Number(weft.weftdyeing) : "",
+          warpweight: warp ? Number(warp.warpweight) : "",
+          weftweight: weft ? Number(weft.weftweight) : "",
+          individualwarpcost: warp ? Number(warp.individualwarpcost) : "",
+          individualweftcost: weft ? Number(weft.individualweftcost) : "",
+          weavingcost: i === 0 ? Number(design.weavingcost) : "",
+          mendingcost: i === 0 ? Number(design.mendingcost) : "",
+          washingcost: i === 0 ? Number(design.washingcost) : "",
+          transportcost: i === 0 ? Number(design.transportcost) : "",
+          individualprofit: warp ? Number(warp.individualprofit) : "",
+          individualtotalcost: warp ? Number(warp.individualtotalcost) : "",
+          individualgst: warp ? Number(warp.individualgst) : "",
+          individualfinalcost: warp ? Number(warp.individualfinalcost) : "",
         });
       }
 
@@ -621,16 +714,16 @@ app.get("/api/excel", async (req, res) => {
         weftdyeing: "",
         warpweight: "Total",
         weftweight: "",
-        individualwarpcost: totalWarpCost,
-        individualweftcost: totalWeftCost,
+        individualwarpcost: Number(totalWarpCost),
+        individualweftcost: Number(totalWeftCost),
         weavingcost: "",
         mendingcost: "",
         washingcost: "",
         transportcost: "",
-        individualprofit: "",
-        individualtotalcost: "",
-        individualgst: "",
-        individualfinalcost: totalIndividualFinal.toFixed(2),
+        individualprofit: Number(totalIndividualProfit),
+        individualtotalcost: Number(totalIndividualCost),
+        individualgst: Number(totalIndividualGst),
+        individualfinalcost: Number(totalIndividualFinal),
       });
 
       worksheet.addRow({});
