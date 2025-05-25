@@ -180,6 +180,10 @@ function CostingPage() {
   const [twisting, setTwisting] = useState(0);
   const [individualWarpCosts, setIndividualWarpCosts] = useState([]);
   const [individualWeftCosts, setIndividualWeftCosts] = useState([]);
+  const [individualProfits, setIndividualProfits] = useState([]);
+  const [individualTotalCosts, setIndividualTotalCosts] = useState([]);
+  const [individualGsts, setIndividualGsts] = useState([]);
+  const [individualFinalTotals, setIndividualFinalTotals] = useState([]);
 
   //Image States
   const [designImagePublicId, setDesignImagePublicId] = useState("");
@@ -610,6 +614,10 @@ function CostingPage() {
         designStatus: "completed",
         individualWarpCosts,
         individualWeftCosts,
+        individualProfits,
+        individualFinalTotals,
+        individualTotalCosts,
+        individualGsts,
       };
       console.log(body);
 
@@ -661,6 +669,10 @@ function CostingPage() {
         setTwisting(0);
         setDesignDate(kolkataDate);
         setDesignImage("");
+        setIndividualProfits([]);
+        setIndividualTotalCosts([]);
+        setIndividualGsts([]);
+        setIndividualFinalTotals([]);
 
         const body = { designid: stateValues.designid };
         const response = await fetch(
@@ -862,6 +874,23 @@ function CostingPage() {
           toNum(mending) +
           toNum(twisting)) *
         profitPercent;
+      for (let i = 0; i < individualWarpCosts.length; i++) {
+        const individualProfit =
+          (toNum(individualWarpCosts[i]) +
+            toNum(individualWeftCosts[i]) +
+            (i === 0
+              ? toNum(weaving) +
+                toNum(washing) +
+                toNum(mending) +
+                toNum(twisting)
+              : 0)) *
+          profitPercent;
+        setIndividualProfits((prev) => {
+          const newProfits = [...prev];
+          newProfits[i] = individualProfit.toFixed(3);
+          return newProfits;
+        });
+      }
       setProfit(profitVal.toFixed(3));
       setSaveProfit(profitVal.toFixed(3));
     }
@@ -887,6 +916,44 @@ function CostingPage() {
         toNum(mending) +
         toNum(twisting) +
         toNum(transport);
+
+      // Calculate individual totals
+      for (let i = 0; i < individualWarpCosts.length; i++) {
+        if (individualWarpCosts[i] != null && individualWeftCosts[i] != null) {
+          const individualTotal = toNum(
+            toNum(individualWarpCosts[i]) +
+              toNum(individualWeftCosts[i]) +
+              (i === 0
+                ? toNum(weaving) +
+                  toNum(washing) +
+                  toNum(mending) +
+                  toNum(transport)
+                : 0) +
+              toNum(individualProfits[i] || 0) // Handle potential undefined profit
+          );
+
+          setIndividualTotalCosts((prev) => {
+            const newCosts = [...prev];
+            newCosts[i] = individualTotal.toFixed(3);
+            return newCosts;
+          });
+
+          // Calculate individual GST
+          setIndividualGsts((prev) => {
+            const newGsts = [...prev];
+            newGsts[i] = (individualTotal * 0.05).toFixed(3);
+            return newGsts;
+          });
+
+          setIndividualFinalTotals((prev) => {
+            const newFinalTotals = [...prev];
+            newFinalTotals[i] = (
+              toNum(individualTotal) + toNum(individualGsts[i])
+            ).toFixed(3);
+            return newFinalTotals;
+          });
+        }
+      }
       setTotalCost(total.toFixed(3));
     }
   }, [
@@ -898,6 +965,9 @@ function CostingPage() {
     mending,
     twisting,
     transport,
+    individualWarpCosts,
+    individualWeftCosts,
+    individualProfits,
   ]);
 
   useEffect(() => {
@@ -968,6 +1038,17 @@ function CostingPage() {
   }
 
   // console.log("warpWeights", warpWeights);
+
+  console.log("Individual Warp Costs:", individualWarpCosts);
+  console.log("Individual Weft Costs:", individualWeftCosts);
+  console.log("Individual Profits:", individualProfits);
+
+  console.log("Individual Totals");
+  console.log(individualTotalCosts);
+  console.log("Individual GSTs");
+  console.log(individualGsts);
+  console.log("Individual Final Totals");
+  console.log(individualFinalTotals);
 
   return (
     <div className="min-h-screen bg-gray-50">
