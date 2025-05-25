@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Toaster, toast } from "react-hot-toast";
+
 import {
   FaWeight,
   FaMoneyBillWave,
@@ -296,39 +297,59 @@ const ColorLegendInput = ({ value, onChange, label, colorLegend }) => {
     });
   };
 
+  // Update the ColorLegendInput component
   return (
     <div className="space-y-4">
-      <div>
-        <label className="text-xs font-medium text-gray-500 mb-1 flex items-center uppercase tracking-wider">
-          <FaPalette className="mr-2 text-gray-400" size={12} />
-          {label}
-          <span className="text-red-500 ml-1">*</span>
-        </label>
+      <div className="grid grid-cols-12 gap-4">
+        {/* Color Selection - Takes 8 columns */}
+        <div className="col-span-8">
+          <label className="text-xs font-medium text-gray-500 mb-1 flex items-center uppercase tracking-wider">
+            <FaPalette className="mr-2 text-gray-400" size={12} />
+            {label}
+            <span className="text-red-500 ml-1">*</span>
+          </label>
 
-        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={selectedColor}
+              onChange={(e) => handleColorSelect(e.target.value)}
+              className="w-8 h-8 rounded cursor-pointer"
+            />
+
+            <select
+              value={selectedColor}
+              onChange={(e) => handleColorSelect(e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm appearance-none"
+            >
+              <option value="">Select a color</option>
+              {predefinedColors.map((color, index) => (
+                <option key={index} value={color.value}>
+                  {color.label}
+                </option>
+              ))}
+              <option value="custom">Custom Color...</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Legend Number - Takes 4 columns */}
+        <div className="col-span-4">
+          <label className="text-xs font-medium text-gray-500 mb-1 flex items-center uppercase tracking-wider">
+            Legend No.
+            <span className="text-red-500 ml-1">*</span>
+          </label>
           <input
-            type="color"
-            value={selectedColor}
-            onChange={(e) => handleColorSelect(e.target.value)}
-            className="w-8 h-8 rounded cursor-pointer"
+            type="number"
+            min="1"
+            value={value?.serial || ""}
+            onChange={handleSerialChange}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm"
           />
-
-          <select
-            value={selectedColor}
-            onChange={(e) => handleColorSelect(e.target.value)}
-            className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm appearance-none"
-          >
-            <option value="">Select a color</option>
-            {predefinedColors.map((color, index) => (
-              <option key={index} value={color.value}>
-                {color.label}
-              </option>
-            ))}
-            <option value="custom">Custom Color...</option>
-          </select>
         </div>
       </div>
 
+      {/* Custom Color Name Input - Show only when needed */}
       {inputMode === "input" && selectedColor && (
         <div>
           <label className="text-xs font-medium text-gray-500 mb-1 flex items-center uppercase tracking-wider">
@@ -344,20 +365,6 @@ const ColorLegendInput = ({ value, onChange, label, colorLegend }) => {
           />
         </div>
       )}
-
-      <div>
-        <label className="text-xs font-medium text-gray-500 mb-1 flex items-center uppercase tracking-wider">
-          Legend Number
-          <span className="text-red-500 ml-1">*</span>
-        </label>
-        <input
-          type="number"
-          min="1"
-          value={value?.serial || ""}
-          onChange={handleSerialChange}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm"
-        />
-      </div>
     </div>
   );
 };
@@ -378,6 +385,7 @@ function DesignSheet() {
 
   // State management
   const [designName, setDesignName] = useState("");
+  const [partialThreads, setPartialThreads] = useState([]);
   const [width, setWidth] = useState("");
   const [yarnCount, setYarnCount] = useState([]);
   const [yarnPrice, setYarnPrice] = useState([]);
@@ -395,7 +403,7 @@ function DesignSheet() {
     },
   ]);
   const [totalThreadSum, setTotalThreadSum] = useState(0);
-  const [totalOrderWidth, setTotalORderWidth] = useState("");
+  const [totalOrderWidth, setTotalORderWidth] = useState(0);
   const [legendFormData, setLegendFormData] = useState({
     color: "",
     name: "",
@@ -408,6 +416,7 @@ function DesignSheet() {
   const [totalThreads, setTotalThreads] = useState(0);
   const [finalThreadSummary, setFinalThreadSummary] = useState([]);
   const [threadWeights, setThreadWeights] = useState([]);
+  const [TotalThreadWeights, setTotalThreadWeights] = useState([]);
 
   const getAvailableColors = () => {
     return colorLegend.map((item) => {
@@ -418,7 +427,43 @@ function DesignSheet() {
     });
   };
 
-  //calculate thread weights
+  useEffect(() => {
+    if (repeatInfo && repeatInfo.stoppingIndex >= 0) {
+      const partialThreadsData = [];
+
+      // Calculate threads up to stopping index
+      for (let i = 0; i < repeatInfo.stoppingIndex; i++) {
+        const design = warpDesigns[i];
+        const threadCount = parseInt(design.threadCount) || 0;
+        if (threadCount > 0) {
+          partialThreadsData.push({
+            color: design.color,
+            legendNumber: getLegendNumberForColor(colorLegend, design.color),
+            threadCount: threadCount,
+            colorName: getColorName(design.color),
+          });
+        }
+      }
+
+      // Add the partial thread count for stopping color
+      if (repeatInfo.adjustedValue > 0) {
+        const stoppingDesign = warpDesigns[repeatInfo.stoppingIndex];
+        partialThreadsData.push({
+          color: stoppingDesign.color,
+          legendNumber: getLegendNumberForColor(
+            colorLegend,
+            stoppingDesign.color
+          ),
+          threadCount: repeatInfo.adjustedValue,
+          colorName: getColorName(stoppingDesign.color),
+        });
+      }
+
+      setPartialThreads(partialThreadsData);
+    }
+  }, [repeatInfo, warpDesigns, colorLegend]);
+
+  // Then modify the useEffect that calculates weights:
   useEffect(() => {
     if (warpWeights.length > 0 && totalThreads > 0) {
       const totalWarpWeight = warpWeights.reduce(
@@ -426,23 +471,38 @@ function DesignSheet() {
         0
       );
 
+      // Calculate individual weights
       const weights = finalThreadSummary.map(
         ({ color, legendNumber, finalCount }) => {
           const threadPercentage = finalCount / totalThreads;
           const weightForColor = totalWarpWeight * threadPercentage;
+          const totalWeightForColor = weightForColor * totalOrderWidth;
 
           return {
             color,
             legendNumber,
             threadCount: finalCount,
             weight: weightForColor.toFixed(3),
+            totalWeight: totalWeightForColor.toFixed(3),
           };
         }
       );
 
-      setThreadWeights(weights);
+      // Add total row data
+      const totalRow = {
+        color: null,
+        legendNumber: "total",
+        threadCount: totalThreads,
+        weight: totalWarpWeight.toFixed(3),
+        totalWeight: (
+          totalWarpWeight * parseFloat(totalOrderWidth || 0)
+        ).toFixed(3),
+      };
+
+      // Set threadWeights with both individual weights and total
+      setThreadWeights([...weights, totalRow]);
     }
-  }, [warpWeights, totalThreads, finalThreadSummary]);
+  }, [warpWeights, totalThreads, finalThreadSummary, totalOrderWidth]);
 
   //calculate total threads
   useEffect(() => {
@@ -1025,8 +1085,8 @@ function DesignSheet() {
               noPadding
             >
               <div className="space-y-4">
-                {/* Column headings */}
-                <div className="grid grid-cols-12 gap-4 px-4 pt-3">
+                {/* Column headings - Keep this fixed */}
+                <div className="grid grid-cols-12 gap-4 px-4 pt-3 bg-white sticky top-0 z-10 border-b border-gray-100">
                   <div className="col-span-1 text-xs font-medium text-gray-500 uppercase tracking-wider">
                     No.
                   </div>
@@ -1038,67 +1098,71 @@ function DesignSheet() {
                   </div>
                 </div>
 
-                {/* Designs list */}
-                <div className="divide-y divide-gray-100">
-                  {warpDesigns.map((design, index) => (
-                    <div
-                      key={`design-${index}`}
-                      className="grid grid-cols-12 gap-4 px-4 py-3 hover:bg-gray-50 transition-colors relative group"
-                    >
-                      <div className="col-span-1 flex items-center">
-                        <span className="text-sm font-medium text-gray-600">
-                          {index + 1}
-                        </span>
-                      </div>
-
-                      <div className="col-span-6 md:col-span-7 relative">
-                        <ColorInput
-                          value={design.color}
-                          onChange={(e) =>
-                            handleWarpDesignChange(index, "color", e)
-                          }
-                          availableColors={getAvailableColors()}
-                          compact
-                          hideLabel
-                        />
-                        <div className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-purple-100 text-purple-800 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border border-purple-200">
-                          {getLegendNumberForColor(colorLegend, design.color) ||
-                            "?"}
+                {/* Scrollable design list */}
+                <div className="max-h-[500px] overflow-y-auto">
+                  <div className="divide-y divide-gray-100">
+                    {warpDesigns.map((design, index) => (
+                      <div
+                        key={`design-${index}`}
+                        className="grid grid-cols-12 gap-4 px-4 py-3 hover:bg-gray-50 transition-colors relative group"
+                      >
+                        <div className="col-span-1 flex items-center">
+                          <span className="text-sm font-medium text-gray-600">
+                            {index + 1}
+                          </span>
                         </div>
+
+                        <div className="col-span-6 md:col-span-7 relative">
+                          <ColorInput
+                            value={design.color}
+                            onChange={(e) =>
+                              handleWarpDesignChange(index, "color", e)
+                            }
+                            availableColors={getAvailableColors()}
+                            compact
+                            hideLabel
+                          />
+                          <div className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-purple-100 text-purple-800 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border border-purple-200">
+                            {getLegendNumberForColor(
+                              colorLegend,
+                              design.color
+                            ) || "?"}
+                          </div>
+                        </div>
+                        <div className="col-span-5 md:col-span-4">
+                          <TextInput
+                            value={design.threadCount}
+                            onChange={(e) =>
+                              handleWarpDesignChange(
+                                index,
+                                "threadCount",
+                                e.target.value
+                              )
+                            }
+                            type="number"
+                            min={0}
+                            step="1"
+                            compact
+                            hideLabel
+                          />
+                        </div>
+                        {warpDesigns.length > 1 && (
+                          <button
+                            onClick={() => removeWarpDesign(index)}
+                            className="absolute -right-4 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50"
+                            aria-label="Remove design"
+                          >
+                            <FaTimes size={14} />
+                          </button>
+                        )}
                       </div>
-                      <div className="col-span-5 md:col-span-4">
-                        <TextInput
-                          value={design.threadCount}
-                          onChange={(e) =>
-                            handleWarpDesignChange(
-                              index,
-                              "threadCount",
-                              e.target.value
-                            )
-                          }
-                          type="number"
-                          min={0}
-                          step="1"
-                          compact
-                          hideLabel
-                        />
-                      </div>
-                      {warpDesigns.length > 1 && (
-                        <button
-                          onClick={() => removeWarpDesign(index)}
-                          className="absolute -right-2 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-red-50"
-                          aria-label="Remove design"
-                        >
-                          <FaTimes size={14} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
 
-                {/* Add button - only show if there are colors in legend */}
-                {colorLegend.length > 0 && (
-                  <div className="px-4 pb-3">
+                {/* Keep the buttons outside the scroll area */}
+                <div className="px-4 pb-3 border-t border-gray-100 bg-white">
+                  {colorLegend.length > 0 ? (
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -1108,15 +1172,12 @@ function DesignSheet() {
                       <FaPlus size={14} />
                       Add Design
                     </motion.button>
-                  </div>
-                )}
-
-                {/* Message if no colors in legend */}
-                {colorLegend.length === 0 && (
-                  <div className="px-4 pb-3 text-center text-sm text-gray-500">
-                    Please add colors to the Color Legend first
-                  </div>
-                )}
+                  ) : (
+                    <div className="text-center text-sm text-gray-500">
+                      Please add colors to the Color Legend first
+                    </div>
+                  )}
+                </div>
               </div>
             </SectionCard>
           </div>
@@ -1214,7 +1275,7 @@ function DesignSheet() {
               </div>
             </SectionCard>
             <SectionCard
-              title="Threads Per Color / Pattern"
+              title="Total Threads Per Color"
               icon={FaCalculator}
               color="text-indigo-600"
             >
@@ -1241,6 +1302,65 @@ function DesignSheet() {
                 </div>
               )}
             </SectionCard>
+            {repeatInfo && partialThreads.length > 0 && (
+              <div className="mt-4">
+                <ResultCard
+                  title="Partial Thread Distribution"
+                  icon={FaCalculator}
+                  color="bg-yellow-50"
+                  value={
+                    <div className="w-full">
+                      <div className="text-sm text-gray-600 mb-2">
+                        Partial pattern threads (0.
+                        {Math.round((repeatInfo.repeat * 100) % 100)} repeat):
+                      </div>
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead>
+                          <tr>
+                            <th className="text-left text-xs font-medium text-gray-500">
+                              Color
+                            </th>
+                            <th className="text-right text-xs font-medium text-gray-500">
+                              Threads
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {partialThreads.map((thread, index) => (
+                            <tr key={index}>
+                              <td className="py-2">
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="w-4 h-4 rounded-full border border-gray-200"
+                                    style={{ backgroundColor: thread.color }}
+                                  />
+                                  <span className="text-sm">
+                                    {thread.colorName} (Color{" "}
+                                    {thread.legendNumber})
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-2 text-right text-sm">
+                                {thread.threadCount}
+                              </td>
+                            </tr>
+                          ))}
+                          <tr className="font-medium">
+                            <td className="py-2">Total</td>
+                            <td className="py-2 text-right">
+                              {partialThreads.reduce(
+                                (sum, t) => sum + t.threadCount,
+                                0
+                              )}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  }
+                />
+              </div>
+            )}
           </div>
         </div>
         <div className="mt-6">
@@ -1254,32 +1374,59 @@ function DesignSheet() {
 
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th
+                      scope="col"
+                      className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5"
+                    >
                       Color
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                    <th
+                      scope="col"
+                      className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5"
+                    >
                       Thread Count
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                    <th
+                      scope="col"
+                      className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5"
+                    >
                       Weight (kg)
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                    <th
+                      scope="col"
+                      className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5"
+                    >
+                      Total Weight (kg)
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5"
+                    >
                       Percentage
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {threadWeights.map(
-                    ({ color, legendNumber, threadCount, weight }) => (
-                      <tr key={`weight-${legendNumber}`}>
+                    ({
+                      color,
+                      legendNumber,
+                      threadCount,
+                      weight,
+                      totalWeight,
+                    }) => (
+                      <tr
+                        key={`weight-${legendNumber}`}
+                        className="hover:bg-gray-50"
+                      >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-3">
                             <div
-                              className="w-6 h-6 rounded-full border border-gray-200"
+                              className="w-6 h-6 rounded-full border border-gray-200 flex-shrink-0"
                               style={{ backgroundColor: color }}
-                            ></div>
+                            />
                             <div className="flex flex-col">
                               <span className="text-sm font-medium text-gray-900">
                                 {getColorName(color)}
@@ -1290,26 +1437,29 @@ function DesignSheet() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
                           {threadCount.toLocaleString()}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {weight}
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
+                          {parseFloat(weight).toFixed(3)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
+                          {parseFloat(totalWeight).toFixed(3)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500">
                           {((threadCount / totalThreads) * 100).toFixed(2)}%
                         </td>
                       </tr>
                     )
                   )}
                   <tr className="bg-gray-50 font-medium">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                       Total
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-900">
                       {totalThreads.toLocaleString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-900">
                       {warpWeights
                         .reduce(
                           (sum, weight) => sum + parseFloat(weight || 0),
@@ -1317,222 +1467,200 @@ function DesignSheet() {
                         )
                         .toFixed(3)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                      100%
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-900">
+                      {(
+                        warpWeights.reduce(
+                          (sum, weight) => sum + parseFloat(weight || 0),
+                          0
+                        ) * parseFloat(totalOrderWidth || 0)
+                      ).toFixed(3)}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-900">
+                      100%
+                    </td> */}
                   </tr>
                 </tbody>
               </table>
             </div>
           </div>
         </div>
+        `{/* Color Pattern Bar */}
         {/* Color Pattern Bar */}
-
-        <div className="w-full flex justify-center mt-6 md:mt-8">
+        <div className="w-full flex flex-col items-center mt-6 md:mt-8">
           <div
-            className="flex flex-row items-end w-full max-w-4xl rounded-lg border border-gray-200 overflow-hidden bg-white shadow-sm p-2"
-            style={{ height: "200px" }}
+            className="w-[900px] max-w-full"
+            style={{ paddingBottom: "8px" }}
           >
-            {(() => {
-              let strips = [];
-              let totalThreads = 0;
+            <div
+              className="rounded-lg border border-gray-200 bg-white shadow-sm p-2"
+              style={{
+                minHeight: "140px",
+                position: "relative",
+                width: "100%",
+                overflow: "hidden",
+              }}
+            >
+              <div className="w-full h-full overflow-x-auto">
+                {/* Pattern rendering */}
+                {(() => {
+                  let strips = [];
+                  let repeatGroups = [];
+                  let totalThreads = 0;
+                  let singlePatternLength = warpDesigns.reduce(
+                    (sum, d) => sum + (parseInt(d.threadCount) || 0),
+                    0
+                  );
+                  let repeatCount = repeatInfo ? repeatInfo.repeat : 1;
 
-              // Build the full pattern as per repeatInfo
-              if (repeatInfo) {
-                // Full repeats
-                for (let r = 0; r < repeatInfo.repeat; r++) {
-                  warpDesigns.forEach((design) => {
-                    const count = parseInt(design.threadCount) || 0;
-                    const legendNumber = getLegendNumberForColor(
-                      colorLegend,
-                      design.color
-                    );
-                    for (let i = 0; i < count; i++) {
-                      strips.push({
+                  // Helper to build a single repeat
+                  const buildRepeat = () =>
+                    warpDesigns.flatMap((design) => {
+                      const count = parseInt(design.threadCount) || 0;
+                      const legendNumber = getLegendNumberForColor(
+                        colorLegend,
+                        design.color
+                      );
+                      return Array.from({ length: count }).map(() => ({
                         color: design.color,
                         title: legendNumber
                           ? `Color ${legendNumber}`
                           : getColorName(design.color),
-                      });
+                      }));
+                    });
+
+                  // Build full repeats
+                  for (let r = 0; r < repeatCount; r++) {
+                    repeatGroups.push(buildRepeat());
+                  }
+
+                  // Partial repeat (if any)
+                  if (repeatInfo && repeatInfo.stoppingIndex >= 0) {
+                    let partial = [];
+                    for (let i = 0; i < repeatInfo.stoppingIndex; i++) {
+                      const design = warpDesigns[i];
+                      const count = parseInt(design.threadCount) || 0;
+                      const legendNumber = getLegendNumberForColor(
+                        colorLegend,
+                        design.color
+                      );
+                      partial = partial.concat(
+                        Array.from({ length: count }).map(() => ({
+                          color: design.color,
+                          title: legendNumber
+                            ? `Color ${legendNumber}`
+                            : getColorName(design.color),
+                        }))
+                      );
                     }
-                  });
-                }
-                // Partial up to stoppingIndex
-                for (let i = 0; i < repeatInfo.stoppingIndex; i++) {
-                  const design = warpDesigns[i];
-                  const count = parseInt(design.threadCount) || 0;
-                  const legendNumber = getLegendNumberForColor(
-                    colorLegend,
-                    design.color
+                    // Add adjusted value for stopping color
+                    if (repeatInfo.adjustedValue > 0) {
+                      const design = warpDesigns[repeatInfo.stoppingIndex];
+                      const legendNumber = getLegendNumberForColor(
+                        colorLegend,
+                        design.color
+                      );
+                      partial = partial.concat(
+                        Array.from({ length: repeatInfo.adjustedValue }).map(
+                          () => ({
+                            color: design.color,
+                            title: legendNumber
+                              ? `Color ${legendNumber}`
+                              : getColorName(design.color),
+                          })
+                        )
+                      );
+                    }
+                    if (partial.length > 0) repeatGroups.push(partial);
+                  }
+
+                  // If no repeatInfo, just one group
+                  if (!repeatInfo) {
+                    repeatGroups = [buildRepeat()];
+                  }
+
+                  // Calculate box size
+                  const totalBoxes = repeatGroups.reduce(
+                    (sum, group) => sum + group.length,
+                    0
                   );
-                  for (let j = 0; j < count; j++) {
-                    strips.push({
-                      color: design.color,
-                      title: legendNumber
-                        ? `Color ${legendNumber}`
-                        : getColorName(design.color),
-                    });
-                  }
-                }
-                // Adjusted value for the stopping color
-                if (repeatInfo.adjustedValue > 0) {
-                  const adjustedColor =
-                    warpDesigns[repeatInfo.stoppingIndex]?.color;
-                  const legendNumber = getLegendNumberForColor(
-                    colorLegend,
-                    adjustedColor
+                  const MAX_BOXES = 400;
+                  let boxSize = Math.max(
+                    8,
+                    Math.floor(900 / Math.min(totalBoxes, MAX_BOXES))
                   );
-                  for (let i = 0; i < repeatInfo.adjustedValue; i++) {
-                    strips.push({
-                      color: adjustedColor,
-                      title: legendNumber
-                        ? `Color ${legendNumber}`
-                        : getColorName(adjustedColor),
-                    });
-                  }
-                }
-              } else {
-                // No repeatInfo: just show all strips as usual
-                warpDesigns.forEach((design) => {
-                  const count = parseInt(design.threadCount) || 0;
-                  const legendNumber = getLegendNumberForColor(
-                    colorLegend,
-                    design.color
+                  let stripHeight = 200;
+
+                  // Render
+                  return (
+                    <div className="flex flex-col w-full">
+                      {/* Labels */}
+                      <div className="flex flex-row w-full mb-1">
+                        {repeatGroups.map((group, idx) => {
+                          // Check if this is the last group and a partial (not a full repeat)
+                          const isLast = idx === repeatGroups.length - 1;
+                          const isPartial =
+                            repeatGroups.length > 1 &&
+                            isLast &&
+                            repeatInfo &&
+                            (group.length !== repeatGroups[0].length ||
+                              (repeatInfo.adjustedValue > 0 &&
+                                group.length < repeatGroups[0].length));
+
+                          return (
+                            <div
+                              key={`label-${idx}`}
+                              style={{
+                                width: `${group.length * boxSize}px`,
+                                minWidth: `${group.length * boxSize}px`,
+                                textAlign: "center",
+                                position: "relative",
+                              }}
+                              className="flex flex-col items-center"
+                            >
+                              <span className="text-xs font-semibold text-gray-600 relative z-10 bg-white px-1">
+                                {isPartial
+                                  ? "Remaining Threads"
+                                  : `Repeat ${idx + 1}`}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {/* Strips */}
+                      <div className="flex flex-row w-full">
+                        {repeatGroups.map((group, idx) => (
+                          <div
+                            key={`repeat-${idx}`}
+                            className="flex flex-row"
+                            style={{
+                              borderRight:
+                                idx < repeatGroups.length - 1
+                                  ? "2px dashed #a3a3a3"
+                                  : "none",
+                            }}
+                          >
+                            {group.map((strip, sidx) => (
+                              <div
+                                key={`strip-${idx}-${sidx}`}
+                                style={{
+                                  width: `${boxSize}px`,
+                                  height: `${stripHeight}px`,
+                                  background: strip.color,
+                                  minWidth: "8px",
+                                  display: "inline-block",
+                                  marginRight: "0px",
+                                }}
+                                title={strip.title}
+                              />
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   );
-                  for (let i = 0; i < count; i++) {
-                    strips.push({
-                      color: design.color,
-                      title: legendNumber
-                        ? `Color ${legendNumber}`
-                        : getColorName(design.color),
-                    });
-                  }
-                });
-              }
-
-              totalThreads = strips.length;
-
-              // Calculate the length of a single pattern repeat
-              const singlePatternLength = warpDesigns.reduce(
-                (sum, d) => sum + (parseInt(d.threadCount) || 0),
-                0
-              );
-
-              // Limit the number of boxes for display
-              const MAX_BOXES = 400;
-              let displayStrips = [];
-              let boxSize = 2; // px
-              let markerIndex = null;
-
-              if (totalThreads > MAX_BOXES) {
-                // Group threads into boxes
-                const groupSize = Math.ceil(totalThreads / MAX_BOXES);
-                let threadCounter = 0;
-                let markerPlaced = false;
-                for (let i = 0; i < totalThreads; i += groupSize) {
-                  // If marker falls within this group, split the group at the marker
-                  if (
-                    !markerPlaced &&
-                    threadCounter < singlePatternLength &&
-                    threadCounter + groupSize > singlePatternLength
-                  ) {
-                    // First part before marker
-                    const beforeMarker = strips.slice(
-                      i,
-                      i + (singlePatternLength - threadCounter)
-                    );
-                    if (beforeMarker.length > 0) {
-                      const colorCount = {};
-                      beforeMarker.forEach((s) => {
-                        colorCount[s.color] = (colorCount[s.color] || 0) + 1;
-                      });
-                      const mainColor = Object.entries(colorCount).sort(
-                        (a, b) => b[1] - a[1]
-                      )[0][0];
-                      displayStrips.push({
-                        color: mainColor,
-                        title:
-                          beforeMarker[0].title +
-                          (beforeMarker.length > 1
-                            ? ` (+${beforeMarker.length - 1})`
-                            : ""),
-                      });
-                    }
-                    // Place marker after the first repeat
-                    markerIndex = displayStrips.length;
-                    markerPlaced = true;
-                    // Second part after marker
-                    const afterMarker = strips.slice(
-                      i + (singlePatternLength - threadCounter),
-                      i + groupSize
-                    );
-                    if (afterMarker.length > 0) {
-                      const colorCount = {};
-                      afterMarker.forEach((s) => {
-                        colorCount[s.color] = (colorCount[s.color] || 0) + 1;
-                      });
-                      const mainColor = Object.entries(colorCount).sort(
-                        (a, b) => b[1] - a[1]
-                      )[0][0];
-                      displayStrips.push({
-                        color: mainColor,
-                        title:
-                          afterMarker[0].title +
-                          (afterMarker.length > 1
-                            ? ` (+${afterMarker.length - 1})`
-                            : ""),
-                      });
-                    }
-                  } else {
-                    // Normal grouping
-                    const group = strips.slice(i, i + groupSize);
-                    const colorCount = {};
-                    group.forEach((s) => {
-                      colorCount[s.color] = (colorCount[s.color] || 0) + 1;
-                    });
-                    const mainColor = Object.entries(colorCount).sort(
-                      (a, b) => b[1] - a[1]
-                    )[0][0];
-                    displayStrips.push({
-                      color: mainColor,
-                      title:
-                        group[0].title +
-                        (group.length > 1 ? ` (+${group.length - 1})` : ""),
-                    });
-                    // Place marker if the marker falls exactly after this group
-                    if (
-                      !markerPlaced &&
-                      threadCounter + group.length === singlePatternLength
-                    ) {
-                      markerIndex = displayStrips.length;
-                      markerPlaced = true;
-                    }
-                  }
-                  threadCounter += groupSize;
-                }
-                boxSize = Math.max(2, Math.floor(800 / displayStrips.length));
-              } else {
-                displayStrips = strips;
-                boxSize = Math.max(2, Math.floor(800 / totalThreads));
-                markerIndex = singlePatternLength;
-              }
-
-              return displayStrips.map((strip, idx) => (
-                <React.Fragment key={idx}>
-                  <div
-                    style={{
-                      width: `${boxSize}px`,
-                      height: "100%",
-                      background: strip.color,
-                      marginRight: "0px",
-                      minWidth: "2px",
-                      display: "inline-block",
-                    }}
-                    title={strip.title}
-                  />
-                </React.Fragment>
-              ));
-            })()}
+                })()}
+              </div>
+            </div>
           </div>
         </div>
       </div>

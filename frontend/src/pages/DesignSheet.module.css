@@ -1,0 +1,17 @@
+.max-h-[400px] {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.max-h-[400px]::-webkit-scrollbar {
+  width: 6px;
+}
+
+.max-h-[400px]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.max-h-[400px]::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
