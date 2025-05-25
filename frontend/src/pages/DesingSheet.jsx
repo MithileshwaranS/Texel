@@ -405,6 +405,9 @@ function DesignSheet() {
   const [warpWeights, setWarpWeights] = useState([]);
   const [threadSummary, setThreadSummary] = useState([]);
   const [repeatInfo, setRepeatInfo] = useState(null);
+  const [totalThreads, setTotalThreads] = useState(0);
+  const [finalThreadSummary, setFinalThreadSummary] = useState([]);
+  const [threadWeights, setThreadWeights] = useState([]);
 
   const getAvailableColors = () => {
     return colorLegend.map((item) => {
@@ -414,6 +417,75 @@ function DesignSheet() {
       );
     });
   };
+
+  //calculate thread weights
+  useEffect(() => {
+    if (warpWeights.length > 0 && totalThreads > 0) {
+      const totalWarpWeight = warpWeights.reduce(
+        (sum, weight) => sum + parseFloat(weight || 0),
+        0
+      );
+
+      const weights = finalThreadSummary.map(
+        ({ color, legendNumber, finalCount }) => {
+          const threadPercentage = finalCount / totalThreads;
+          const weightForColor = totalWarpWeight * threadPercentage;
+
+          return {
+            color,
+            legendNumber,
+            threadCount: finalCount,
+            weight: weightForColor.toFixed(3),
+          };
+        }
+      );
+
+      setThreadWeights(weights);
+    }
+  }, [warpWeights, totalThreads, finalThreadSummary]);
+
+  //calculate total threads
+  useEffect(() => {
+    if (!repeatInfo) {
+      setTotalThreads(totalThreadSum);
+      setFinalThreadSummary(
+        threadSummary.map(({ color, legendNumber, totalThreadCount }) => ({
+          color,
+          legendNumber,
+          finalCount: totalThreadCount,
+        }))
+      );
+      return;
+    }
+
+    // Total threads in design
+    const partialRepeatSum = warpDesigns
+      .slice(0, repeatInfo.stoppingIndex)
+      .reduce((sum, design) => sum + (parseInt(design.threadCount) || 0), 0);
+    const total =
+      totalThreadSum * repeatInfo.repeat +
+      partialRepeatSum +
+      (repeatInfo.adjustedValue || 0);
+    setTotalThreads(total);
+
+    // Final count for each color
+    const updatedSummary = threadSummary.map(
+      ({ color, legendNumber, totalThreadCount }) => {
+        let finalCount = totalThreadCount * repeatInfo.repeat;
+        const designIndex = warpDesigns.findIndex((d) => d.color === color);
+
+        if (designIndex >= 0 && designIndex < repeatInfo.stoppingIndex) {
+          finalCount += parseInt(warpDesigns[designIndex].threadCount) || 0;
+        } else if (designIndex === repeatInfo.stoppingIndex) {
+          finalCount += repeatInfo.adjustedValue || 0;
+        }
+
+        return { color, legendNumber, finalCount };
+      }
+    );
+
+    setFinalThreadSummary(updatedSummary);
+  }, [repeatInfo, warpDesigns, totalThreadSum, threadSummary]);
 
   // Calculate each color total thread
   useEffect(() => {
@@ -647,6 +719,7 @@ function DesignSheet() {
   const sortedWeftCountOptions = sortYarnCounts([...weftCountOptions]);
 
   // Calculations
+
   useEffect(() => {
     if (width != null && warps?.length) {
       const warpTotals = warps.map((warp) => {
@@ -710,6 +783,9 @@ function DesignSheet() {
     setRepeatInfo(info);
   }, [warpDesigns, totalYarn]);
 
+  useEffect(() => {
+    console.log("Warp Designs Updated:", warpDesigns);
+  });
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-6xl mx-auto">
@@ -951,10 +1027,13 @@ function DesignSheet() {
               <div className="space-y-4">
                 {/* Column headings */}
                 <div className="grid grid-cols-12 gap-4 px-4 pt-3">
-                  <div className="col-span-6 md:col-span-8 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <div className="col-span-1 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    No.
+                  </div>
+                  <div className="col-span-6 md:col-span-7 text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Color
                   </div>
-                  <div className="col-span-6 md:col-span-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <div className="col-span-5 md:col-span-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Thread Count
                   </div>
                 </div>
@@ -966,11 +1045,16 @@ function DesignSheet() {
                       key={`design-${index}`}
                       className="grid grid-cols-12 gap-4 px-4 py-3 hover:bg-gray-50 transition-colors relative group"
                     >
+                      <div className="col-span-1 flex items-center">
+                        <span className="text-sm font-medium text-gray-600">
+                          {index + 1}
+                        </span>
+                      </div>
                       <div className="absolute -left-3 top-1/2 transform -translate-y-1/2 bg-purple-100 text-purple-800 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border border-purple-200">
                         {getLegendNumberForColor(colorLegend, design.color) ||
                           "?"}
                       </div>
-                      <div className="col-span-7 md:col-span-8">
+                      <div className="col-span-6 md:col-span-7">
                         <ColorInput
                           value={design.color}
                           onChange={(e) =>
@@ -1095,7 +1179,7 @@ function DesignSheet() {
             </SectionCard>
 
             <SectionCard
-              title="Threads Per Color"
+              title="Threads Per Color / Pattern"
               icon={FaCalculator}
               color="text-indigo-600"
             >
@@ -1121,12 +1205,18 @@ function DesignSheet() {
               </div>
               <div className="mt-4">
                 <ResultCard
-                  title="Total Threads (All Colors)"
+                  title="Total Threads per Pattern"
                   value={totalThreadSum}
                   icon={FaSlidersH}
                   color="bg-green-50"
                 />
               </div>
+            </SectionCard>
+            <SectionCard
+              title="Threads Per Color / Pattern"
+              icon={FaCalculator}
+              color="text-indigo-600"
+            >
               {repeatInfo && (
                 <div className="mt-4">
                   <ResultCard
@@ -1150,27 +1240,89 @@ function DesignSheet() {
                 </div>
               )}
             </SectionCard>
+          </div>
+        </div>
+        <div className="mt-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <FaWeight className="text-indigo-600" />
+              <h3 className="font-semibold text-xl text-gray-800">
+                Thread Weight Distribution
+              </h3>
+            </div>
 
-            <SectionCard
-              title="Calculations"
-              icon={FaCalculator}
-              color="text-indigo-600"
-            >
-              <div className="grid grid-cols-1 gap-4">
-                <ResultCard
-                  title="Estimated Weight"
-                  value="0.000 kg/m²"
-                  icon={FaWeight}
-                  color="bg-gray-50"
-                />
-                <ResultCard
-                  title="Production Cost"
-                  value="$0.00"
-                  icon={FaMoneyBillWave}
-                  color="bg-gray-50"
-                />
-              </div>
-            </SectionCard>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                      Color
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                      Thread Count
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                      Weight (kg)
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                      Percentage
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {threadWeights.map(
+                    ({ color, legendNumber, threadCount, weight }) => (
+                      <tr key={`weight-${legendNumber}`}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-6 h-6 rounded-full border border-gray-200"
+                              style={{ backgroundColor: color }}
+                            ></div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium text-gray-900">
+                                {getColorName(color)}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                Color {legendNumber}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {threadCount.toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {weight}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {((threadCount / totalThreads) * 100).toFixed(2)}%
+                        </td>
+                      </tr>
+                    )
+                  )}
+                  <tr className="bg-gray-50 font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                      Total
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                      {totalThreads.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                      {warpWeights
+                        .reduce(
+                          (sum, weight) => sum + parseFloat(weight || 0),
+                          0
+                        )
+                        .toFixed(3)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                      100%
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
         {/* Color Pattern Bar */}
