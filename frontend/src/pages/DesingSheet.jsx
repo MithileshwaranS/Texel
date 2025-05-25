@@ -1050,11 +1050,8 @@ function DesignSheet() {
                           {index + 1}
                         </span>
                       </div>
-                      <div className="absolute -left-3 top-1/2 transform -translate-y-1/2 bg-purple-100 text-purple-800 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border border-purple-200">
-                        {getLegendNumberForColor(colorLegend, design.color) ||
-                          "?"}
-                      </div>
-                      <div className="col-span-6 md:col-span-7">
+
+                      <div className="col-span-6 md:col-span-7 relative">
                         <ColorInput
                           value={design.color}
                           onChange={(e) =>
@@ -1064,6 +1061,10 @@ function DesignSheet() {
                           compact
                           hideLabel
                         />
+                        <div className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-purple-100 text-purple-800 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border border-purple-200">
+                          {getLegendNumberForColor(colorLegend, design.color) ||
+                            "?"}
+                        </div>
                       </div>
                       <div className="col-span-5 md:col-span-4">
                         <TextInput
