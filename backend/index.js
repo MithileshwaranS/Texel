@@ -5,6 +5,7 @@ import { Pool } from "pg";
 import fetch from "node-fetch";
 import { v2 as cloudinary } from "cloudinary";
 import ExcelJS from "exceljs";
+import bcrypt from "bcrypt";
 
 dotenv.config();
 
@@ -394,12 +395,42 @@ app.delete("/api/deleteDesign", async (req, res) => {
   }
 });
 
-//Login api
+
+app.post("/register", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    const userExists = await pool.query(
+      "SELECT * FROM login WHERE username = $1",
+      [username]
+    );
+
+    if (userExists.rows.length > 0) {
+      return res.status(409).json({ error: "User already exists" });
+    }
+
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const result = await pool.query(
+      "INSERT INTO login (username, password) VALUES ($1, $2) RETURNING id",
+      [username, hashedPassword]
+    );
+
+    res.status(201).json({
+      message: "User registered successfully",
+      userId: result.rows[0].id,
+    });
+  } catch (error) {
+    console.error("Registration error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 app.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const query = await pool.query("SELECT * FROM login WHERE email = $1", [
-      email,
+    const { username, password } = req.body;
+    const query = await pool.query("SELECT * FROM login WHERE username = $1", [
+      username,
     ]);
 
     if (query.rows.length === 0) {
@@ -407,13 +438,16 @@ app.post("/login", async (req, res) => {
     }
 
     const user = query.rows[0];
-    if (user.password !== password) {
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatch) {
       return res.status(401).json({ error: "Invalid password" });
     }
 
-    res.json({ message: "login successful", userId: user.id });
+    res.json({ message: "Login successful", userId: user.id });
   } catch (error) {
-    console.error(error);
+    console.error("Login error:", error);
     res.status(500).json({ error: "Server error" });
   }
 });
