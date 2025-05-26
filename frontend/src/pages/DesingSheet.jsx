@@ -906,7 +906,7 @@ function DesignSheet() {
             >
               <div className="space-y-4 md:space-y-6">
                 <TextInput
-                  label="Total Order Width (inches)"
+                  label="Total Order Width (m)"
                   value={totalOrderWidth}
                   onChange={(e) => setTotalORderWidth(e.target.value)}
                   type="number"
@@ -1484,183 +1484,213 @@ function DesignSheet() {
             </div>
           </div>
         </div>
-        `{/* Color Pattern Bar */}
         {/* Color Pattern Bar */}
-        <div className="w-full flex flex-col items-center mt-6 md:mt-8">
-          <div
-            className="w-[900px] max-w-full"
-            style={{ paddingBottom: "8px" }}
-          >
-            <div
-              className="rounded-lg border border-gray-200 bg-white shadow-sm p-2"
-              style={{
-                minHeight: "140px",
-                position: "relative",
-                width: "100%",
-                overflow: "hidden",
-              }}
-            >
-              <div className="w-full h-full overflow-x-auto">
-                {/* Pattern rendering */}
-                {(() => {
-                  let strips = [];
-                  let repeatGroups = [];
-                  let totalThreads = 0;
-                  let singlePatternLength = warpDesigns.reduce(
-                    (sum, d) => sum + (parseInt(d.threadCount) || 0),
-                    0
-                  );
-                  let repeatCount = repeatInfo ? repeatInfo.repeat : 1;
 
-                  // Helper to build a single repeat
-                  const buildRepeat = () =>
-                    warpDesigns.flatMap((design) => {
-                      const count = parseInt(design.threadCount) || 0;
-                      const legendNumber = getLegendNumberForColor(
-                        colorLegend,
-                        design.color
-                      );
-                      return Array.from({ length: count }).map(() => ({
+        <div className="w-full flex justify-center mt-6 md:mt-8">
+          <div
+            className="flex flex-row items-end w-full max-w-4xl rounded-lg border border-gray-200 overflow-hidden bg-white shadow-sm p-2"
+            style={{ height: "200px" }}
+          >
+            {(() => {
+              let strips = [];
+              let totalThreads = 0;
+
+              // Build the full pattern as per repeatInfo
+              if (repeatInfo) {
+                // Full repeats
+                for (let r = 0; r < repeatInfo.repeat; r++) {
+                  warpDesigns.forEach((design) => {
+                    const count = parseInt(design.threadCount) || 0;
+                    const legendNumber = getLegendNumberForColor(
+                      colorLegend,
+                      design.color
+                    );
+                    for (let i = 0; i < count; i++) {
+                      strips.push({
                         color: design.color,
                         title: legendNumber
                           ? `Color ${legendNumber}`
                           : getColorName(design.color),
-                      }));
+                      });
+                    }
+                  });
+                }
+                // Partial up to stoppingIndex
+                for (let i = 0; i < repeatInfo.stoppingIndex; i++) {
+                  const design = warpDesigns[i];
+                  const count = parseInt(design.threadCount) || 0;
+                  const legendNumber = getLegendNumberForColor(
+                    colorLegend,
+                    design.color
+                  );
+                  for (let j = 0; j < count; j++) {
+                    strips.push({
+                      color: design.color,
+                      title: legendNumber
+                        ? `Color ${legendNumber}`
+                        : getColorName(design.color),
                     });
-
-                  // Build full repeats
-                  for (let r = 0; r < repeatCount; r++) {
-                    repeatGroups.push(buildRepeat());
                   }
+                }
+                // Adjusted value for the stopping color
+                if (repeatInfo.adjustedValue > 0) {
+                  const adjustedColor =
+                    warpDesigns[repeatInfo.stoppingIndex]?.color;
+                  const legendNumber = getLegendNumberForColor(
+                    colorLegend,
+                    adjustedColor
+                  );
+                  for (let i = 0; i < repeatInfo.adjustedValue; i++) {
+                    strips.push({
+                      color: adjustedColor,
+                      title: legendNumber
+                        ? `Color ${legendNumber}`
+                        : getColorName(adjustedColor),
+                    });
+                  }
+                }
+              } else {
+                // No repeatInfo: just show all strips as usual
+                warpDesigns.forEach((design) => {
+                  const count = parseInt(design.threadCount) || 0;
+                  const legendNumber = getLegendNumberForColor(
+                    colorLegend,
+                    design.color
+                  );
+                  for (let i = 0; i < count; i++) {
+                    strips.push({
+                      color: design.color,
+                      title: legendNumber
+                        ? `Color ${legendNumber}`
+                        : getColorName(design.color),
+                    });
+                  }
+                });
+              }
 
-                  // Partial repeat (if any)
-                  if (repeatInfo && repeatInfo.stoppingIndex >= 0) {
-                    let partial = [];
-                    for (let i = 0; i < repeatInfo.stoppingIndex; i++) {
-                      const design = warpDesigns[i];
-                      const count = parseInt(design.threadCount) || 0;
-                      const legendNumber = getLegendNumberForColor(
-                        colorLegend,
-                        design.color
-                      );
-                      partial = partial.concat(
-                        Array.from({ length: count }).map(() => ({
-                          color: design.color,
-                          title: legendNumber
-                            ? `Color ${legendNumber}`
-                            : getColorName(design.color),
-                        }))
-                      );
+              totalThreads = strips.length;
+
+              // Calculate the length of a single pattern repeat
+              const singlePatternLength = warpDesigns.reduce(
+                (sum, d) => sum + (parseInt(d.threadCount) || 0),
+                0
+              );
+
+              // Limit the number of boxes for display
+              const MAX_BOXES = 400;
+              let displayStrips = [];
+              let boxSize = 2; // px
+              let markerIndex = null;
+
+              if (totalThreads > MAX_BOXES) {
+                // Group threads into boxes
+                const groupSize = Math.ceil(totalThreads / MAX_BOXES);
+                let threadCounter = 0;
+                let markerPlaced = false;
+                for (let i = 0; i < totalThreads; i += groupSize) {
+                  // If marker falls within this group, split the group at the marker
+                  if (
+                    !markerPlaced &&
+                    threadCounter < singlePatternLength &&
+                    threadCounter + groupSize > singlePatternLength
+                  ) {
+                    // First part before marker
+                    const beforeMarker = strips.slice(
+                      i,
+                      i + (singlePatternLength - threadCounter)
+                    );
+                    if (beforeMarker.length > 0) {
+                      const colorCount = {};
+                      beforeMarker.forEach((s) => {
+                        colorCount[s.color] = (colorCount[s.color] || 0) + 1;
+                      });
+                      const mainColor = Object.entries(colorCount).sort(
+                        (a, b) => b[1] - a[1]
+                      )[0][0];
+                      displayStrips.push({
+                        color: mainColor,
+                        title:
+                          beforeMarker[0].title +
+                          (beforeMarker.length > 1
+                            ? ` (+${beforeMarker.length - 1})`
+                            : ""),
+                      });
                     }
-                    // Add adjusted value for stopping color
-                    if (repeatInfo.adjustedValue > 0) {
-                      const design = warpDesigns[repeatInfo.stoppingIndex];
-                      const legendNumber = getLegendNumberForColor(
-                        colorLegend,
-                        design.color
-                      );
-                      partial = partial.concat(
-                        Array.from({ length: repeatInfo.adjustedValue }).map(
-                          () => ({
-                            color: design.color,
-                            title: legendNumber
-                              ? `Color ${legendNumber}`
-                              : getColorName(design.color),
-                          })
-                        )
-                      );
+                    // Place marker after the first repeat
+                    markerIndex = displayStrips.length;
+                    markerPlaced = true;
+                    // Second part after marker
+                    const afterMarker = strips.slice(
+                      i + (singlePatternLength - threadCounter),
+                      i + groupSize
+                    );
+                    if (afterMarker.length > 0) {
+                      const colorCount = {};
+                      afterMarker.forEach((s) => {
+                        colorCount[s.color] = (colorCount[s.color] || 0) + 1;
+                      });
+                      const mainColor = Object.entries(colorCount).sort(
+                        (a, b) => b[1] - a[1]
+                      )[0][0];
+                      displayStrips.push({
+                        color: mainColor,
+                        title:
+                          afterMarker[0].title +
+                          (afterMarker.length > 1
+                            ? ` (+${afterMarker.length - 1})`
+                            : ""),
+                      });
                     }
-                    if (partial.length > 0) repeatGroups.push(partial);
+                  } else {
+                    // Normal grouping
+                    const group = strips.slice(i, i + groupSize);
+                    const colorCount = {};
+                    group.forEach((s) => {
+                      colorCount[s.color] = (colorCount[s.color] || 0) + 1;
+                    });
+                    const mainColor = Object.entries(colorCount).sort(
+                      (a, b) => b[1] - a[1]
+                    )[0][0];
+                    displayStrips.push({
+                      color: mainColor,
+                      title:
+                        group[0].title +
+                        (group.length > 1 ? ` (+${group.length - 1})` : ""),
+                    });
+                    // Place marker if the marker falls exactly after this group
+                    if (
+                      !markerPlaced &&
+                      threadCounter + group.length === singlePatternLength
+                    ) {
+                      markerIndex = displayStrips.length;
+                      markerPlaced = true;
+                    }
                   }
+                  threadCounter += groupSize;
+                }
+                boxSize = Math.max(2, Math.floor(800 / displayStrips.length));
+              } else {
+                displayStrips = strips;
+                boxSize = Math.max(2, Math.floor(800 / totalThreads));
+                markerIndex = singlePatternLength;
+              }
 
-                  // If no repeatInfo, just one group
-                  if (!repeatInfo) {
-                    repeatGroups = [buildRepeat()];
-                  }
-
-                  // Calculate box size
-                  const totalBoxes = repeatGroups.reduce(
-                    (sum, group) => sum + group.length,
-                    0
-                  );
-                  const MAX_BOXES = 400;
-                  let boxSize = Math.max(
-                    8,
-                    Math.floor(900 / Math.min(totalBoxes, MAX_BOXES))
-                  );
-                  let stripHeight = 200;
-
-                  // Render
-                  return (
-                    <div className="flex flex-col w-full">
-                      {/* Labels */}
-                      <div className="flex flex-row w-full mb-1">
-                        {repeatGroups.map((group, idx) => {
-                          // Check if this is the last group and a partial (not a full repeat)
-                          const isLast = idx === repeatGroups.length - 1;
-                          const isPartial =
-                            repeatGroups.length > 1 &&
-                            isLast &&
-                            repeatInfo &&
-                            (group.length !== repeatGroups[0].length ||
-                              (repeatInfo.adjustedValue > 0 &&
-                                group.length < repeatGroups[0].length));
-
-                          return (
-                            <div
-                              key={`label-${idx}`}
-                              style={{
-                                width: `${group.length * boxSize}px`,
-                                minWidth: `${group.length * boxSize}px`,
-                                textAlign: "center",
-                                position: "relative",
-                              }}
-                              className="flex flex-col items-center"
-                            >
-                              <span className="text-xs font-semibold text-gray-600 relative z-10 bg-white px-1">
-                                {isPartial
-                                  ? "Remaining Threads"
-                                  : `Repeat ${idx + 1}`}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {/* Strips */}
-                      <div className="flex flex-row w-full">
-                        {repeatGroups.map((group, idx) => (
-                          <div
-                            key={`repeat-${idx}`}
-                            className="flex flex-row"
-                            style={{
-                              borderRight:
-                                idx < repeatGroups.length - 1
-                                  ? "2px dashed #a3a3a3"
-                                  : "none",
-                            }}
-                          >
-                            {group.map((strip, sidx) => (
-                              <div
-                                key={`strip-${idx}-${sidx}`}
-                                style={{
-                                  width: `${boxSize}px`,
-                                  height: `${stripHeight}px`,
-                                  background: strip.color,
-                                  minWidth: "8px",
-                                  display: "inline-block",
-                                  marginRight: "0px",
-                                }}
-                                title={strip.title}
-                              />
-                            ))}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
+              return displayStrips.map((strip, idx) => (
+                <React.Fragment key={idx}>
+                  <div
+                    style={{
+                      width: `${boxSize}px`,
+                      height: "100%",
+                      background: strip.color,
+                      marginRight: "0px",
+                      minWidth: "2px",
+                      display: "inline-block",
+                    }}
+                    title={strip.title}
+                  />
+                </React.Fragment>
+              ));
+            })()}
           </div>
         </div>
       </div>

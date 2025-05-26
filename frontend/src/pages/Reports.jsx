@@ -133,8 +133,8 @@ function Reports() {
 
     // Apply sorting
     const sortByDate = (a, b) => {
-      const dateA = new Date(a.created_date);
-      const dateB = new Date(b.created_date);
+      const dateA = new Date(a.created_at || a.created_date);
+      const dateB = new Date(b.created_at || b.created_date);
       return sortOption === "newest" ? dateB - dateA : dateA - dateB;
     };
 
