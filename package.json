@@ -4,6 +4,7 @@
   },
   "dependencies": {
     "exceljs": "^4.4.0",
+    "html2canvas": "^1.4.1",
     "react-hot-toast": "^2.5.2",
     "styled-components": "^6.1.18"
   }
