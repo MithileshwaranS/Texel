@@ -39,6 +39,7 @@ import {
   Receipt,
   FiberManualRecord,
 } from "@mui/icons-material";
+import { FaFileExcel } from "react-icons/fa";
 import "jspdf-autotable";
 
 // Modern styled components with animations
@@ -325,6 +326,32 @@ function DesignDetail() {
     }
   };
 
+  const handleExcelExport = async () => {
+    handleMenuClose();
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BACKEND_URL}/api/excel/${designId}`,
+        { method: "GET" }
+      );
+
+      if (!response.ok) throw new Error("Export failed");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${design.designname}-${
+        new Date().toISOString().split("T")[0]
+      }.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Excel export failed:", error);
+    }
+  };
+
   const formatCurrency = (value) => {
     return parseFloat(value)
       .toLocaleString("en-IN", {
@@ -406,6 +433,26 @@ function DesignDetail() {
             </Button>
 
             <Box sx={{ display: "flex", gap: 1 }}>
+              <Tooltip title="Export as Excel" TransitionComponent={Zoom}>
+                <Button
+                  variant="contained"
+                  startIcon={<FaFileExcel />}
+                  onClick={handleExcelExport}
+                  sx={{
+                    borderRadius: "8px",
+                    textTransform: "none",
+                    boxShadow: "none",
+                    bgcolor: "#16a34a", 
+                    "&:hover": {
+                      bgcolor: "#15803d", 
+                    },
+                  }}
+                >
+                  {isMobile ? "Excel" : "Export Excel"}
+                </Button>
+              </Tooltip>
+
+              {/* Existing PDF button */}
               <Tooltip title="Export as PDF" TransitionComponent={Zoom}>
                 <Button
                   variant="contained"
@@ -420,6 +467,8 @@ function DesignDetail() {
                   {isMobile ? "PDF" : "Export PDF"}
                 </Button>
               </Tooltip>
+
+              {/* Existing More Options button */}
               <Tooltip title="More options" TransitionComponent={Zoom}>
                 <IconButton
                   aria-label="more"
@@ -434,30 +483,6 @@ function DesignDetail() {
                   <MoreVert />
                 </IconButton>
               </Tooltip>
-              <Menu
-                id="export-menu"
-                anchorEl={anchorEl}
-                keepMounted
-                open={open}
-                onClose={handleMenuClose}
-                PaperProps={{
-                  style: {
-                    width: 200,
-                    borderRadius: "12px",
-                    boxShadow: theme.shadows[4],
-                  },
-                }}
-                TransitionComponent={Fade}
-              >
-                <MenuItem onClick={handleExportPDF}>
-                  <PictureAsPdf color="error" sx={{ mr: 1 }} />
-                  Export PDF
-                </MenuItem>
-                <MenuItem onClick={handleMenuClose}>
-                  <Receipt color="primary" sx={{ mr: 1 }} />
-                  Print Report
-                </MenuItem>
-              </Menu>
             </Box>
           </Box>
           {/* Design Header */}

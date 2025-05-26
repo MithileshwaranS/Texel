@@ -767,6 +767,331 @@ app.get("/api/excel", async (req, res) => {
   }
 });
 
+// Add this new route for single design Excel export
+app.get("/api/excel/:designId", async (req, res) => {
+  try {
+    const { designId } = req.params;
+
+    const resultDesigns = await pool.query(
+      "SELECT * FROM designs WHERE design_id = $1",
+      [designId]
+    );
+    const designs = resultDesigns.rows;
+
+    const resultWarps = await pool.query(
+      "SELECT * FROM warps WHERE design_id = $1",
+      [designId]
+    );
+    const warps = resultWarps.rows;
+
+    const resultWefts = await pool.query(
+      "SELECT * FROM wefts WHERE design_id = $1",
+      [designId]
+    );
+    const wefts = resultWefts.rows;
+
+    // Use your existing Excel generation logic
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Design Report");
+
+    worksheet.columns = [
+      {
+        header: "Design ID",
+        key: "design_id",
+        width: 10,
+        style: { numFmt: "0" },
+      },
+      { header: "Design Name", key: "designname", width: 15 },
+      { header: "Width", key: "width", width: 10, style: { numFmt: "0.00" } },
+      {
+        header: "Warp Count",
+        key: "warpcount",
+        width: 12,
+      },
+      {
+        header: "Weft Count",
+        key: "weftcount",
+        width: 12,
+      },
+      { header: "Reed", key: "reed", width: 10, style: { numFmt: "0.00" } },
+      { header: "Pick", key: "pick", width: 10, style: { numFmt: "0.00" } },
+      {
+        header: "initWarpCost",
+        key: "initwarpcost",
+        width: 12,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "initWeftCost",
+        key: "initweftcost",
+        width: 12,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "Warp Dyeing",
+        key: "warpdyeing",
+        width: 12,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "Weft Dyeing",
+        key: "weftdyeing",
+        width: 12,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "Warp Wt",
+        key: "warpweight",
+        width: 10,
+        style: { numFmt: "0.000" },
+      },
+      {
+        header: "Weft Wt",
+        key: "weftweight",
+        width: 10,
+        style: { numFmt: "0.000" },
+      },
+      {
+        header: "Individual Warp Cost",
+        key: "individualwarpcost",
+        width: 18,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "Individual Weft Cost",
+        key: "individualweftcost",
+        width: 18,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "Weaving",
+        key: "weavingcost",
+        width: 10,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "Mending",
+        key: "mendingcost",
+        width: 10,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "Washing",
+        key: "washingcost",
+        width: 10,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "Transport",
+        key: "transportcost",
+        width: 10,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "Profit",
+        key: "individualprofit",
+        width: 10,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "Subtotal",
+        key: "individualtotalcost",
+        width: 10,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "GST",
+        key: "individualgst",
+        width: 10,
+        style: { numFmt: "0.00" },
+      },
+      {
+        header: "TOTAL",
+        key: "individualfinalcost",
+        width: 10,
+        style: { numFmt: "0.00" },
+      },
+    ];
+
+    worksheet.getRow(1).eachCell((cell) => {
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "000080" },
+      };
+      cell.font = {
+        color: { argb: "FFFFFF" },
+        bold: true,
+      };
+      cell.alignment = {
+        vertical: "middle",
+        horizontal: "center",
+      };
+    });
+
+    worksheet.eachRow((row, rowNumber) => {
+      row.eachCell((cell) => {
+        cell.alignment = {
+          vertical: "middle",
+          horizontal: "center",
+        };
+      });
+    });
+
+    worksheet.autoFilter = {
+      from: "A1",
+      to: "W1",
+    };
+
+    worksheet.views = [
+      {
+        state: "frozen",
+        xSplit: 0,
+        ySplit: 1,
+        topLeftCell: "A2",
+        activeCell: "A2",
+      },
+    ];
+
+    designs.forEach((design) => {
+      const relatedWarps = warps
+        .filter((w) => w.design_id === design.design_id)
+        .sort((a, b) => a.warp_id - b.warp_id);
+
+      const relatedWefts = wefts
+        .filter((w) => w.design_id === design.design_id)
+        .sort((a, b) => a.weft_id - b.weft_id);
+
+      const totalWarpCost = relatedWarps.reduce(
+        (sum, w) => sum + (parseFloat(w.individualwarpcost) || 0),
+        0
+      );
+      const totalWeftCost = relatedWefts.reduce(
+        (sum, w) => sum + (parseFloat(w.individualweftcost) || 0),
+        0
+      );
+
+      const maxLen = Math.max(relatedWarps.length, relatedWefts.length);
+
+      for (let i = 0; i < maxLen; i++) {
+        const warp = relatedWarps[i];
+        const weft = relatedWefts[i];
+
+        worksheet.addRow({
+          design_id: i === 0 ? Number(design.design_id) : "",
+          designname: i === 0 ? design.designname : "",
+          width: i === 0 ? Number(design.width) : "",
+          warpcount: warp ? warp.warpcount : "",
+          weftcount: weft ? weft.weftcount : "",
+          reed: warp ? Number(warp.reed) : "",
+          pick: weft ? Number(weft.pick) : "",
+          initwarpcost: warp ? Number(warp.initwarpcost) : "",
+          initweftcost: weft ? Number(weft.initweftcost) : "",
+          warpdyeing: warp ? Number(warp.warpdyeing) : "",
+          weftdyeing: weft ? Number(weft.weftdyeing) : "",
+          warpweight: warp ? Number(warp.warpweight) : "",
+          weftweight: weft ? Number(weft.weftweight) : "",
+          individualwarpcost: warp ? Number(warp.individualwarpcost) : "",
+          individualweftcost: weft ? Number(weft.individualweftcost) : "",
+          weavingcost: i === 0 ? Number(design.weavingcost) : "",
+          mendingcost: i === 0 ? Number(design.mendingcost) : "",
+          washingcost: i === 0 ? Number(design.washingcost) : "",
+          transportcost: i === 0 ? Number(design.transportcost) : "",
+          individualprofit: warp ? Number(warp.individualprofit) : "",
+          individualtotalcost: warp ? Number(warp.individualtotalcost) : "",
+          individualgst: warp ? Number(warp.individualgst) : "",
+          individualfinalcost: warp ? Number(warp.individualfinalcost) : "",
+        });
+      }
+
+      // Calculate totals for individual values
+      const totalIndividualProfit = relatedWarps.reduce(
+        (sum, w) => sum + (parseFloat(w.individualprofit) || 0),
+        0
+      );
+      const totalIndividualCost = relatedWarps.reduce(
+        (sum, w) => sum + (parseFloat(w.individualtotalcost) || 0),
+        0
+      );
+      const totalIndividualGst = relatedWarps.reduce(
+        (sum, w) => sum + (parseFloat(w.individualgst) || 0),
+        0
+      );
+      const totalIndividualFinal = relatedWarps.reduce(
+        (sum, w) => sum + (parseFloat(w.individualfinalcost) || 0),
+        0
+      );
+
+      worksheet.addRow({});
+
+      worksheet.addRow({
+        design_id: "",
+        designname: "",
+        width: "",
+        warpcount: "",
+        weftcount: "",
+        reed: "",
+        pick: "",
+        initwarpcost: "",
+        initweftcost: "",
+        warpdyeing: "",
+        weftdyeing: "",
+        warpweight: "Total",
+        weftweight: "",
+        individualwarpcost: Number(totalWarpCost),
+        individualweftcost: Number(totalWeftCost),
+        weavingcost: "",
+        mendingcost: "",
+        washingcost: "",
+        transportcost: "",
+        individualprofit: Number(totalIndividualProfit),
+        individualtotalcost: Number(totalIndividualCost),
+        individualgst: Number(totalIndividualGst),
+        individualfinalcost: Number(totalIndividualFinal),
+      });
+
+      worksheet.addRow({});
+      const emptyRow = worksheet.lastRow;
+      emptyRow.height = 15;
+      emptyRow.eachCell((cell) => {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "F5F5F5" },
+        };
+        cell.border = {
+          bottom: { style: "thin", color: { argb: "E0E0E0" } },
+        };
+      });
+
+      const totalsRow = worksheet.getRow(emptyRow.number - 1);
+      totalsRow.eachCell((cell) => {
+        cell.border = {
+          bottom: { style: "thick", color: { argb: "000000" } },
+        };
+        cell.font = {
+          bold: true,
+        };
+      });
+    });
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=Design_${designId}_Report.xlsx`
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error("Excel generation error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get("/api/excel/data", async (req, res) => {
   try {
     const designs = (await pool.query("SELECT * FROM designs")).rows;

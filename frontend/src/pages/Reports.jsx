@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { FaChartLine, FaSearch, FaTimes, FaPlus } from "react-icons/fa";
+import {
+  FaChartLine,
+  FaSearch,
+  FaTimes,
+  FaPlus,
+  FaFileExcel,
+} from "react-icons/fa";
 import { FiFilter } from "react-icons/fi";
 import YarnCard from "../components/common/CardComponent";
 import { useNavigate } from "react-router-dom";
@@ -195,6 +201,33 @@ function Reports() {
     navigate("/new-design");
   };
 
+  const handleExcelDownload = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BACKEND_URL}/api/excel`,
+        {
+          method: "GET",
+        }
+      );
+
+      if (!response.ok) throw new Error("Download failed");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Design-Report-${
+        new Date().toISOString().split("T")[0]
+      }.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Excel download failed:", error);
+    }
+  };
+
   const statusOptions = [
     { value: "all", label: "All" },
     { value: "pending", label: "Pending" },
@@ -220,10 +253,19 @@ function Reports() {
           </div>
 
           <div className="flex gap-3">
+            {/* Excel Export Button */}
+            <button
+              onClick={handleExcelDownload}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 shadow-sm cursor-pointer"
+            >
+              <FaFileExcel className="text-sm" />
+              <span className="text-sm font-medium">Export Excel</span>
+            </button>
+
             {/* New Report Button */}
             <button
               onClick={handleNewReport}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer"
             >
               <FaPlus className="text-sm" />
               <span className="text-sm font-medium">New Report</span>
