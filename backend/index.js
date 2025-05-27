@@ -453,16 +453,33 @@ app.post("/login", async (req, res) => {
 
 //excel generation
 
-// Excel download route
+// Update the Excel download route
 app.get("/api/excel", async (req, res) => {
   try {
-    const resultDesigns = await pool.query("SELECT * FROM designs");
+    const designIds = req.query.designs ? req.query.designs.split(",") : [];
+
+    let designQuery = "SELECT * FROM designs";
+    let queryParams = [];
+
+    if (designIds.length > 0) {
+      designQuery += " WHERE design_id = ANY($1)";
+      queryParams.push(designIds);
+    }
+
+    const resultDesigns = await pool.query(designQuery, queryParams);
     const designs = resultDesigns.rows;
 
-    const resultWarps = await pool.query("SELECT * FROM warps");
+    // Use the design IDs to fetch related warps and wefts
+    const resultWarps = await pool.query(
+      "SELECT * FROM warps WHERE design_id = ANY($1)",
+      [designs.map((d) => d.design_id)]
+    );
     const warps = resultWarps.rows;
 
-    const resultWefts = await pool.query("SELECT * FROM wefts");
+    const resultWefts = await pool.query(
+      "SELECT * FROM wefts WHERE design_id = ANY($1)",
+      [designs.map((d) => d.design_id)]
+    );
     const wefts = resultWefts.rows;
 
     const workbook = new ExcelJS.Workbook();
