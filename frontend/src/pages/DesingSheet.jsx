@@ -1616,7 +1616,7 @@ function DesignSheet() {
                 />
               </div>
             </SectionCard>
-            <SectionCard
+            {/* <SectionCard
               title="Total Threads Per Color"
               icon={FaCalculator}
               color="text-indigo-600"
@@ -1643,69 +1643,68 @@ function DesignSheet() {
                   />
                 </div>
               )}
-            </SectionCard>
-            {repeatInfo && partialThreads.length > 0 && (
-              <div className="mt-4">
-                <ResultCard
-                  title="Partial Thread Distribution"
-                  icon={FaCalculator}
-                  color="bg-yellow-50"
-                  value={
-                    <div className="w-full">
-                      <div className="text-sm text-gray-600 mb-2">
-                        Partial pattern threads (0.
-                        {Math.round((repeatInfo.repeat * 100) % 100)} repeat):
-                      </div>
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead>
-                          <tr>
-                            <th className="text-left text-xs font-medium text-gray-500">
-                              Color
-                            </th>
-                            <th className="text-right text-xs font-medium text-gray-500">
-                              Threads
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                          {partialThreads.map((thread, index) => (
-                            <tr key={index}>
-                              <td className="py-2">
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className="w-4 h-4 rounded-full border border-gray-200"
-                                    style={{ backgroundColor: thread.color }}
-                                  />
-                                  <span className="text-sm">
-                                    {thread.colorName} (Color{" "}
-                                    {thread.legendNumber})
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="py-2 text-right text-sm">
-                                {thread.threadCount}
-                              </td>
-                            </tr>
-                          ))}
-                          <tr className="font-medium">
-                            <td className="py-2">Total</td>
-                            <td className="py-2 text-right">
-                              {partialThreads.reduce(
-                                (sum, t) => sum + t.threadCount,
-                                0
-                              )}
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  }
-                />
-              </div>
-            )}
+            </SectionCard> */}
           </div>
         </div>
         <div className="mt-6">
+          {repeatInfo && partialThreads.length > 0 && (
+            <div className="mt-4 mb-5">
+              <ResultCard
+                title="Partial Thread Distribution"
+                icon={FaCalculator}
+                color="bg-yellow-50"
+                value={
+                  <div className="w-full">
+                    <div className="text-md text-gray-600 mb-2">
+                      Total Repeat : {repeatInfo.repeat}
+                    </div>
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead>
+                        <tr>
+                          <th className="text-left text-xs font-medium text-gray-500">
+                            Color
+                          </th>
+                          <th className="text-right text-xs font-medium text-gray-500">
+                            Threads
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {partialThreads.map((thread, index) => (
+                          <tr key={index}>
+                            <td className="py-2">
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="w-4 h-4 rounded-full border border-gray-200"
+                                  style={{ backgroundColor: thread.color }}
+                                />
+                                <span className="text-sm">
+                                  {thread.colorName} (Color{" "}
+                                  {thread.legendNumber})
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-2 text-right text-sm">
+                              {thread.threadCount}
+                            </td>
+                          </tr>
+                        ))}
+                        <tr className="font-medium">
+                          <td className="py-2">Total</td>
+                          <td className="py-2 text-right">
+                            {partialThreads.reduce(
+                              (sum, t) => sum + t.threadCount,
+                              0
+                            )}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              />
+            </div>
+          )}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center gap-2 mb-6">
               <FaWeight className="text-indigo-600" />
