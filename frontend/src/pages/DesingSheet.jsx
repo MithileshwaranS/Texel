@@ -580,6 +580,7 @@ function DesignSheet() {
   const [warps, setWarps] = useState([
     { count: "", reed: "", cost: "", dyeing: 300, constant: 1.45 },
   ]);
+  const [colorValue, setColorValue] = useState("");
   const [warpDesigns, setWarpDesigns] = useState([
     {
       color: "#000000",
@@ -1232,6 +1233,14 @@ function DesignSheet() {
               value={designName}
               onChange={(e) => setDesignName(e.target.value)}
               placeholder="Enter design name"
+              icon={FaFileSignature}
+              className="w-full"
+            />
+            <TextInput
+              label="Color"
+              value={colorValue}
+              onChange={(e) => setDesignName(e.target.value)}
+              placeholder="Enter color name"
               icon={FaFileSignature}
               className="w-full"
             />
