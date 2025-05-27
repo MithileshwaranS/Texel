@@ -21,7 +21,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import HeaderItem from "./components/common/HeaderItem";
-import Design from "./pages/DesingSheet";
+import DesignSheet from "./pages/DesignSheet";
 import Dashboard from "./pages/Dashboard";
 import Costing from "./pages/CostingPage";
 import Inventory from "./pages/Inventory";
@@ -171,7 +171,7 @@ function App() {
             path="/design"
             element={
               <ProtectedRoute>
-                <Design />
+                <DesignSheet />
               </ProtectedRoute>
             }
           />

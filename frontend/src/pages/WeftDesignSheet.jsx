@@ -21,147 +21,79 @@ import {
   FaDownload,
 } from "react-icons/fa";
 
-const createPatternSVG = (
-  designs,
-  totalWidth,
-  totalHeight,
-  repeatInfo,
-  totalYarn
-) => {
+const createPatternSVG = (designs, totalWidth, totalHeight, totalYarn) => {
   const singlePatternLength = designs.reduce(
     (sum, d) => sum + (parseInt(d.threadCount) || 0),
     0
   );
 
   let svgContent = "";
-  let currentX = 0;
-
-  // Calculate total pattern width including remaining portion
-  const totalPatternWidth =
-    ((repeatInfo.repeat * singlePatternLength +
-      (repeatInfo.adjustedValue || 0)) /
-      totalYarn) *
-    totalWidth;
+  let currentY = 0;
 
   // Add padding to ensure no overlap
   const patternPadding = 40;
   const labelPadding = 60;
-  const effectiveHeight = totalHeight - labelPadding;
+  const effectiveWidth = totalWidth - labelPadding;
+
+  // Fixed width for the pattern
+  const patternWidth = effectiveWidth * 0.8; // Use 80% of effective width
 
   // Function to create a pattern section
-  const createSection = (designList, isPartial = false) => {
-    let sectionX = 0;
+  const createSection = (designList) => {
+    let sectionY = patternPadding;
     const sectionTotalThreads = designList.reduce(
       (sum, d) => sum + (parseInt(d.threadCount) || 0),
       0
     );
 
-    // Calculate section width based on total threads proportion
-    const sectionWidth = (sectionTotalThreads / totalYarn) * totalWidth;
+    // Calculate height for each thread
+    const totalPatternHeight = totalHeight - 2 * patternPadding;
 
     designList.forEach((design) => {
       const threadCount = parseInt(design.threadCount) || 0;
       if (threadCount <= 0) return;
 
-      // Calculate segment width based on proportion within this section
-      const width = (threadCount / sectionTotalThreads) * sectionWidth;
+      // Calculate segment height based on proportion
+      const height = (threadCount / sectionTotalThreads) * totalPatternHeight;
 
-      svgContent += `<rect x="${currentX + sectionX}" y="${
-        patternPadding / 2
-      }" width="${width}" height="${effectiveHeight}" fill="${design.color}"/>`;
-      sectionX += width;
+      svgContent += `<rect 
+        x="${labelPadding}" 
+        y="${sectionY}" 
+        width="${patternWidth}" 
+        height="${height}" 
+        fill="${design.color}"
+      />`;
+
+      // Add thread count label on the left
+      svgContent += `<text 
+        x="${labelPadding - 10}" 
+        y="${sectionY + height / 2}" 
+        text-anchor="end" 
+        dominant-baseline="middle"
+        fill="#666" 
+        font-size="12px"
+      >${threadCount}</text>`;
+
+      sectionY += height;
     });
-
-    currentX += sectionWidth;
-    return sectionWidth;
   };
 
-  // Add full repeats
-  for (let i = 0; i < repeatInfo.repeat; i++) {
-    const sectionWidth = createSection(designs);
+  // Create single repeat
+  createSection(designs);
 
-    // Add separator line with improved styling
-    if (i < repeatInfo.repeat - 1 || repeatInfo.adjustedValue > 0) {
-      svgContent += `
-        <g>
-          <!-- Main pattern separator line -->
-          <line 
-            x1="${currentX}" 
-            y1="0" 
-            x2="${currentX}" 
-            y2="${totalHeight}" 
-            stroke="#666" 
-            stroke-width="2.5"
-            stroke-dasharray="8,6"
-            vector-effect="non-scaling-stroke"
-          />
-          <!-- Extended line in label area with reduced opacity -->
-          <line 
-            x1="${currentX}" 
-            y1="${effectiveHeight + patternPadding / 2}" 
-            x2="${currentX}" 
-            y2="${totalHeight}" 
-            stroke="#666" 
-            stroke-width="2.5"
-            stroke-dasharray="8,6"
-            opacity="0.4"
-            vector-effect="non-scaling-stroke"
-          />
-        </g>`;
-    }
-  }
-
-  // Add partial section if exists
-  let remainingWidth = 0;
-  if (repeatInfo.stoppingIndex >= 0 && repeatInfo.adjustedValue > 0) {
-    const partialDesigns = [
-      ...designs.slice(0, repeatInfo.stoppingIndex),
-      {
-        ...designs[repeatInfo.stoppingIndex],
-        threadCount: repeatInfo.adjustedValue,
-      },
-    ];
-    remainingWidth = createSection(partialDesigns, true);
-  }
-
-  // Add labels with improved spacing and alignment
-  let labelX = 0;
-  const labelY = effectiveHeight + labelPadding;
-  const labelFontSize = "14px";
-
-  // Add repeat labels
-  for (let i = 0; i < repeatInfo.repeat; i++) {
-    const sectionWidth = (singlePatternLength / totalYarn) * totalWidth;
-    svgContent += `
-      <text 
-        x="${labelX + sectionWidth / 2}" 
-        y="${labelY}" 
-        text-anchor="middle" 
-        fill="#666" 
-        font-size="${labelFontSize}"
-        font-weight="500"
-      >
-        Repeat ${i + 1}
-      </text>
-    `;
-    labelX += sectionWidth;
-  }
-
-  // Add remaining label with proper spacing
-  if (repeatInfo.adjustedValue > 0) {
-    svgContent += `
-      <text 
-        x="${labelX + remainingWidth / 2}" 
-        y="${labelY}" 
-        text-anchor="middle" 
-        fill="#666" 
-        font-size="${labelFontSize}"
-        font-weight="500"
-      >
-        Remaining
-      </text>
-    `;
-  }
+  // Add title label
+  svgContent += `
+    <text 
+      x="${labelPadding + patternWidth / 2}" 
+      y="${patternPadding / 2}" 
+      text-anchor="middle" 
+      fill="#666" 
+      font-size="14px"
+      font-weight="500"
+    >
+      Single Repeat Pattern
+    </text>
+  `;
 
   // Add background for better visibility
   const backgroundSvg = `
@@ -553,7 +485,7 @@ const ColorLegendInput = ({ value, onChange, label, colorLegend }) => {
   );
 };
 
-function DesignSheet() {
+function WeftDesignSheet({ designName, color, DesignInputs }) {
   const [colorLegend, setColorLegend] = useState([]);
   const [isPatternVisible, setIsPatternVisible] = useState(false);
   const getColorName = (hex) => {
@@ -569,7 +501,7 @@ function DesignSheet() {
   });
 
   // State management
-  const [designName, setDesignName] = useState("");
+  //   const [designName, setDesignName] = useState("");
   const [partialThreads, setPartialThreads] = useState([]);
   const [width, setWidth] = useState("");
   const [yarnCount, setYarnCount] = useState([]);
@@ -580,12 +512,11 @@ function DesignSheet() {
   const [warps, setWarps] = useState([
     { count: "", reed: "", cost: "", dyeing: 300, constant: 1.45 },
   ]);
-  const [colorValue, setColorValue] = useState("");
   const [warpDesigns, setWarpDesigns] = useState([
     {
-      color: "#000000",
+      color: color || "#000000",
       threadCount: "",
-      colorName: getColorName("#000000"),
+      colorName: getColorName(color || "#000000"),
     },
   ]);
   const [totalThreadSum, setTotalThreadSum] = useState(0);
@@ -1084,20 +1015,13 @@ function DesignSheet() {
   const generatePattern = () => {
     if (!validatePatternInputs()) return;
 
-    const threadCounts = warpDesigns.map((d) => parseInt(d.threadCount) || 0);
-    const colors = warpDesigns.map((d) => d.colorName || getColorName(d.color));
-    const target = totalYarn;
-
-    const info = findRepeatInfo(target, threadCounts, colors);
-    setRepeatInfo(info);
     setIsPatternVisible(true);
-
     toast.success("Pattern generated successfully!");
   };
 
   // Update the downloadPattern function
   const downloadPattern = () => {
-    if (!repeatInfo || !warpDesigns.length) {
+    if (!warpDesigns.length) {
       toast.error("No pattern to download");
       return;
     }
@@ -1109,8 +1033,7 @@ function DesignSheet() {
       const svgContent = createPatternSVG(
         warpDesigns,
         1200, // width
-        400, // increased height for better visibility
-        repeatInfo,
+        800, // increased height for better visibility
         totalYarn
       );
 
@@ -1123,7 +1046,7 @@ function DesignSheet() {
       // Create download link
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${designName || "pattern"}.svg`;
+      link.download = `${designName || "weft-pattern"}.svg`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -1189,6 +1112,19 @@ function DesignSheet() {
     );
   };
 
+  // Update useEffect to watch for color prop changes
+  useEffect(() => {
+    if (color && warpDesigns.length > 0) {
+      const newDesigns = [...warpDesigns];
+      newDesigns[0] = {
+        ...newDesigns[0],
+        color: color,
+        colorName: getColorName(color),
+      };
+      setWarpDesigns(newDesigns);
+    }
+  }, [color]);
+
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-6xl mx-auto">
@@ -1220,30 +1156,15 @@ function DesignSheet() {
             </div>
             <div>
               <h1 className="text-xl md:text-2xl font-bold text-gray-800">
-                Design Sheet
+                Weft Design Sheet
               </h1>
               <p className="text-xs md:text-sm text-gray-500">
-                Create and manage fabric specifications
+                Design your Weft
               </p>
             </div>
           </div>
           <div className="w-full md:w-auto">
-            <TextInput
-              label="Design Name"
-              value={designName}
-              onChange={(e) => setDesignName(e.target.value)}
-              placeholder="Enter design name"
-              icon={FaFileSignature}
-              className="w-full"
-            />
-            <TextInput
-              label="Color"
-              value={colorValue}
-              onChange={(e) => setDesignName(e.target.value)}
-              placeholder="Enter color name"
-              icon={FaFileSignature}
-              className="w-full"
-            />
+            {DesignInputs && <DesignInputs />}
           </div>
         </div>
         {/* Main Content */}
@@ -1278,7 +1199,7 @@ function DesignSheet() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <h3 className="text-sm font-medium text-gray-700">
-                      Warp Specifications
+                      Weft Specifications
                     </h3>
                     <button
                       onClick={addWarp}
@@ -1306,7 +1227,7 @@ function DesignSheet() {
                       )}
 
                       <DropdownField
-                        label="Warp Count"
+                        label="Weft Count"
                         value={warp.count}
                         onChange={(e) =>
                           handleWarpChange(index, "count", e.target.value)
@@ -1315,7 +1236,7 @@ function DesignSheet() {
                         icon={FaWeight}
                       />
                       <TextInput
-                        label="Reed"
+                        label="Pick"
                         value={warp.reed}
                         onChange={(e) =>
                           handleWarpChange(index, "reed", e.target.value)
@@ -1430,7 +1351,7 @@ function DesignSheet() {
 
             {/* Warp Design Section */}
             <SectionCard
-              title="Warp Design"
+              title="Weft Design"
               icon={FaPalette}
               color="text-purple-600"
               noPadding
@@ -1445,7 +1366,7 @@ function DesignSheet() {
                     Color
                   </div>
                   <div className="col-span-5 md:col-span-4 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Thread Count
+                    No. of Threads
                   </div>
                 </div>
 
@@ -1555,8 +1476,8 @@ function DesignSheet() {
               >
                 {warpWeights.map((weight, index) => (
                   <ResultCard
-                    key={`warp-weight-${index}`}
-                    title={`Warp ${index + 1} Weight`}
+                    key={`weft-weight-${index}`}
+                    title={`Weft ${index + 1} Weight`}
                     value={weight}
                     icon={FaWeight}
                     color="bg-yellow-50"
@@ -1573,8 +1494,8 @@ function DesignSheet() {
               >
                 {warpTotalThread.map((threadCount, index) => (
                   <ResultCard
-                    key={`Warp-${index}-Thread`}
-                    title={`Warp ${index + 1} Thread`}
+                    key={`Weft-${index}-Thread`}
+                    title={`Weft ${index + 1} Thread`}
                     value={threadCount}
                     icon={FaSlidersH}
                     color="bg-yellow-50"
@@ -1736,7 +1657,7 @@ function DesignSheet() {
                       scope="col"
                       className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5"
                     >
-                      Thread Count
+                      Total Threads
                     </th>
                     <th
                       scope="col"
@@ -1864,186 +1785,106 @@ function DesignSheet() {
             </div>
 
             {/* Pattern Container */}
-            {isPatternVisible && repeatInfo && (
+            {isPatternVisible && (
               <div className="relative">
                 {/* Pattern Display */}
                 <div className="w-full overflow-x-auto">
                   <div
                     ref={patternRef}
-                    className="flex flex-row items-end min-w-full bg-white"
+                    className="flex flex-col items-center min-w-full bg-white"
                     style={{
-                      minHeight: "200px",
-                      paddingBottom: "40px",
+                      minHeight: "400px",
+                      padding: "20px",
                     }}
                   >
-                    {(() => {
-                      let displayElements = [];
-                      const singlePatternLength = warpDesigns.reduce(
-                        (sum, d) => sum + (parseInt(d.threadCount) || 0),
-                        0
-                      );
-
-                      if (!repeatInfo || !singlePatternLength) return null;
-
-                      // Calculate minimum width per repeat to ensure visibility
-                      const minWidthPerRepeat = 90;
-                      const totalRepeats =
-                        repeatInfo.repeat +
-                        (repeatInfo.adjustedValue > 0 ? 1 : 0);
-                      const containerWidth = Math.max(
-                        totalRepeats * minWidthPerRepeat,
-                        150
-                      );
-
-                      // Declare arrays for labels and separators
-                      const labels = [];
-                      const separators = [];
-
-                      // Function to create a pattern group
-                      const createPatternGroup = (
-                        designs,
-                        isPartial = false
-                      ) => {
-                        // Calculate total threads in this group
-                        const groupTotalThreads = designs.reduce(
-                          (sum, design) => {
-                            return sum + (parseInt(design.threadCount) || 0);
-                          },
-                          0
-                        );
-
-                        // Calculate width based on proportion of total threads
-                        const totalWidth =
-                          (groupTotalThreads / totalYarn) * 100;
-
-                        return (
-                          <div
-                            className="flex flex-col relative"
-                            style={{
-                              width: `${totalWidth}%`,
-                              minWidth: isPartial
-                                ? "50px"
-                                : minWidthPerRepeat + "px",
-                            }}
-                          >
-                            <div className="flex h-40">
-                              {designs.map((design, idx) => {
-                                const threadCount =
-                                  parseInt(design.threadCount) || 0;
-                                if (threadCount <= 0) return null;
-
-                                // Calculate segment width based on proportion within this group
-                                const segmentWidth =
-                                  (threadCount / groupTotalThreads) * 100;
-
-                                // Convert color to hex
-                                const hexColor = colorToHex(design.color);
-
-                                return (
-                                  <div
-                                    key={idx}
-                                    style={{
-                                      width: `${segmentWidth}%`,
-                                      backgroundColor: hexColor,
-                                      minWidth: "3px",
-                                    }}
-                                    className="h-full"
-                                    data-color={hexColor}
-                                  />
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      };
-
-                      // Add full repeats
-                      for (let i = 0; i < repeatInfo.repeat; i++) {
-                        displayElements.push(createPatternGroup(warpDesigns));
-
-                        // Add label
-                        labels.push(
-                          <div
-                            key={`label-${i}`}
-                            className="absolute text-xs text-gray-600 font-medium"
-                            style={{
-                              left: `${
-                                ((i * singlePatternLength) / totalYarn) * 100
-                              }%`,
-                              bottom: "-25px",
-                              transform: "translateX(-50%)",
-                            }}
-                          >
-                            Repeat {i + 1}
-                          </div>
-                        );
-
-                        // Add separator (except for last repeat)
-                        if (
-                          i < repeatInfo.repeat - 1 ||
-                          repeatInfo.adjustedValue > 0
-                        ) {
-                          separators.push(
-                            <div
-                              key={`separator-${i}`}
-                              className="absolute h-full w-0.5 bg-gray-300"
-                              style={{
-                                left: `${
-                                  (((i + 1) * singlePatternLength) /
-                                    totalYarn) *
-                                  100
-                                }%`,
-                                transform: "translateX(-50%)",
-                              }}
-                            />
+                    <div
+                      className="relative"
+                      style={{ width: "100%", maxWidth: "800px" }}
+                    >
+                      <div className="relative flex flex-col">
+                        {(() => {
+                          const singlePatternLength = warpDesigns.reduce(
+                            (sum, d) => sum + (parseInt(d.threadCount) || 0),
+                            0
                           );
-                        }
-                      }
 
-                      // Add partial repeat if exists
-                      if (
-                        repeatInfo.stoppingIndex >= 0 &&
-                        repeatInfo.adjustedValue > 0
-                      ) {
-                        const partialDesigns = [
-                          ...warpDesigns.slice(0, repeatInfo.stoppingIndex),
-                          {
-                            ...warpDesigns[repeatInfo.stoppingIndex],
-                            threadCount: repeatInfo.adjustedValue,
-                          },
-                        ];
+                          if (!singlePatternLength) return null;
 
-                        displayElements.push(
-                          createPatternGroup(partialDesigns, true)
-                        );
-                        labels.push(
-                          <div
-                            key="label-remaining"
-                            className="absolute text-xs text-gray-600 font-medium"
-                            style={{
-                              right: "0",
-                              bottom: "-25px",
-                              transform: "translateX(50%)",
-                            }}
-                          >
-                            Remaining
-                          </div>
-                        );
-                      }
+                          // Calculate total threads in this group
+                          const totalThreads = warpDesigns.reduce(
+                            (sum, design) => {
+                              return sum + (parseInt(design.threadCount) || 0);
+                            },
+                            0
+                          );
 
-                      return (
-                        <div
-                          className="relative"
-                          style={{ width: containerWidth + "px" }}
-                        >
-                          <div className="relative flex">
-                            {separators}
-                            {displayElements}
-                          </div>
-                          {labels}
-                        </div>
-                      );
-                    })()}
+                          return (
+                            <div className="flex flex-col w-full">
+                              <div className="text-center mb-4">
+                                <span className="text-sm font-medium text-gray-600">
+                                  Single Repeat Pattern
+                                </span>
+                              </div>
+                              <div className="flex items-center">
+                                {/* Thread count labels */}
+                                <div
+                                  className="pr-4 flex flex-col justify-between"
+                                  style={{ width: "60px" }}
+                                >
+                                  {warpDesigns.map((design, idx) => {
+                                    const threadCount =
+                                      parseInt(design.threadCount) || 0;
+                                    if (threadCount <= 0) return null;
+                                    const height =
+                                      (threadCount / totalThreads) * 100;
+                                    return (
+                                      <div
+                                        key={`label-${idx}`}
+                                        className="text-xs text-gray-600 text-right"
+                                        style={{ height: `${height}%` }}
+                                      >
+                                        {threadCount}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                {/* Pattern strips */}
+                                <div
+                                  className="flex-1 flex flex-col"
+                                  style={{ height: "300px" }}
+                                >
+                                  {warpDesigns.map((design, idx) => {
+                                    const threadCount =
+                                      parseInt(design.threadCount) || 0;
+                                    if (threadCount <= 0) return null;
+
+                                    // Calculate segment height based on proportion
+                                    const height =
+                                      (threadCount / totalThreads) * 100;
+
+                                    // Convert color to hex
+                                    const hexColor = colorToHex(design.color);
+
+                                    return (
+                                      <div
+                                        key={idx}
+                                        style={{
+                                          height: `${height}%`,
+                                          backgroundColor: hexColor,
+                                          width: "80%",
+                                        }}
+                                        className="relative"
+                                        data-color={hexColor}
+                                      />
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -2070,4 +1911,4 @@ function DesignSheet() {
   );
 }
 
-export default DesignSheet;
+export default WeftDesignSheet;
