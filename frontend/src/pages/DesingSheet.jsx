@@ -555,6 +555,7 @@ const ColorLegendInput = ({ value, onChange, label, colorLegend }) => {
 
 function DesignSheet() {
   const [colorLegend, setColorLegend] = useState([]);
+  const [isPatternVisible, setIsPatternVisible] = useState(false);
   const getColorName = (hex) => {
     const legendEntry = colorLegend.find((l) => l.color === hex);
     if (legendEntry) return legendEntry.name;
@@ -705,34 +706,56 @@ function DesignSheet() {
       return;
     }
 
-    // Total threads in design
-    const partialRepeatSum = warpDesigns
-      .slice(0, repeatInfo.stoppingIndex)
-      .reduce((sum, design) => sum + (parseInt(design.threadCount) || 0), 0);
-    const total =
-      totalThreadSum * repeatInfo.repeat +
-      partialRepeatSum +
-      (repeatInfo.adjustedValue || 0);
+    // Calculate total threads in full repeats
+    const fullRepeatThreads = totalThreadSum * repeatInfo.repeat;
+
+    // Calculate threads in partial section
+    let partialThreads = 0;
+    const colorThreadCounts = new Map(); // Use Map to track threads per color
+
+    // First, add threads from full repeats for each color
+    threadSummary.forEach(({ color, legendNumber, totalThreadCount }) => {
+      colorThreadCounts.set(color, totalThreadCount * repeatInfo.repeat);
+    });
+
+    // Then add threads from partial section
+    if (repeatInfo.stoppingIndex >= 0) {
+      // Add complete sections in partial repeat
+      for (let i = 0; i < repeatInfo.stoppingIndex; i++) {
+        const design = warpDesigns[i];
+        const threadCount = parseInt(design.threadCount) || 0;
+        const currentCount = colorThreadCounts.get(design.color) || 0;
+        colorThreadCounts.set(design.color, currentCount + threadCount);
+        partialThreads += threadCount;
+      }
+
+      // Add the partial section
+      if (repeatInfo.adjustedValue > 0) {
+        const stoppingDesign = warpDesigns[repeatInfo.stoppingIndex];
+        const currentCount = colorThreadCounts.get(stoppingDesign.color) || 0;
+        colorThreadCounts.set(
+          stoppingDesign.color,
+          currentCount + repeatInfo.adjustedValue
+        );
+        partialThreads += repeatInfo.adjustedValue;
+      }
+    }
+
+    // Set total threads
+    const total = fullRepeatThreads + partialThreads;
     setTotalThreads(total);
 
-    // Final count for each color
-    const updatedSummary = threadSummary.map(
-      ({ color, legendNumber, totalThreadCount }) => {
-        let finalCount = totalThreadCount * repeatInfo.repeat;
-        const designIndex = warpDesigns.findIndex((d) => d.color === color);
-
-        if (designIndex >= 0 && designIndex < repeatInfo.stoppingIndex) {
-          finalCount += parseInt(warpDesigns[designIndex].threadCount) || 0;
-        } else if (designIndex === repeatInfo.stoppingIndex) {
-          finalCount += repeatInfo.adjustedValue || 0;
-        }
-
-        return { color, legendNumber, finalCount };
-      }
+    // Create final summary
+    const updatedSummary = Array.from(colorThreadCounts.entries()).map(
+      ([color, count]) => ({
+        color,
+        legendNumber: getLegendNumberForColor(colorLegend, color),
+        finalCount: count,
+      })
     );
 
     setFinalThreadSummary(updatedSummary);
-  }, [repeatInfo, warpDesigns, totalThreadSum, threadSummary]);
+  }, [repeatInfo, warpDesigns, totalThreadSum, threadSummary, colorLegend]);
 
   // Calculate each color total thread
   useEffect(() => {
@@ -824,9 +847,11 @@ function DesignSheet() {
 
   const removeWarpDesign = (index) => {
     if (warpDesigns.length > 1) {
-      const newDesigns = [...warpDesigns];
-      newDesigns.splice(index, 1);
+      const newDesigns = warpDesigns.filter((_, i) => i !== index);
       setWarpDesigns(newDesigns);
+      // Reset pattern visibility when designs change
+      setIsPatternVisible(false);
+      setRepeatInfo(null);
     }
   };
 
@@ -849,6 +874,9 @@ function DesignSheet() {
     }
 
     setWarpDesigns(newDesigns);
+    // Reset pattern visibility when designs change
+    setIsPatternVisible(false);
+    setRepeatInfo(null);
   };
 
   // Replace the handleLegendFormSubmit function
@@ -1021,18 +1049,50 @@ function DesignSheet() {
     return null;
   }
 
-  useEffect(() => {
+  const validatePatternInputs = () => {
+    // Check if we have any colors in the legend
+    if (colorLegend.length === 0) {
+      toast.error("Please add colors to the legend first");
+      return false;
+    }
+
+    // Check if we have any warp designs
+    if (warpDesigns.length === 0) {
+      toast.error("Please add at least one design");
+      return false;
+    }
+
+    // Check if all designs have valid colors and thread counts
+    const invalidDesign = warpDesigns.find(
+      (design) => !design.color || !design.threadCount
+    );
+    if (invalidDesign) {
+      toast.error("Please fill in all color and thread count fields");
+      return false;
+    }
+
+    // Check if width is set
+    if (!width) {
+      toast.error("Please enter the width");
+      return false;
+    }
+
+    return true;
+  };
+
+  const generatePattern = () => {
+    if (!validatePatternInputs()) return;
+
     const threadCounts = warpDesigns.map((d) => parseInt(d.threadCount) || 0);
     const colors = warpDesigns.map((d) => d.colorName || getColorName(d.color));
     const target = totalYarn;
 
     const info = findRepeatInfo(target, threadCounts, colors);
     setRepeatInfo(info);
-  }, [warpDesigns, totalYarn]);
+    setIsPatternVisible(true);
 
-  useEffect(() => {
-    console.log("Warp Designs Updated:", warpDesigns);
-  });
+    toast.success("Pattern generated successfully!");
+  };
 
   // Update the downloadPattern function
   const downloadPattern = () => {
@@ -1767,214 +1827,234 @@ function DesignSheet() {
           </div>
         </div>
         {/* Color Pattern Bar */}
-        <div className="w-full  flex flex-col items-center mt-6 md:mt-8">
-          <div className="w-full  max-w-6xl bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+        <div className="w-full flex flex-col items-center mt-6 md:mt-8">
+          <div className="w-full max-w-6xl bg-white rounded-lg border border-gray-200 shadow-sm p-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-base font-semibold text-gray-800">
                 Pattern Visualization
               </h3>
-              <button
-                onClick={downloadPattern}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
-              >
-                <FaDownload size={14} />
-                <span className="text-sm font-medium">Download Pattern</span>
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={generatePattern}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors"
+                >
+                  <FaCalculator size={14} />
+                  <span className="text-sm font-medium">Generate Pattern</span>
+                </button>
+                {isPatternVisible && (
+                  <button
+                    onClick={downloadPattern}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                  >
+                    <FaDownload size={14} />
+                    <span className="text-sm font-medium">
+                      Download Pattern
+                    </span>
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Pattern Container */}
-            <div className="relative">
-              {/* Pattern Display */}
-              <div className="w-full overflow-x-auto">
-                <div
-                  ref={patternRef}
-                  className="flex flex-row items-end min-w-full bg-white"
-                  style={{
-                    minHeight: "200px",
-                    paddingBottom: "40px",
-                  }}
-                >
-                  {(() => {
-                    let displayElements = [];
-                    const singlePatternLength = warpDesigns.reduce(
-                      (sum, d) => sum + (parseInt(d.threadCount) || 0),
-                      0
-                    );
-
-                    if (!repeatInfo || !singlePatternLength) return null;
-
-                    // Calculate minimum width per repeat to ensure visibility
-                    const minWidthPerRepeat = 90;
-                    const totalRepeats =
-                      repeatInfo.repeat +
-                      (repeatInfo.adjustedValue > 0 ? 1 : 0);
-                    const containerWidth = Math.max(
-                      totalRepeats * minWidthPerRepeat,
-                      150
-                    );
-
-                    // Declare arrays for labels and separators
-                    const labels = [];
-                    const separators = [];
-
-                    // Function to create a pattern group
-                    const createPatternGroup = (designs, isPartial = false) => {
-                      // Calculate total threads in this group
-                      const groupTotalThreads = designs.reduce(
-                        (sum, design) => {
-                          return sum + (parseInt(design.threadCount) || 0);
-                        },
+            {isPatternVisible && repeatInfo && (
+              <div className="relative">
+                {/* Pattern Display */}
+                <div className="w-full overflow-x-auto">
+                  <div
+                    ref={patternRef}
+                    className="flex flex-row items-end min-w-full bg-white"
+                    style={{
+                      minHeight: "200px",
+                      paddingBottom: "40px",
+                    }}
+                  >
+                    {(() => {
+                      let displayElements = [];
+                      const singlePatternLength = warpDesigns.reduce(
+                        (sum, d) => sum + (parseInt(d.threadCount) || 0),
                         0
                       );
 
-                      // Calculate width based on proportion of total threads
-                      const totalWidth = (groupTotalThreads / totalYarn) * 100;
+                      if (!repeatInfo || !singlePatternLength) return null;
+
+                      // Calculate minimum width per repeat to ensure visibility
+                      const minWidthPerRepeat = 90;
+                      const totalRepeats =
+                        repeatInfo.repeat +
+                        (repeatInfo.adjustedValue > 0 ? 1 : 0);
+                      const containerWidth = Math.max(
+                        totalRepeats * minWidthPerRepeat,
+                        150
+                      );
+
+                      // Declare arrays for labels and separators
+                      const labels = [];
+                      const separators = [];
+
+                      // Function to create a pattern group
+                      const createPatternGroup = (
+                        designs,
+                        isPartial = false
+                      ) => {
+                        // Calculate total threads in this group
+                        const groupTotalThreads = designs.reduce(
+                          (sum, design) => {
+                            return sum + (parseInt(design.threadCount) || 0);
+                          },
+                          0
+                        );
+
+                        // Calculate width based on proportion of total threads
+                        const totalWidth =
+                          (groupTotalThreads / totalYarn) * 100;
+
+                        return (
+                          <div
+                            className="flex flex-col relative"
+                            style={{
+                              width: `${totalWidth}%`,
+                              minWidth: isPartial
+                                ? "50px"
+                                : minWidthPerRepeat + "px",
+                            }}
+                          >
+                            <div className="flex h-40">
+                              {designs.map((design, idx) => {
+                                const threadCount =
+                                  parseInt(design.threadCount) || 0;
+                                if (threadCount <= 0) return null;
+
+                                // Calculate segment width based on proportion within this group
+                                const segmentWidth =
+                                  (threadCount / groupTotalThreads) * 100;
+
+                                // Convert color to hex
+                                const hexColor = colorToHex(design.color);
+
+                                return (
+                                  <div
+                                    key={idx}
+                                    style={{
+                                      width: `${segmentWidth}%`,
+                                      backgroundColor: hexColor,
+                                      minWidth: "3px",
+                                    }}
+                                    className="h-full"
+                                    data-color={hexColor}
+                                  />
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      };
+
+                      // Add full repeats
+                      for (let i = 0; i < repeatInfo.repeat; i++) {
+                        displayElements.push(createPatternGroup(warpDesigns));
+
+                        // Add label
+                        labels.push(
+                          <div
+                            key={`label-${i}`}
+                            className="absolute text-xs text-gray-600 font-medium"
+                            style={{
+                              left: `${
+                                ((i * singlePatternLength) / totalYarn) * 100
+                              }%`,
+                              bottom: "-25px",
+                              transform: "translateX(-50%)",
+                            }}
+                          >
+                            Repeat {i + 1}
+                          </div>
+                        );
+
+                        // Add separator (except for last repeat)
+                        if (
+                          i < repeatInfo.repeat - 1 ||
+                          repeatInfo.adjustedValue > 0
+                        ) {
+                          separators.push(
+                            <div
+                              key={`separator-${i}`}
+                              className="absolute h-full w-0.5 bg-gray-300"
+                              style={{
+                                left: `${
+                                  (((i + 1) * singlePatternLength) /
+                                    totalYarn) *
+                                  100
+                                }%`,
+                                transform: "translateX(-50%)",
+                              }}
+                            />
+                          );
+                        }
+                      }
+
+                      // Add partial repeat if exists
+                      if (
+                        repeatInfo.stoppingIndex >= 0 &&
+                        repeatInfo.adjustedValue > 0
+                      ) {
+                        const partialDesigns = [
+                          ...warpDesigns.slice(0, repeatInfo.stoppingIndex),
+                          {
+                            ...warpDesigns[repeatInfo.stoppingIndex],
+                            threadCount: repeatInfo.adjustedValue,
+                          },
+                        ];
+
+                        displayElements.push(
+                          createPatternGroup(partialDesigns, true)
+                        );
+                        labels.push(
+                          <div
+                            key="label-remaining"
+                            className="absolute text-xs text-gray-600 font-medium"
+                            style={{
+                              right: "0",
+                              bottom: "-25px",
+                              transform: "translateX(50%)",
+                            }}
+                          >
+                            Remaining
+                          </div>
+                        );
+                      }
 
                       return (
                         <div
-                          className="flex flex-col relative"
-                          style={{
-                            width: `${totalWidth}%`,
-                            minWidth: isPartial
-                              ? "50px"
-                              : minWidthPerRepeat + "px",
-                          }}
+                          className="relative"
+                          style={{ width: containerWidth + "px" }}
                         >
-                          <div className="flex h-40">
-                            {designs.map((design, idx) => {
-                              const threadCount =
-                                parseInt(design.threadCount) || 0;
-                              if (threadCount <= 0) return null;
-
-                              // Calculate segment width based on proportion within this group
-                              const segmentWidth =
-                                (threadCount / groupTotalThreads) * 100;
-
-                              // Convert color to hex
-                              const hexColor = colorToHex(design.color);
-
-                              return (
-                                <div
-                                  key={idx}
-                                  style={{
-                                    width: `${segmentWidth}%`,
-                                    backgroundColor: hexColor,
-                                    minWidth: "3px",
-                                  }}
-                                  className="h-full"
-                                  data-color={hexColor}
-                                />
-                              );
-                            })}
+                          <div className="relative flex">
+                            {separators}
+                            {displayElements}
                           </div>
+                          {labels}
                         </div>
                       );
-                    };
+                    })()}
+                  </div>
+                </div>
 
-                    // Add full repeats
-                    for (let i = 0; i < repeatInfo.repeat; i++) {
-                      displayElements.push(createPatternGroup(warpDesigns));
-
-                      // Add label
-                      labels.push(
-                        <div
-                          key={`label-${i}`}
-                          className="absolute text-xs text-gray-600 font-medium"
-                          style={{
-                            left: `${
-                              ((i * singlePatternLength) / totalYarn) * 100
-                            }%`,
-                            bottom: "-25px",
-                            transform: "translateX(-50%)",
-                          }}
-                        >
-                          Repeat {i + 1}
-                        </div>
-                      );
-
-                      // Add separator (except for last repeat)
-                      if (
-                        i < repeatInfo.repeat - 1 ||
-                        repeatInfo.adjustedValue > 0
-                      ) {
-                        separators.push(
-                          <div
-                            key={`separator-${i}`}
-                            className="absolute h-full w-0.5 bg-gray-300"
-                            style={{
-                              left: `${
-                                (((i + 1) * singlePatternLength) / totalYarn) *
-                                100
-                              }%`,
-                              transform: "translateX(-50%)",
-                            }}
-                          />
-                        );
-                      }
-                    }
-
-                    // Add partial repeat if exists
-                    if (
-                      repeatInfo.stoppingIndex >= 0 &&
-                      repeatInfo.adjustedValue > 0
-                    ) {
-                      const partialDesigns = [
-                        ...warpDesigns.slice(0, repeatInfo.stoppingIndex),
-                        {
-                          ...warpDesigns[repeatInfo.stoppingIndex],
-                          threadCount: repeatInfo.adjustedValue,
-                        },
-                      ];
-
-                      displayElements.push(
-                        createPatternGroup(partialDesigns, true)
-                      );
-                      labels.push(
-                        <div
-                          key="label-remaining"
-                          className="absolute text-xs text-gray-600 font-medium"
-                          style={{
-                            right: "0",
-                            bottom: "-25px",
-                            transform: "translateX(50%)",
-                          }}
-                        >
-                          Remaining
-                        </div>
-                      );
-                    }
-
-                    return (
+                {/* Legend */}
+                <div className="mt-8 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {colorLegend.map((l, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
                       <div
-                        className="relative"
-                        style={{ width: containerWidth + "px" }}
-                      >
-                        <div className="relative flex">
-                          {separators}
-                          {displayElements}
-                        </div>
-                        {labels}
-                      </div>
-                    );
-                  })()}
+                        className="w-4 h-4 rounded-sm border border-gray-200"
+                        style={{ backgroundColor: l.color }}
+                      />
+                      <span className="text-xs text-gray-600">
+                        Color {l.serial}: {l.name}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
-
-              {/* Legend */}
-              <div className="mt-8 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {colorLegend.map((l, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <div
-                      className="w-4 h-4 rounded-sm border border-gray-200"
-                      style={{ backgroundColor: l.color }}
-                    />
-                    <span className="text-xs text-gray-600">
-                      Color {l.serial}: {l.name}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
