@@ -10,6 +10,7 @@ import { FiFilter } from "react-icons/fi";
 import YarnCard from "../components/common/CardComponent";
 import { useNavigate } from "react-router-dom";
 import ConfirmDialog from "../components/common/ConfirmDialog";
+import SelectDesignsDialog from "../components/common/SelectDesignsDialog";
 
 const ImagePreview = ({ imageUrl, onClose }) => {
   return (
@@ -49,6 +50,7 @@ function Reports() {
   const [samplingdesign, setSamplingDesign] = useState([]);
   const [samplingfilteredDesigns, setSamplingFilteredDesigns] = useState([]);
   const [previewImage, setPreviewImage] = useState(null);
+  const [selectDialogOpen, setSelectDialogOpen] = useState(false);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -201,10 +203,13 @@ function Reports() {
     navigate("/new-design");
   };
 
-  const handleExcelDownload = async () => {
+  const handleExcelDownload = async (selectedDesignIds) => {
     try {
+      const queryParams = selectedDesignIds.join(",");
       const response = await fetch(
-        `${import.meta.env.VITE_API_BACKEND_URL}/api/excel`,
+        `${
+          import.meta.env.VITE_API_BACKEND_URL
+        }/api/excel?designs=${queryParams}`,
         {
           method: "GET",
         }
@@ -255,7 +260,7 @@ function Reports() {
           <div className="flex gap-3">
             {/* Excel Export Button */}
             <button
-              onClick={handleExcelDownload}
+              onClick={() => setSelectDialogOpen(true)}
               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 shadow-sm cursor-pointer"
             >
               <FaFileExcel className="text-sm" />
@@ -519,6 +524,17 @@ function Reports() {
           open={confirmOpen}
           onClose={() => setConfirmOpen(false)}
           onConfirm={handleDeleteConfirm}
+        />
+
+        {/* Select Designs Dialog */}
+        <SelectDesignsDialog
+          open={selectDialogOpen}
+          onClose={() => setSelectDialogOpen(false)}
+          onConfirm={(selectedIds) => {
+            handleExcelDownload(selectedIds);
+            setSelectDialogOpen(false);
+          }}
+          designs={design}
         />
       </div>
     </div>
