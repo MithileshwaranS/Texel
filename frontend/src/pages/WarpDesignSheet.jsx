@@ -1094,7 +1094,7 @@ function DesignSheet({ designName, color, DesignInputs }) {
   };
 
   // Update the downloadPattern function
-  const downloadPattern = () => {
+  const downloadPattern = async () => {
     if (!repeatInfo || !warpDesigns.length) {
       toast.error("No pattern to download");
       return;
@@ -1102,34 +1102,46 @@ function DesignSheet({ designName, color, DesignInputs }) {
 
     try {
       toast.loading("Generating pattern image...", { id: "download-toast" });
-
-      // Create SVG with increased height
       const svgContent = createPatternSVG(
         warpDesigns,
-        1200, // width
-        400, // increased height for better visibility
+        1200,
+        400,
         repeatInfo,
         totalYarn
       );
 
-      // Convert SVG to blob
-      const blob = new Blob([svgContent], {
-        type: "image/svg+xml;charset=utf-8",
-      });
-      const url = URL.createObjectURL(blob);
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BACKEND_URL}/api/uploadPattern`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            svgContent,
+            designName: designName || "pattern",
+          }),
+        }
+      );
 
-      // Create download link
+      if (!response.ok) {
+        throw new Error("Failed to upload pattern");
+      }
+
+      const { url, publicId } = await response.json();
+
       const link = document.createElement("a");
       link.href = url;
       link.download = `${designName || "pattern"}.svg`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(url);
 
       toast.success("Pattern downloaded successfully!", {
         id: "download-toast",
       });
+
+      return { publicId, url };
     } catch (error) {
       console.error("Error downloading pattern:", error);
       toast.error("Failed to download pattern", { id: "download-toast" });
