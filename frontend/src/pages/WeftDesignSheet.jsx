@@ -117,26 +117,6 @@ const createPatternSVG = (designs, totalWidth, totalHeight, totalYarn) => {
   `;
 };
 
-// --- Predefined Colors ---
-export const predefinedColors = [
-  { value: "#000000", label: "Black" },
-  { value: "#FFFFFF", label: "White" },
-  { value: "#FF0000", label: "Red" },
-  { value: "#00FF00", label: "Green" },
-  { value: "#0000FF", label: "Blue" },
-  { value: "#FFFF00", label: "Yellow" },
-  { value: "#FF00FF", label: "Magenta" },
-  { value: "#00FFFF", label: "Cyan" },
-  { value: "#FFA500", label: "Orange" },
-  { value: "#800080", label: "Purple" },
-  { value: "#A52A2A", label: "Brown" },
-  { value: "#808080", label: "Gray" },
-  { value: "#F5F5DC", label: "Beige" },
-  { value: "#FFC0CB", label: "Pink" },
-  { value: "#008080", label: "Teal" },
-  { value: "#4B0082", label: "Indigo" },
-];
-
 // Color conversion utilities
 const rgbToHex = (r, g, b) => {
   const toHex = (c) => {
@@ -172,6 +152,94 @@ const colorToHex = (color) => {
 
   // Default to black if conversion fails
   return "#000000";
+};
+
+const ColorPicker = ({
+  value,
+  onChange,
+  onRemove,
+  inputMode = "select",
+  compact = false,
+  hideLabel = false,
+  availableColors = [],
+}) => {
+  const [customColor, setCustomColor] = useState("#000000");
+  const [customName, setCustomName] = useState("");
+  const [selectedColor, setSelectedColor] = useState("");
+  const [colors, setColors] = useState([]);
+
+  useEffect(() => {
+    const fetchColors = async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_API_BACKEND_URL}/api/colors`
+        );
+        const data = await response.json();
+        const formattedColors = data.map((color) => ({
+          value: color.colorvalue,
+          label: color.colorlabel,
+        }));
+        setColors(formattedColors);
+      } catch (error) {
+        console.error("Error fetching colors:", error);
+      }
+    };
+
+    fetchColors();
+  }, []);
+
+  useEffect(() => {
+    if (value) {
+      setSelectedColor(value.color || "");
+      setCustomColor(value.color || "#000000");
+      setCustomName(value.name || "");
+    }
+  }, [value]);
+
+  const handleColorSelect = (color) => {
+    setSelectedColor(color);
+    const predefined = colors.find((c) => c.value === color);
+    if (predefined) {
+      onChange({
+        color,
+        name: predefined.label,
+      });
+    } else {
+      onChange({
+        color,
+        name: customName,
+      });
+    }
+  };
+
+  return (
+    <div className={`flex ${compact ? "space-x-2" : "space-x-4"} items-center`}>
+      {inputMode === "select" ? (
+        <select
+          value={selectedColor}
+          onChange={(e) => handleColorSelect(e.target.value)}
+          className="block w-full px-3 py-1 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm appearance-none"
+        >
+          <option value="">Select a color</option>
+          {colors.map((color) => (
+            <option key={color.value} value={color.value}>
+              {color.label}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <input
+          type="color"
+          value={customColor}
+          onChange={(e) => {
+            setCustomColor(e.target.value);
+            handleColorSelect(e.target.value);
+          }}
+          className="w-8 h-8 rounded cursor-pointer"
+        />
+      )}
+    </div>
+  );
 };
 
 // Reusable components
@@ -250,57 +318,6 @@ const DropdownField = ({
   );
 };
 
-const ColorInput = ({
-  value,
-  onChange,
-  label,
-  compact = false,
-  hideLabel = false,
-  availableColors = predefinedColors,
-}) => {
-  // Convert the color to hex before rendering
-  const hexValue = colorToHex(value);
-
-  const handleColorChange = (e) => {
-    const newValue = e.target ? e.target.value : e;
-    onChange({ target: { value: colorToHex(newValue) } });
-  };
-
-  return (
-    <div className="flex flex-col">
-      {!hideLabel && (
-        <label className="text-xs font-medium text-gray-500 mb-1 flex items-center uppercase tracking-wider">
-          <FaPalette className="mr-2 text-gray-400" size={12} />
-          {label}
-          <span className="text-red-500 ml-1">*</span>
-        </label>
-      )}
-      <div className="flex items-center gap-2">
-        <input
-          type="color"
-          value={hexValue}
-          onChange={handleColorChange}
-          className="w-8 h-8 rounded cursor-pointer"
-        />
-        <select
-          value={hexValue}
-          onChange={handleColorChange}
-          className={`${
-            compact ? "py-1 text-sm" : "py-2"
-          } flex-1 px-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm appearance-none`}
-        >
-          <option value="">Select a color</option>
-          {availableColors.map((color, index) => (
-            <option key={index} value={colorToHex(color.value)}>
-              {color.label}
-            </option>
-          ))}
-        </select>
-      </div>
-    </div>
-  );
-};
-
 const ResultCard = ({ title, value, icon: Icon, color = "bg-white" }) => {
   return (
     <motion.div
@@ -357,68 +374,38 @@ const getLegendNumberForColor = (colorLegend, color) => {
   return found ? found.serial : null;
 };
 
-const ColorLegendInput = ({ value, onChange, label, colorLegend }) => {
-  const [inputMode, setInputMode] = useState("select"); // 'select' or 'input'
-  const [customName, setCustomName] = useState("");
+const ColorLegendInput = ({ value, onChange, label, colorLegend, colors }) => {
   const [selectedColor, setSelectedColor] = useState("");
-
-  const isPredefinedColor = predefinedColors.some(
-    (c) => c.value === selectedColor
-  );
 
   useEffect(() => {
     if (value) {
-      const isPredefined = predefinedColors.some(
-        (c) => c.value === value.color
-      );
-      setInputMode(isPredefined ? "select" : "input");
       setSelectedColor(value.color);
-      if (!isPredefined) {
-        setCustomName(value.name);
-      }
     }
   }, [value]);
 
   const handleColorSelect = (color) => {
     setSelectedColor(color);
-    const predefined = predefinedColors.find((c) => c.value === color);
+    const predefined = colors.find((c) => c.value === color);
     if (predefined) {
       onChange({
         color,
         name: predefined.label,
         serial: value?.serial || "",
       });
-      setInputMode("select");
-    } else {
-      setInputMode("input");
     }
-  };
-
-  const handleNameChange = (e) => {
-    setCustomName(e.target.value);
-    onChange({
-      color: selectedColor,
-      name: e.target.value,
-      serial: value?.serial || "",
-    });
   };
 
   const handleSerialChange = (e) => {
     onChange({
       color: selectedColor,
-      name:
-        inputMode === "select"
-          ? predefinedColors.find((c) => c.value === selectedColor)?.label || ""
-          : customName,
+      name: colors.find((c) => c.value === selectedColor)?.label || "",
       serial: e.target.value,
     });
   };
 
-  // Update the ColorLegendInput component
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-12 gap-4">
-        {/* Color Selection - Takes 8 columns */}
         <div className="col-span-8">
           <label className="text-xs font-medium text-gray-500 mb-1 flex items-center uppercase tracking-wider">
             <FaPalette className="mr-2 text-gray-400" size={12} />
@@ -427,11 +414,9 @@ const ColorLegendInput = ({ value, onChange, label, colorLegend }) => {
           </label>
 
           <div className="flex items-center gap-2">
-            <input
-              type="color"
-              value={selectedColor}
-              onChange={(e) => handleColorSelect(e.target.value)}
-              className="w-8 h-8 rounded cursor-pointer"
+            <div
+              className="w-8 h-8 rounded cursor-pointer border border-gray-200"
+              style={{ backgroundColor: selectedColor }}
             />
 
             <select
@@ -440,8 +425,8 @@ const ColorLegendInput = ({ value, onChange, label, colorLegend }) => {
               className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm appearance-none"
             >
               <option value="">Select a color</option>
-              {predefinedColors.map((color, index) => (
-                <option key={index} value={color.value}>
+              {colors.map((color) => (
+                <option key={color.value} value={color.value}>
                   {color.label}
                 </option>
               ))}
@@ -449,7 +434,6 @@ const ColorLegendInput = ({ value, onChange, label, colorLegend }) => {
           </div>
         </div>
 
-        {/* Legend Number - Takes 4 columns */}
         <div className="col-span-4">
           <label className="text-xs font-medium text-gray-500 mb-1 flex items-center uppercase tracking-wider">
             Legend No.
@@ -464,23 +448,6 @@ const ColorLegendInput = ({ value, onChange, label, colorLegend }) => {
           />
         </div>
       </div>
-
-      {/* Custom Color Name Input - Show only when needed */}
-      {inputMode === "input" && selectedColor && (
-        <div>
-          <label className="text-xs font-medium text-gray-500 mb-1 flex items-center uppercase tracking-wider">
-            Custom Color Name
-            <span className="text-red-500 ml-1">*</span>
-          </label>
-          <input
-            type="text"
-            value={customName}
-            onChange={handleNameChange}
-            placeholder="Enter color name"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm"
-          />
-        </div>
-      )}
     </div>
   );
 };
@@ -488,17 +455,35 @@ const ColorLegendInput = ({ value, onChange, label, colorLegend }) => {
 function WeftDesignSheet({ designName, color, DesignInputs }) {
   const [colorLegend, setColorLegend] = useState([]);
   const [isPatternVisible, setIsPatternVisible] = useState(false);
+  const [colors, setColors] = useState([]);
+
   const getColorName = (hex) => {
     const legendEntry = colorLegend.find((l) => l.color === hex);
     if (legendEntry) return legendEntry.name;
 
-    const found = predefinedColors.find((c) => c.value === hex);
+    const found = colors.find((c) => c.value === hex);
     return found ? found.label : hex;
   };
 
   useEffect(() => {
-    console.log("Color Legend Updated:", colorLegend);
-  });
+    const fetchColors = async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_API_BACKEND_URL}/api/colors`
+        );
+        const data = await response.json();
+        const formattedColors = data.map((color) => ({
+          value: color.colorvalue,
+          label: color.colorlabel,
+        }));
+        setColors(formattedColors);
+      } catch (error) {
+        console.error("Error fetching colors:", error);
+      }
+    };
+
+    fetchColors();
+  }, []);
 
   // State management
   //   const [designName, setDesignName] = useState("");
@@ -540,7 +525,7 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
 
   const getAvailableColors = () => {
     return colorLegend.map((item) => {
-      const predefined = predefinedColors.find((c) => c.value === item.color);
+      const predefined = colors.find((c) => c.value === item.color);
       return (
         predefined || { value: item.color, label: getColorName(item.color) }
       );
@@ -821,12 +806,9 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
       return;
     }
 
-    const isPredefined = predefinedColors.some(
-      (c) => c.value === legendFormData.color
-    );
+    const isPredefined = colors.some((c) => c.value === legendFormData.color);
     const name = isPredefined
-      ? predefinedColors.find((c) => c.value === legendFormData.color)?.label ||
-        ""
+      ? colors.find((c) => c.value === legendFormData.color)?.label || ""
       : legendFormData.name;
 
     if (!name) {
@@ -1285,6 +1267,7 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
                   onChange={setLegendFormData}
                   label="Add to Color Legend"
                   colorLegend={colorLegend}
+                  colors={colors}
                 />
 
                 <motion.button
@@ -1330,7 +1313,7 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
                           </div>
                           <div className="flex justify-between items-center mt-2">
                             <span className="text-xs text-gray-500">
-                              {predefinedColors.some((c) => c.value === l.color)
+                              {colors.some((c) => c.value === l.color)
                                 ? "Predefined"
                                 : "Custom"}
                             </span>
@@ -1396,15 +1379,27 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
                         </div>
 
                         <div className="col-span-6 md:col-span-7 relative">
-                          <ColorInput
+                          <select
                             value={design.color}
                             onChange={(e) =>
-                              handleWarpDesignChange(index, "color", e)
+                              handleWarpDesignChange(
+                                index,
+                                "color",
+                                e.target.value
+                              )
                             }
-                            availableColors={getAvailableColors()}
-                            compact
-                            hideLabel
-                          />
+                            className="block w-full px-3 py-1 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm appearance-none"
+                          >
+                            <option value="">Select a color</option>
+                            {colorLegend.map((legendColor) => (
+                              <option
+                                key={legendColor.serial}
+                                value={legendColor.color}
+                              >
+                                {legendColor.name} (Color {legendColor.serial})
+                              </option>
+                            ))}
+                          </select>
                           <div className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-purple-100 text-purple-800 text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border border-purple-200">
                             {getLegendNumberForColor(
                               colorLegend,
