@@ -125,26 +125,72 @@ app.get("/api/yarnPrice", async (req, res) => {
   }
 });
 
-// 5. Edit/Update Yarn
+// Update the edit yarn endpoint
 app.put("/api/editYarn/:id", async (req, res) => {
-  const { id } = req.params;
-  const { yarnCount, hanksWt, yarnPrice } = req.body;
-
+  const client = await pool.connect();
   try {
-    const result = await queryDB(
-      `UPDATE yarndetails SET yarn_count=$1, hanks_wt=$2, yarnprice=$3 WHERE id=$4 RETURNING *`,
+    await client.query("BEGIN");
+    const { id } = req.params;
+    const { yarnCount, hanksWt, yarnPrice } = req.body;
+
+    // Get the current yarn details to compare price
+    const currentYarn = await client.query(
+      "SELECT yarn_count, yarnprice FROM yarndetails WHERE id = $1",
+      [id]
+    );
+
+    // Update the yarn details
+    const result = await client.query(
+      `UPDATE yarndetails 
+       SET yarn_count=$1, hanks_wt=$2, yarnprice=$3 
+       WHERE id=$4 
+       RETURNING *`,
       [yarnCount, hanksWt, yarnPrice, id]
     );
 
-    if (result.rows.length === 0)
-      return res.status(404).json({ message: "Yarn not found" });
+    // If price has changed, add to history
+    if (currentYarn.rows[0].yarnprice !== yarnPrice) {
+      await client.query(
+        `INSERT INTO yarn_price_history (yarn_count, price, updated_by)
+         VALUES ($1, $2, $3)`,
+        [yarnCount, yarnPrice, "system"] // Replace 'system' with actual user if available
+      );
+    }
+
+    await client.query("COMMIT");
 
     res.json({
       message: "Yarn updated successfully",
       updatedYarn: result.rows[0],
     });
   } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Update failed:", error);
     res.status(500).json({ message: "Update failed", error: error.message });
+  } finally {
+    client.release();
+  }
+});
+
+// Add new endpoint to get price history
+app.get("/api/yarnPriceHistory/:yarnCount", async (req, res) => {
+  try {
+    const yarnCount = decodeURIComponent(req.params.yarnCount);
+    console.log("Fetching history for yarn count:", yarnCount); // Debug log
+
+    const result = await pool.query(
+      `SELECT price, created_at, updated_by 
+       FROM yarn_price_history 
+       WHERE yarn_count = $1 
+       ORDER BY created_at DESC`,
+      [yarnCount]
+    );
+
+    console.log("Found records:", result.rows.length); // Debug log
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error fetching price history:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -1117,6 +1163,153 @@ app.get("/api/excel/data", async (req, res) => {
     res.json({ designs, warps, wefts });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// 1. Get all colors
+app.get("/api/colors", async (req, res) => {
+  try {
+    const result = await queryDB("SELECT * FROM colorsdetails ORDER BY id ASC");
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 2. Add new color
+app.post("/api/colors", async (req, res) => {
+  try {
+    const { colorValue, colorLabel } = req.body;
+
+    // Check if color already exists
+    const existingColor = await queryDB(
+      "SELECT * FROM colorsdetails WHERE colorvalue = $1 OR colorlabel = $2",
+      [colorValue, colorLabel]
+    );
+
+    if (existingColor.rows.length > 0) {
+      return res.status(409).json({ error: "Color already exists" });
+    }
+
+    const result = await queryDB(
+      "INSERT INTO colorsdetails (colorvalue, colorlabel) VALUES ($1, $2) RETURNING *",
+      [colorValue, colorLabel]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Failed to add color", details: error.message });
+  }
+});
+
+// 3. Update color
+app.put("/api/colors/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { colorValue, colorLabel } = req.body;
+
+    // Check if color exists
+    const existingColor = await queryDB(
+      "SELECT * FROM colorsdetails WHERE id = $1",
+      [id]
+    );
+
+    if (existingColor.rows.length === 0) {
+      return res.status(404).json({ error: "Color not found" });
+    }
+
+    // Check if new values conflict with existing colors
+    const conflictCheck = await queryDB(
+      "SELECT * FROM colorsdetails WHERE (colorvalue = $1 OR colorlabel = $2) AND id != $3",
+      [colorValue, colorLabel, id]
+    );
+
+    if (conflictCheck.rows.length > 0) {
+      return res
+        .status(409)
+        .json({ error: "Color value or label already exists" });
+    }
+
+    const result = await queryDB(
+      "UPDATE colorsdetails SET colorvalue = $1, colorlabel = $2 WHERE id = $3 RETURNING *",
+      [colorValue, colorLabel, id]
+    );
+
+    res.json({
+      message: "Color updated successfully",
+      color: result.rows[0],
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Update failed", details: error.message });
+  }
+});
+
+// 4. Delete color
+app.delete("/api/colors/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if color exists
+    const existingColor = await queryDB(
+      "SELECT * FROM colorsdetails WHERE id = $1",
+      [id]
+    );
+
+    if (existingColor.rows.length === 0) {
+      return res.status(404).json({ error: "Color not found" });
+    }
+
+    await queryDB("DELETE FROM colorsdetails WHERE id = $1", [id]);
+
+    res.json({ message: "Color deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Delete failed", details: error.message });
+  }
+});
+
+// 5. Get single color by ID
+app.get("/api/colors/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await queryDB("SELECT * FROM colorsdetails WHERE id = $1", [
+      id,
+    ]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Color not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Add new endpoint for uploading SVG to Cloudinary
+app.post("/api/uploadPattern", async (req, res) => {
+  try {
+    const { svgContent, designName } = req.body;
+
+    // Convert SVG string to Base64
+    const base64Svg = Buffer.from(svgContent).toString("base64");
+    const dataUri = `data:image/svg+xml;base64,${base64Svg}`;
+
+    // Upload to Cloudinary
+    const uploadResponse = await cloudinary.uploader.upload(dataUri, {
+      folder: "warp-patterns",
+      public_id: `pattern-${designName}-${Date.now()}`,
+      resource_type: "image",
+    });
+
+    res.json({
+      publicId: uploadResponse.public_id,
+      url: uploadResponse.secure_url,
+    });
+  } catch (error) {
+    console.error("Error uploading to Cloudinary:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 

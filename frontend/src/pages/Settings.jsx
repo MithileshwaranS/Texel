@@ -5,6 +5,7 @@ import {
   FaEdit,
   FaTrash,
   FaSearch,
+  FaHistory,
 } from "react-icons/fa";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -15,8 +16,15 @@ import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Tab } from "@headlessui/react";
+import ColorSettings from "../components/settings/ColorSettings";
+import PriceHistoryModal from "../components/settings/PriceHistoryModal";
 
-function Settings() {
+const YarnSettings = (
+  {
+    /* pass necessary props */
+  }
+) => {
   const [rows, setRows] = useState([]);
   const [filteredRows, setFilteredRows] = useState([]);
   const [headers, setHeaders] = useState([]);
@@ -35,6 +43,9 @@ function Settings() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showPriceHistory, setShowPriceHistory] = useState(false);
+  const [selectedYarnHistory, setSelectedYarnHistory] = useState([]);
+  const [selectedYarnCount, setSelectedYarnCount] = useState("");
 
   // Filter rows based on search term
   useEffect(() => {
@@ -127,12 +138,20 @@ function Settings() {
 
       const method = isEditing ? "PUT" : "POST";
 
+      // If editing, include the old price in the request
+      const requestBody = {
+        ...formData,
+        oldPrice: isEditing
+          ? rows.find((row) => row.id === currentId)?.yarnprice
+          : null,
+      };
+
       const response = await fetch(endpoint, {
         method: method,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(requestBody),
       });
 
       if (response.ok) {
@@ -196,6 +215,31 @@ function Settings() {
   useEffect(() => {
     fetchYarnData();
   }, []);
+
+  const handleViewPriceHistory = async (id, yarnCount) => {
+    try {
+      console.log("Fetching history for yarn count:", yarnCount);
+      const encodedYarnCount = encodeURIComponent(yarnCount);
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_BACKEND_URL
+        }/api/yarnPriceHistory/${encodedYarnCount}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const history = await response.json();
+      console.log("Received price history:", history);
+
+      setSelectedYarnHistory(history);
+      setSelectedYarnCount(yarnCount);
+      setShowPriceHistory(true);
+    } catch (error) {
+      console.error("Error fetching price history:", error);
+    }
+  };
 
   // Animation variants
   const containerVariants = {
@@ -378,6 +422,20 @@ function Settings() {
                               className="py-3 text-gray-600 border-b border-gray-200"
                             >
                               <div className="flex justify-center space-x-2">
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={() =>
+                                    handleViewPriceHistory(
+                                      row.id,
+                                      row.yarn_count
+                                    )
+                                  }
+                                  className="p-2 text-green-600 hover:text-green-800 hover:bg-green-100 rounded-full transition-colors"
+                                  title="Price History"
+                                >
+                                  <FaHistory />
+                                </motion.button>
                                 <motion.button
                                   whileHover={{ scale: 1.1 }}
                                   whileTap={{ scale: 0.9 }}
@@ -605,6 +663,52 @@ function Settings() {
           </motion.div>
         )}
       </AnimatePresence>
+      <PriceHistoryModal
+        isOpen={showPriceHistory}
+        onClose={() => setShowPriceHistory(false)}
+        priceHistory={selectedYarnHistory}
+        yarnCount={selectedYarnCount}
+      />
+    </div>
+  );
+};
+
+function Settings() {
+  const tabs = [
+    { name: "Yarn Settings", component: YarnSettings },
+    { name: "Color Settings", component: ColorSettings },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        <Tab.Group>
+          <Tab.List className="flex space-x-1 rounded-xl bg-white p-1 shadow-sm mb-6">
+            {tabs.map((tab) => (
+              <Tab
+                key={tab.name}
+                className={({ selected }) =>
+                  `w-full rounded-lg py-2.5 text-sm font-medium leading-5
+                  ${
+                    selected
+                      ? "bg-blue-600 text-white shadow"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`
+                }
+              >
+                {tab.name}
+              </Tab>
+            ))}
+          </Tab.List>
+          <Tab.Panels>
+            {tabs.map((tab, idx) => (
+              <Tab.Panel key={idx}>
+                <tab.component />
+              </Tab.Panel>
+            ))}
+          </Tab.Panels>
+        </Tab.Group>
+      </div>
     </div>
   );
 }
