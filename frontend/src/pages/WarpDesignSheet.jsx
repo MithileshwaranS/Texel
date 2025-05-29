@@ -520,7 +520,12 @@ const ColorLegendInput = ({ value, onChange, label, colorLegend, colors }) => {
   );
 };
 
-function WarpDesignSheet({ color }) {
+function WarpDesignSheet({
+  color,
+  onChangeDesignType,
+  onChangeDesignName,
+  onChangeColorName,
+}) {
   const [colorLegend, setColorLegend] = useState([]);
   const [isPatternVisible, setIsPatternVisible] = useState(false);
   const [colors, setColors] = useState([]);
@@ -632,6 +637,10 @@ function WarpDesignSheet({ color }) {
       const data = await response.json();
       console.log(data);
       toast.success("Design saved successfully!");
+      onChangeDesignName(designName);
+      onChangeColorName(selectedColor);
+      onChangeDesignType("weft");
+      window.scrollTo(0, 0);
     } catch (error) {
       console.error("Error saving data:", error);
       toast.error("Failed to save design");

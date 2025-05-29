@@ -452,12 +452,12 @@ const ColorLegendInput = ({ value, onChange, label, colorLegend, colors }) => {
   );
 };
 
-function WeftDesignSheet() {
+function WeftDesignSheet({ newDesignName, newColorName }) {
   const [colorLegend, setColorLegend] = useState([]);
   const [isPatternVisible, setIsPatternVisible] = useState(false);
   const [colors, setColors] = useState([]);
-  const [designName, setDesignName] = useState("");
-  const [selectedColor, setSelectedColor] = useState("#000000");
+  const [designName, setDesignName] = useState(newDesignName || "");
+  const [selectedColor, setSelectedColor] = useState(newColorName || "#000000");
 
   const getColorName = (hex) => {
     const legendEntry = colorLegend.find((l) => l.color === hex);
@@ -1136,6 +1136,7 @@ function WeftDesignSheet() {
       width,
       totalThreads,
       warpWeights,
+      totalThreadSum: totalThreadSum,
       threadSummary: threadSummary.map((thread) => ({
         color: getColorName(thread.color),
         legendNumber: thread.legendNumber,
@@ -1211,18 +1212,26 @@ function WeftDesignSheet() {
         width,
         totalThreads,
         warpWeights,
+        totalThreadSum: totalThreadSum,
         threadSummary: threadSummary.map((thread) => ({
           color: getColorName(thread.color),
           legendNumber: thread.legendNumber,
           totalThreadCount: thread.totalThreadCount,
         })),
-        threadWeights: threadWeights.map((weight) => ({
-          color: weight.color ? getColorName(weight.color) : "Total",
-          legendNumber: weight.legendNumber,
-          threadCount: weight.threadCount,
-          weight: weight.weight,
-          totalWeight: weight.totalWeight,
-        })),
+        threadWeights: threadWeights.map((weight) => {
+          const threadSummaryItem = threadSummary.find(
+            (t) => t.color === weight.color
+          );
+          return {
+            color: weight.color ? getColorName(weight.color) : "Total",
+            colorValue: weight.color,
+            legendNumber: weight.legendNumber,
+            threadCount: weight.threadCount,
+            weight: weight.weight,
+            totalWeight: weight.totalWeight,
+            singleRepeatThread: threadSummaryItem?.totalThreadCount || 0,
+          };
+        }),
       };
 
       // Set the final data state
@@ -1230,7 +1239,7 @@ function WeftDesignSheet() {
 
       // Send to backend
       const response = await fetch(
-        `${import.meta.env.VITE_API_BACKEND_URL}/api/save-design`,
+        `${import.meta.env.VITE_API_BACKEND_URL}/api/save-weft-design`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1258,6 +1267,41 @@ function WeftDesignSheet() {
       <span className="text-sm font-medium">Save Design</span>
     </motion.button>
   );
+
+  const logAllValues = () => {
+    const loggedValues = {
+      designValues: {
+        designName,
+        selectedColor,
+        colorName: getColorName(selectedColor),
+        width,
+        totalOrderWidth,
+        totalYarn,
+        totalThreads,
+        totalThreadSum,
+      },
+      designs: {
+        weftDesigns,
+        warps,
+        colorLegend,
+        partialThreads,
+      },
+      calculations: {
+        warpWeights,
+        threadWeights,
+        warpTotalThread,
+        threadSummary,
+        finalThreadSummary,
+      },
+      patternInfo: {
+        repeatInfo,
+        isPatternVisible,
+      },
+    };
+
+    console.log("All Component Values:", loggedValues);
+    return loggedValues;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
@@ -1967,6 +2011,13 @@ function WeftDesignSheet() {
                       </span>
                     </button>
                     <SubmitButton />
+                    <button
+                      onClick={logAllValues}
+                      className="flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-colors"
+                    >
+                      <FaCalculator size={14} />
+                      <span className="text-sm font-medium">Log State</span>
+                    </button>
                   </>
                 )}
               </div>

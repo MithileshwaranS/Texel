@@ -1405,6 +1405,101 @@ app.post("/api/save-design", async (req, res) => {
   }
 });
 
+app.post("/api/save-weft-design", async (req, res) => {
+  try {
+    const request = req.body;
+    console.log("request", request);
+
+    const queryDesigns = await queryDB(
+      "INSERT into designsheet(designname) values($1) RETURNING id",
+      [request.designName]
+    );
+
+    const designId = queryDesigns.rows[0].id;
+
+    const queryWefts = await queryDB(
+      "INSERT into designsheetweft(designid) values($1) RETURNING id",
+      [designId]
+    );
+    const length = request.threadWeights.length - 1;
+
+    const weftId = queryWefts.rows[0].id;
+
+    const queryWeftInfo = await queryDB(
+      `INSERT INTO weftinfo(weftid,colorname,weftcount,pick,wastage,totalquantity,width,
+      totalthreads,weftweight,threadperrepeat,ordertotalweight,totalweightperrepeat) 
+      values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
+      [
+        weftId,
+        request.colorName,
+        request.warps[0].count,
+        request.warps[0].reed,
+        request.warps[0].constant,
+        request.totalOrderWidth,
+        request.width,
+        request.totalThreads,
+        request.warpWeights[0],
+        parseFloat(request.totalThreadSum),
+        parseFloat(request.threadWeights[length].totalWeight),
+        parseFloat(request.threadWeights[length].weight),
+      ]
+    );
+
+    const weftInfoId = queryWeftInfo.rows[0].id;
+
+    // Loop through thread weights but skip the last object
+    for (let i = 0; i < request.threadWeights.length - 1; i++) {
+      const threadWeight = request.threadWeights[i];
+      await queryDB(
+        "INSERT INTO weftcolorsinfo(weftinfoid,colorvalue,colorlabel,legend,threads,weight,totalweight,totalweightthreads) values($1,$2,$3,$4,$5,$6,$7,$8)",
+        [
+          weftInfoId,
+          threadWeight.colorValue,
+          threadWeight.color,
+          threadWeight.legendNumber,
+          threadWeight.singleRepeatThread,
+          parseFloat(threadWeight.weight),
+          parseFloat(threadWeight.totalWeight),
+          threadWeight.threadCount,
+        ]
+      );
+    }
+
+    // for (let i = 0; i < request.WeftOrder.length; i++) {
+    //   const weftOrder = request.WeftOrder[i];
+    //   await queryDB(
+    //     "INSERT INTO WaOrderColours(warpinfoid,colorvalue,colorlabel,threadcount) values($1,$2,$3,$4)",
+    //     [
+    //       warpInfoId,
+    //       warpOrder.color.toLowerCase(),
+    //       warpOrder.colorName,
+    //       parseInt(warpOrder.threadCount),
+    //     ]
+    //   );
+    // }
+
+    // for (let i = 0; i < request.partialThreads.length; i++) {
+    //   const partialThread = request.partialThreads[i];
+    //   await queryDB(
+    //     "INSERT INTO WarpPartialThreads(warpinfoid,colorvalue,colorlabel,threadcount,legendnumber) values($1,$2,$3,$4,$5)",
+    //     [
+    //       warpInfoId,
+    //       partialThread.color,
+    //       partialThread.colorName,
+    //       partialThread.threadCount,
+    //       partialThread.legendNumber,
+    //     ]
+    //   );
+    // }
+
+    res.status(201).json({ message: "Design saved successfully", designId });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Failed to save design", details: error.message });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
