@@ -452,10 +452,12 @@ const ColorLegendInput = ({ value, onChange, label, colorLegend, colors }) => {
   );
 };
 
-function WeftDesignSheet({ designName, color, DesignInputs }) {
+function WeftDesignSheet() {
   const [colorLegend, setColorLegend] = useState([]);
   const [isPatternVisible, setIsPatternVisible] = useState(false);
   const [colors, setColors] = useState([]);
+  const [designName, setDesignName] = useState("");
+  const [selectedColor, setSelectedColor] = useState("#000000");
 
   const getColorName = (hex) => {
     const legendEntry = colorLegend.find((l) => l.color === hex);
@@ -477,6 +479,19 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
           label: color.colorlabel,
         }));
         setColors(formattedColors);
+
+        // Set initial selected color and weft design when colors are loaded
+        if (formattedColors.length > 0) {
+          const initialColor = formattedColors[0].value;
+          setSelectedColor(initialColor);
+          setWeftDesigns([
+            {
+              color: initialColor,
+              threadCount: "",
+              colorName: formattedColors[0].label,
+            },
+          ]);
+        }
       } catch (error) {
         console.error("Error fetching colors:", error);
       }
@@ -497,11 +512,11 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
   const [warps, setWarps] = useState([
     { count: "", reed: "", cost: "", dyeing: 300, constant: 1.45 },
   ]);
-  const [warpDesigns, setWarpDesigns] = useState([
+  const [weftDesigns, setWeftDesigns] = useState([
     {
-      color: color || "#000000",
+      color: selectedColor,
       threadCount: "",
-      colorName: getColorName(color || "#000000"),
+      colorName: getColorName(selectedColor),
     },
   ]);
   const [totalThreadSum, setTotalThreadSum] = useState(0);
@@ -519,6 +534,7 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
   const [finalThreadSummary, setFinalThreadSummary] = useState([]);
   const [threadWeights, setThreadWeights] = useState([]);
   const [TotalThreadWeights, setTotalThreadWeights] = useState([]);
+  const [finalData, setFinalData] = useState(null);
 
   // Add new state for the pattern ref
   const patternRef = React.useRef(null);
@@ -538,7 +554,7 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
 
       // Calculate threads up to stopping index
       for (let i = 0; i < repeatInfo.stoppingIndex; i++) {
-        const design = warpDesigns[i];
+        const design = weftDesigns[i];
         const threadCount = parseInt(design.threadCount) || 0;
         if (threadCount > 0) {
           partialThreadsData.push({
@@ -552,7 +568,7 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
 
       // Add the partial thread count for stopping color
       if (repeatInfo.adjustedValue > 0) {
-        const stoppingDesign = warpDesigns[repeatInfo.stoppingIndex];
+        const stoppingDesign = weftDesigns[repeatInfo.stoppingIndex];
         partialThreadsData.push({
           color: stoppingDesign.color,
           legendNumber: getLegendNumberForColor(
@@ -566,7 +582,7 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
 
       setPartialThreads(partialThreadsData);
     }
-  }, [repeatInfo, warpDesigns, colorLegend]);
+  }, [repeatInfo, weftDesigns, colorLegend]);
 
   // Then modify the useEffect that calculates weights:
   useEffect(() => {
@@ -639,7 +655,7 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
     if (repeatInfo.stoppingIndex >= 0) {
       // Add complete sections in partial repeat
       for (let i = 0; i < repeatInfo.stoppingIndex; i++) {
-        const design = warpDesigns[i];
+        const design = weftDesigns[i];
         const threadCount = parseInt(design.threadCount) || 0;
         const currentCount = colorThreadCounts.get(design.color) || 0;
         colorThreadCounts.set(design.color, currentCount + threadCount);
@@ -648,7 +664,7 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
 
       // Add the partial section
       if (repeatInfo.adjustedValue > 0) {
-        const stoppingDesign = warpDesigns[repeatInfo.stoppingIndex];
+        const stoppingDesign = weftDesigns[repeatInfo.stoppingIndex];
         const currentCount = colorThreadCounts.get(stoppingDesign.color) || 0;
         colorThreadCounts.set(
           stoppingDesign.color,
@@ -672,14 +688,14 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
     );
 
     setFinalThreadSummary(updatedSummary);
-  }, [repeatInfo, warpDesigns, totalThreadSum, threadSummary, colorLegend]);
+  }, [repeatInfo, weftDesigns, totalThreadSum, threadSummary, colorLegend]);
 
   // Calculate each color total thread
   useEffect(() => {
     const threadSummary = {};
     let sum = 0;
 
-    for (const { color, threadCount } of warpDesigns) {
+    for (const { color, threadCount } of weftDesigns) {
       const count = parseInt(threadCount);
       const safeCount = isNaN(count) ? 0 : count;
       const legendNumber = getLegendNumberForColor(colorLegend, color);
@@ -698,7 +714,7 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
 
     setThreadSummary(Object.values(threadSummary));
     setTotalThreadSum(sum);
-  }, [warpDesigns, colorLegend]);
+  }, [weftDesigns, colorLegend]);
 
   // Fetch yarn details
   useEffect(() => {
@@ -752,8 +768,8 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
     const defaultColor =
       availableColors.length > 0 ? availableColors[0].value : "#000000";
 
-    setWarpDesigns([
-      ...warpDesigns,
+    setWeftDesigns([
+      ...weftDesigns,
       {
         color: defaultColor,
         threadCount: "",
@@ -763,9 +779,9 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
   };
 
   const removeWarpDesign = (index) => {
-    if (warpDesigns.length > 1) {
-      const newDesigns = warpDesigns.filter((_, i) => i !== index);
-      setWarpDesigns(newDesigns);
+    if (weftDesigns.length > 1) {
+      const newDesigns = weftDesigns.filter((_, i) => i !== index);
+      setWeftDesigns(newDesigns);
       // Reset pattern visibility when designs change
       setIsPatternVisible(false);
       setRepeatInfo(null);
@@ -773,7 +789,7 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
   };
 
   const handleWarpDesignChange = (index, field, value) => {
-    const newDesigns = [...warpDesigns];
+    const newDesigns = [...weftDesigns];
     const newValue = value.target ? value.target.value : value;
 
     if (field === "color") {
@@ -790,7 +806,7 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
       newDesigns[index][field] = newValue;
     }
 
-    setWarpDesigns(newDesigns);
+    setWeftDesigns(newDesigns);
     // Reset pattern visibility when designs change
     setIsPatternVisible(false);
     setRepeatInfo(null);
@@ -971,13 +987,13 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
     }
 
     // Check if we have any warp designs
-    if (warpDesigns.length === 0) {
+    if (weftDesigns.length === 0) {
       toast.error("Please add at least one design");
       return false;
     }
 
     // Check if all designs have valid colors and thread counts
-    const invalidDesign = warpDesigns.find(
+    const invalidDesign = weftDesigns.find(
       (design) => !design.color || !design.threadCount
     );
     if (invalidDesign) {
@@ -1003,7 +1019,7 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
 
   // Update the downloadPattern function
   const downloadPattern = async () => {
-    if (!warpDesigns.length) {
+    if (!weftDesigns.length) {
       toast.error("No pattern to download");
       return;
     }
@@ -1012,7 +1028,7 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
       toast.loading("Generating pattern image...", { id: "download-toast" });
 
       // Create SVG with increased height
-      const svgContent = createPatternSVG(warpDesigns, 1200, 800, totalYarn);
+      const svgContent = createPatternSVG(weftDesigns, 1200, 800, totalYarn);
 
       // Upload to Cloudinary through backend
       const response = await fetch(
@@ -1105,18 +1121,143 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
     );
   };
 
-  // Update useEffect to watch for color prop changes
+  // Add new function to handle state logging
+  const handleSubmitState = () => {
+    // Create final data object with specific values
+    const finalDataObj = {
+      designName: designName,
+      colorName: getColorName(selectedColor),
+      warps: warps.map((warp) => ({
+        count: warp.count,
+        reed: warp.reed,
+        constant: warp.constant,
+      })),
+      totalOrderWidth,
+      width,
+      totalThreads,
+      warpWeights,
+      threadSummary: threadSummary.map((thread) => ({
+        color: getColorName(thread.color),
+        legendNumber: thread.legendNumber,
+        totalThreadCount: thread.totalThreadCount,
+      })),
+      threadWeights: threadWeights.map((weight) => ({
+        color: weight.color ? getColorName(weight.color) : "Total",
+        legendNumber: weight.legendNumber,
+        threadCount: weight.threadCount,
+        weight: weight.weight,
+        totalWeight: weight.totalWeight,
+      })),
+    };
+
+    // Set the final data state
+    setFinalData(finalDataObj);
+
+    // Log the values
+    console.log("Design Name:", designName);
+    console.log("Selected Color:", {
+      color: selectedColor,
+      colorName: getColorName(selectedColor),
+    });
+    console.log("Final Data:", finalDataObj);
+
+    const allState = {
+      designName,
+      selectedColor,
+      partialThreads,
+      width,
+      yarnCount,
+      yarnPrice,
+      isLoading,
+      totalYarn,
+      warpTotalThread,
+      warps,
+      weftDesigns,
+      totalThreadSum,
+      totalOrderWidth,
+      legendFormData,
+      warpWeights,
+      threadSummary,
+      repeatInfo,
+      totalThreads,
+      finalThreadSummary,
+      threadWeights,
+      TotalThreadWeights,
+      colorLegend,
+    };
+
+    console.log("Current Weft Design State:", allState);
+  };
+
+  // Add useEffect to watch finalData changes
   useEffect(() => {
-    if (color && warpDesigns.length > 0) {
-      const newDesigns = [...warpDesigns];
-      newDesigns[0] = {
-        ...newDesigns[0],
-        color: color,
-        colorName: getColorName(color),
-      };
-      setWarpDesigns(newDesigns);
+    if (finalData) {
+      console.log("Updated Final Data:", finalData);
     }
-  }, [color]);
+  }, [finalData]);
+
+  const saveData = async () => {
+    try {
+      // First create the finalData object
+      const finalDataObj = {
+        designName: designName,
+        colorName: getColorName(selectedColor),
+        warps: warps.map((warp) => ({
+          count: warp.count,
+          reed: warp.reed,
+          constant: warp.constant,
+        })),
+        totalOrderWidth,
+        width,
+        totalThreads,
+        warpWeights,
+        threadSummary: threadSummary.map((thread) => ({
+          color: getColorName(thread.color),
+          legendNumber: thread.legendNumber,
+          totalThreadCount: thread.totalThreadCount,
+        })),
+        threadWeights: threadWeights.map((weight) => ({
+          color: weight.color ? getColorName(weight.color) : "Total",
+          legendNumber: weight.legendNumber,
+          threadCount: weight.threadCount,
+          weight: weight.weight,
+          totalWeight: weight.totalWeight,
+        })),
+      };
+
+      // Set the final data state
+      setFinalData(finalDataObj);
+
+      // Send to backend
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BACKEND_URL}/api/save-design`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(finalDataObj),
+        }
+      );
+      const data = await response.json();
+      console.log(data);
+      toast.success("Design saved successfully!");
+    } catch (error) {
+      console.error("Error saving data:", error);
+      toast.error("Failed to save design");
+    }
+  };
+
+  // Add new button component
+  const SubmitButton = () => (
+    <motion.button
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={saveData}
+      className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors"
+    >
+      <FaSave size={14} />
+      <span className="text-sm font-medium">Save Design</span>
+    </motion.button>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
@@ -1157,7 +1298,45 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
             </div>
           </div>
           <div className="w-full md:w-auto">
-            {DesignInputs && <DesignInputs />}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <TextInput
+                label="Design Name"
+                value={designName}
+                onChange={(e) => setDesignName(e.target.value)}
+                placeholder="Enter design name"
+                icon={FaFileSignature}
+                required={true}
+              />
+              <div className="flex flex-col">
+                <label className="text-xs font-medium text-gray-500 mb-1 flex items-center uppercase tracking-wider">
+                  <FaPalette className="mr-2 text-gray-400" size={12} />
+                  Color
+                  <span className="text-red-500 ml-1">*</span>
+                </label>
+                <select
+                  value={selectedColor}
+                  onChange={(e) => {
+                    setSelectedColor(e.target.value);
+                    // Update initial weft design color
+                    setWeftDesigns([
+                      {
+                        color: e.target.value,
+                        threadCount: "",
+                        colorName: getColorName(e.target.value),
+                      },
+                    ]);
+                  }}
+                  className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm appearance-none"
+                >
+                  <option value="">Select a color</option>
+                  {colors.map((color) => (
+                    <option key={color.value} value={color.value}>
+                      {color.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
         </div>
         {/* Main Content */}
@@ -1367,7 +1546,7 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
                 {/* Scrollable design list */}
                 <div className="max-h-[500px] overflow-y-auto">
                   <div className="divide-y divide-gray-100">
-                    {warpDesigns.map((design, index) => (
+                    {weftDesigns.map((design, index) => (
                       <div
                         key={`design-${index}`}
                         className="grid grid-cols-12 gap-4 px-4 py-3 hover:bg-gray-50 transition-colors relative group"
@@ -1424,7 +1603,7 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
                             hideLabel
                           />
                         </div>
-                        {warpDesigns.length > 1 && (
+                        {weftDesigns.length > 1 && (
                           <button
                             onClick={() => removeWarpDesign(index)}
                             className="absolute -right-4 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50"
@@ -1777,15 +1956,18 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
                   <span className="text-sm font-medium">Generate Pattern</span>
                 </button>
                 {isPatternVisible && (
-                  <button
-                    onClick={downloadPattern}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
-                  >
-                    <FaDownload size={14} />
-                    <span className="text-sm font-medium">
-                      Download Pattern
-                    </span>
-                  </button>
+                  <>
+                    <button
+                      onClick={downloadPattern}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                    >
+                      <FaDownload size={14} />
+                      <span className="text-sm font-medium">
+                        Download Pattern
+                      </span>
+                    </button>
+                    <SubmitButton />
+                  </>
                 )}
               </div>
             </div>
@@ -1809,7 +1991,7 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
                     >
                       <div className="relative flex flex-col">
                         {(() => {
-                          const singlePatternLength = warpDesigns.reduce(
+                          const singlePatternLength = weftDesigns.reduce(
                             (sum, d) => sum + (parseInt(d.threadCount) || 0),
                             0
                           );
@@ -1817,7 +1999,7 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
                           if (!singlePatternLength) return null;
 
                           // Calculate total threads in this group
-                          const totalThreads = warpDesigns.reduce(
+                          const totalThreads = weftDesigns.reduce(
                             (sum, design) => {
                               return sum + (parseInt(design.threadCount) || 0);
                             },
@@ -1837,7 +2019,7 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
                                   className="pr-4 flex flex-col justify-between"
                                   style={{ width: "60px" }}
                                 >
-                                  {warpDesigns.map((design, idx) => {
+                                  {weftDesigns.map((design, idx) => {
                                     const threadCount =
                                       parseInt(design.threadCount) || 0;
                                     if (threadCount <= 0) return null;
@@ -1859,7 +2041,7 @@ function WeftDesignSheet({ designName, color, DesignInputs }) {
                                   className="flex-1 flex flex-col"
                                   style={{ height: "300px" }}
                                 >
-                                  {warpDesigns.map((design, idx) => {
+                                  {weftDesigns.map((design, idx) => {
                                     const threadCount =
                                       parseInt(design.threadCount) || 0;
                                     if (threadCount <= 0) return null;

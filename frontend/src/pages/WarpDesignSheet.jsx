@@ -520,10 +520,11 @@ const ColorLegendInput = ({ value, onChange, label, colorLegend, colors }) => {
   );
 };
 
-function DesignSheet({ designName, color, DesignInputs }) {
+function WarpDesignSheet({ color }) {
   const [colorLegend, setColorLegend] = useState([]);
   const [isPatternVisible, setIsPatternVisible] = useState(false);
   const [colors, setColors] = useState([]);
+  const [selectedColor, setSelectedColor] = useState("#000000");
 
   const getColorName = (hex) => {
     const legendEntry = colorLegend.find((l) => l.color === hex);
@@ -532,10 +533,6 @@ function DesignSheet({ designName, color, DesignInputs }) {
     const found = colors.find((c) => c.value === hex);
     return found ? found.label : hex;
   };
-
-  useEffect(() => {
-    console.log("Color Legend Updated:", colorLegend);
-  });
 
   // State management
   const [partialThreads, setPartialThreads] = useState([]);
@@ -563,6 +560,7 @@ function DesignSheet({ designName, color, DesignInputs }) {
     serial: "",
   });
 
+  const [designName, setDesignName] = useState("");
   const [warpWeights, setWarpWeights] = useState([]);
   const [threadSummary, setThreadSummary] = useState([]);
   const [repeatInfo, setRepeatInfo] = useState(null);
@@ -570,9 +568,75 @@ function DesignSheet({ designName, color, DesignInputs }) {
   const [finalThreadSummary, setFinalThreadSummary] = useState([]);
   const [threadWeights, setThreadWeights] = useState([]);
   const [TotalThreadWeights, setTotalThreadWeights] = useState([]);
+  const [finalData, setFinalData] = useState(null);
 
   // Add new state for the pattern ref
   const patternRef = React.useRef(null);
+
+  const saveData = async () => {
+    try {
+      // First create the finalData object
+      const finalDataObj = {
+        totalThreadSum: totalThreadSum,
+        designName: designName,
+        partialThreads: partialThreads,
+        colorName: getColorName(selectedColor),
+        warps: warps.map((warp) => ({
+          count: warp.count,
+          reed: warp.reed,
+          constant: warp.constant,
+        })),
+        totalOrderWidth,
+        WarpOrder: warpDesigns.map((warp) => ({
+          color: warp.color,
+          threadCount: warp.threadCount,
+          colorName: getColorName(warp.color),
+        })),
+        width,
+        totalThreads,
+        warpWeights,
+        threadSummary: threadSummary.map((thread) => ({
+          color: thread.color,
+          legendNumber: thread.legendNumber,
+          totalThreadCount: thread.totalThreadCount,
+        })),
+        threadWeights: threadWeights.map((weight) => {
+          // Find corresponding thread in threadSummary for single repeat count
+          const threadSummaryItem = threadSummary.find(
+            (t) => t.color === weight.color
+          );
+          return {
+            color: weight.color ? getColorName(weight.color) : "Total",
+            colorValue: weight.color,
+            legendNumber: weight.legendNumber,
+            threadCount: weight.threadCount,
+            weight: weight.weight,
+            totalWeight: weight.totalWeight,
+            singleRepeatThread: threadSummaryItem?.totalThreadCount || 0,
+          };
+        }),
+      };
+
+      // Set the final data state
+      setFinalData(finalDataObj);
+
+      // Send to backend
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BACKEND_URL}/api/save-design`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(finalDataObj),
+        }
+      );
+      const data = await response.json();
+      console.log(data);
+      toast.success("Design saved successfully!");
+    } catch (error) {
+      console.error("Error saving data:", error);
+      toast.error("Failed to save design");
+    }
+  };
 
   useEffect(() => {
     const fetchColors = async () => {
@@ -761,6 +825,7 @@ function DesignSheet({ designName, color, DesignInputs }) {
           legendNumber,
           color,
           totalThreadCount: 0,
+          colorName: getColorName(color),
         };
       }
 
@@ -1199,6 +1264,102 @@ function DesignSheet({ designName, color, DesignInputs }) {
     }
   }, [color]);
 
+  // Add new function to handle state logging
+  const handleSubmitState = () => {
+    // Create final data object with specific values
+    const finalDataObj = {
+      designName: designName,
+      colorName: getColorName(selectedColor),
+      warps: warps.map((warp) => ({
+        count: warp.count,
+        reed: warp.reed,
+        constant: warp.constant,
+      })),
+      totalOrderWidth,
+      width,
+      totalThreads,
+      warpWeights,
+      threadSummary: threadSummary.map((thread) => ({
+        color: getColorName(thread.color),
+        legendNumber: thread.legendNumber,
+        totalThreadCount: thread.totalThreadCount,
+      })),
+      threadWeights: threadWeights.map((weight) => {
+        // Find corresponding thread in threadSummary for single repeat count
+        const threadSummaryItem = threadSummary.find(
+          (t) => t.color === weight.color
+        );
+        return {
+          color: weight.color ? getColorName(weight.color) : "Total",
+          colorValue: weight.color,
+          legendNumber: weight.legendNumber,
+          threadCount: weight.threadCount,
+          weight: weight.weight,
+          totalWeight: weight.totalWeight,
+          singleRepeatThread: threadSummaryItem?.totalThreadCount || 0,
+        };
+      }),
+    };
+
+    // Set the final data state
+    setFinalData(finalDataObj);
+
+    // Log the values
+    console.log("Design Name:", designName);
+    console.log("Selected Color:", {
+      color: selectedColor,
+      colorName: getColorName(selectedColor),
+    });
+    console.log("Final Data:", finalDataObj);
+
+    const allState = {
+      designName,
+      selectedColor,
+      partialThreads,
+      width,
+      yarnCount,
+      yarnPrice,
+      isLoading,
+      totalYarn,
+      warpTotalThread,
+      warps,
+      warpDesigns,
+      totalThreadSum,
+      totalOrderWidth,
+      legendFormData,
+      warpWeights,
+      threadSummary,
+      repeatInfo,
+      totalThreads,
+      finalThreadSummary,
+      threadWeights,
+      TotalThreadWeights,
+      colorLegend,
+    };
+
+    console.log("Current Warp Design State:", allState);
+  };
+
+  // Add useEffect to watch finalData changes
+  useEffect(() => {
+    if (finalData) {
+      console.log("Updated Final Data:", finalData);
+    }
+  }, [finalData]);
+
+  // Add new button component
+  const SubmitButton = () => (
+    <motion.button
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={saveData}
+      className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors"
+    >
+      <FaSave size={14} />
+      <span className="text-sm font-medium">Save Design</span>
+    </motion.button>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-6xl mx-auto">
@@ -1235,25 +1396,48 @@ function DesignSheet({ designName, color, DesignInputs }) {
               <p className="text-xs md:text-sm text-gray-500">
                 Design your Warp
               </p>
-              {designName && (
-                <div className="mt-2 flex items-center space-x-4">
-                  <span className="text-sm font-medium text-gray-600 flex items-center">
-                    <FaFileSignature className="mr-2" size={14} />
-                    {designName}
-                  </span>
-                  <span
-                    className="text-sm font-medium text-gray-600 flex items-center"
-                    style={{ color: color }}
-                  >
-                    <FaPalette className="mr-2" size={14} />
-                    {getColorName(color)}
-                  </span>
-                </div>
-              )}
             </div>
           </div>
           <div className="w-full md:w-auto">
-            {DesignInputs && <DesignInputs />}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <TextInput
+                label="Design Name"
+                value={designName}
+                onChange={(e) => setDesignName(e.target.value)}
+                placeholder="Enter design name"
+                icon={FaFileSignature}
+                required={true}
+              />
+              <div className="flex flex-col">
+                <label className="text-xs font-medium text-gray-500 mb-1 flex items-center uppercase tracking-wider">
+                  <FaPalette className="mr-2 text-gray-400" size={12} />
+                  Color
+                  <span className="text-red-500 ml-1">*</span>
+                </label>
+                <select
+                  value={selectedColor}
+                  onChange={(e) => {
+                    setSelectedColor(e.target.value);
+                    // Update initial warp design color
+                    setWarpDesigns([
+                      {
+                        color: e.target.value,
+                        threadCount: "",
+                        colorName: getColorName(e.target.value),
+                      },
+                    ]);
+                  }}
+                  className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-gray-800 shadow-sm appearance-none"
+                >
+                  <option value="">Select a color</option>
+                  {colors.map((color) => (
+                    <option key={color.value} value={color.value}>
+                      {color.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
         </div>
         {/* Main Content */}
@@ -1679,7 +1863,7 @@ function DesignSheet({ designName, color, DesignInputs }) {
           </div>
         </div>
         <div className="mt-6">
-          {repeatInfo && partialThreads.length > 0 && (
+          {repeatInfo && (
             <div className="mt-4 mb-5">
               <ResultCard
                 title="Partial Thread Distribution"
@@ -1702,25 +1886,36 @@ function DesignSheet({ designName, color, DesignInputs }) {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
-                        {partialThreads.map((thread, index) => (
-                          <tr key={index}>
-                            <td className="py-2">
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className="w-4 h-4 rounded-full border border-gray-200"
-                                  style={{ backgroundColor: thread.color }}
-                                />
-                                <span className="text-sm">
-                                  {thread.colorName} (Color{" "}
-                                  {thread.legendNumber})
-                                </span>
-                              </div>
-                            </td>
-                            <td className="py-2 text-right text-sm">
-                              {thread.threadCount}
+                        {partialThreads.length > 0 ? (
+                          partialThreads.map((thread, index) => (
+                            <tr key={index}>
+                              <td className="py-2">
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="w-4 h-4 rounded-full border border-gray-200"
+                                    style={{ backgroundColor: thread.color }}
+                                  />
+                                  <span className="text-sm">
+                                    {thread.colorName} (Color{" "}
+                                    {thread.legendNumber})
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-2 text-right text-sm">
+                                {thread.threadCount}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td
+                              colSpan="2"
+                              className="py-4 text-center text-sm text-gray-500"
+                            >
+                              No partial threads - Complete repeat pattern
                             </td>
                           </tr>
-                        ))}
+                        )}
                         <tr className="font-medium">
                           <td className="py-2">Total</td>
                           <td className="py-2 text-right">
@@ -1873,15 +2068,18 @@ function DesignSheet({ designName, color, DesignInputs }) {
                   <span className="text-sm font-medium">Generate Pattern</span>
                 </button>
                 {isPatternVisible && (
-                  <button
-                    onClick={downloadPattern}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
-                  >
-                    <FaDownload size={14} />
-                    <span className="text-sm font-medium">
-                      Download Pattern
-                    </span>
-                  </button>
+                  <>
+                    <button
+                      onClick={downloadPattern}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                    >
+                      <FaDownload size={14} />
+                      <span className="text-sm font-medium">
+                        Download Pattern
+                      </span>
+                    </button>
+                    <SubmitButton />
+                  </>
                 )}
               </div>
             </div>
@@ -2093,4 +2291,4 @@ function DesignSheet({ designName, color, DesignInputs }) {
   );
 }
 
-export default DesignSheet;
+export default WarpDesignSheet;
