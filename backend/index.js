@@ -1439,7 +1439,7 @@ app.post("/api/save-weft-design", async (req, res) => {
         request.width,
         request.totalThreads,
         request.warpWeights[0],
-        request.totalThreadSum,
+        parseFloat(request.totalThreadSum),
         parseFloat(request.threadWeights[length].totalWeight),
         parseFloat(request.threadWeights[length].weight),
       ]

@@ -1136,6 +1136,7 @@ function WeftDesignSheet({ newDesignName, newColorName }) {
       width,
       totalThreads,
       warpWeights,
+      totalThreadSum: totalThreadSum,
       threadSummary: threadSummary.map((thread) => ({
         color: getColorName(thread.color),
         legendNumber: thread.legendNumber,
@@ -1211,18 +1212,26 @@ function WeftDesignSheet({ newDesignName, newColorName }) {
         width,
         totalThreads,
         warpWeights,
+        totalThreadSum: totalThreadSum,
         threadSummary: threadSummary.map((thread) => ({
           color: getColorName(thread.color),
           legendNumber: thread.legendNumber,
           totalThreadCount: thread.totalThreadCount,
         })),
-        threadWeights: threadWeights.map((weight) => ({
-          color: weight.color ? getColorName(weight.color) : "Total",
-          legendNumber: weight.legendNumber,
-          threadCount: weight.threadCount,
-          weight: weight.weight,
-          totalWeight: weight.totalWeight,
-        })),
+        threadWeights: threadWeights.map((weight) => {
+          const threadSummaryItem = threadSummary.find(
+            (t) => t.color === weight.color
+          );
+          return {
+            color: weight.color ? getColorName(weight.color) : "Total",
+            colorValue: weight.color,
+            legendNumber: weight.legendNumber,
+            threadCount: weight.threadCount,
+            weight: weight.weight,
+            totalWeight: weight.totalWeight,
+            singleRepeatThread: threadSummaryItem?.totalThreadCount || 0,
+          };
+        }),
       };
 
       // Set the final data state
