@@ -4,6 +4,8 @@ import WeftDesignSheet from "./WeftDesignSheet";
 
 const DesignSheet = () => {
   const [designType, setDesignType] = useState("warp");
+  const [designName, setDesignName] = useState("");
+  const [colorName, setColorName] = useState("");
 
   return (
     <div className="container mx-auto p-4">
@@ -30,7 +32,15 @@ const DesignSheet = () => {
         </button>
       </div>
 
-      {designType === "warp" ? <WarpDesignSheet /> : <WeftDesignSheet />}
+      {designType === "warp" ? (
+        <WarpDesignSheet
+          onChangeDesignType={setDesignType}
+          onChangeDesignName={setDesignName}
+          onChangeColorName={setColorName}
+        />
+      ) : (
+        <WeftDesignSheet newDesignName={designName} newColorName={colorName} />
+      )}
     </div>
   );
 };
