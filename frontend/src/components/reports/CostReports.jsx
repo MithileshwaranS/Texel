@@ -1,44 +1,32 @@
 import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Card,
-  CardContent,
-  CardActions,
-  Button,
-  Typography,
-  Tabs,
-  Tab,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-} from "@mui/material";
+import { FaSearch, FaTimes } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import ReportsHeader from "./ReportsHeader";
 import YarnCard from "../common/CardComponent";
-import WarpDetails from "./WarpDetails";
-import WeftDetails from "./WeftDetails";
 
-const TabPanel = (props) => {
-  const { children, value, index, ...other } = props;
-  return (
-    <div role="tabpanel" hidden={value !== index} {...other}>
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-    </div>
-  );
-};
-
-function CostReports() {
+const CostReports = () => {
+  const navigate = useNavigate();
   const [designs, setDesigns] = useState([]);
-  const [selectedDesign, setSelectedDesign] = useState(null);
-  const [tabValue, setTabValue] = useState(0);
+  const [filteredDesigns, setFilteredDesigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
     fetchDesigns();
   }, []);
+
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setFilteredDesigns(designs);
+    } else {
+      const filtered = designs.filter((design) =>
+        design.designname.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredDesigns(filtered);
+    }
+  }, [searchTerm, designs]);
 
   const fetchDesigns = async () => {
     try {
@@ -63,6 +51,7 @@ function CostReports() {
         throw new Error("Invalid JSON from backend.");
       }
       setDesigns(data);
+      setFilteredDesigns(data);
       setError(null);
     } catch (err) {
       setError(
@@ -74,224 +63,113 @@ function CostReports() {
     }
   };
 
-  const handleViewDesign = (design) => {
-    setSelectedDesign(design);
-    setTabValue(0);
+  const handleViewMore = (id) => {
+    navigate(`/designdetails/${id}`, { state: { tab: "design" } });
   };
 
-  const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
-  };
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
 
-  const renderWarpTable = (warps) => (
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Warp ID</TableCell>
-            <TableCell>Color Name</TableCell>
-            <TableCell>Warp Count</TableCell>
-            <TableCell>Reed</TableCell>
-            <TableCell>Wastage</TableCell>
-            <TableCell>Total Quantity</TableCell>
-            <TableCell>Width</TableCell>
-            <TableCell>Total Threads</TableCell>
-            <TableCell>Warp Weight</TableCell>
-            <TableCell>Thread/Repeat</TableCell>
-            <TableCell>Order Total Weight</TableCell>
-            <TableCell>Total Weight/Repeat</TableCell>
-            <TableCell>Colors</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {warps.map((warp) => (
-            <TableRow key={warp.warp_id || warp.id}>
-              <TableCell>{warp.warp_id || warp.id}</TableCell>
-              <TableCell>{warp.colorname}</TableCell>
-              <TableCell>{warp.warpcount}</TableCell>
-              <TableCell>{warp.reed}</TableCell>
-              <TableCell>{warp.wastage}</TableCell>
-              <TableCell>{warp.totalquantity}</TableCell>
-              <TableCell>{warp.width}</TableCell>
-              <TableCell>{warp.totalthreads}</TableCell>
-              <TableCell>{warp.warpweight}</TableCell>
-              <TableCell>{warp.threadperrepeat}</TableCell>
-              <TableCell>{warp.ordertotalweight}</TableCell>
-              <TableCell>{warp.totalweightperrepeat}</TableCell>
-              <TableCell>
-                {warp.colors && warp.colors.length > 0 ? (
-                  <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
-                    {warp.colors.map((color) => (
-                      <li key={color.id}>
-                        <span
-                          style={{
-                            background: color.colorvalue,
-                            padding: "0 8px",
-                            borderRadius: 4,
-                            color: "#222",
-                            marginRight: 4,
-                          }}
-                        >
-                          {color.colorlabel}
-                        </span>
-                        (Legend: {color.legend}, Threads: {color.threads},
-                        Weight: {color.weight}, Total Weight:{" "}
-                        {color.totalweight})
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <span>-</span>
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  );
-
-  const renderWeftTable = (wefts) => (
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Weft ID</TableCell>
-            <TableCell>Color Name</TableCell>
-            <TableCell>Weft Count</TableCell>
-            <TableCell>Pick</TableCell>
-            <TableCell>Wastage</TableCell>
-            <TableCell>Total Quantity</TableCell>
-            <TableCell>Width</TableCell>
-            <TableCell>Total Threads</TableCell>
-            <TableCell>Weft Weight</TableCell>
-            <TableCell>Thread/Repeat</TableCell>
-            <TableCell>Order Total Weight</TableCell>
-            <TableCell>Total Weight/Repeat</TableCell>
-            <TableCell>Colors</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {wefts.map((weft) => (
-            <TableRow key={weft.weft_id || weft.id}>
-              <TableCell>{weft.weft_id || weft.id}</TableCell>
-              <TableCell>{weft.colorname}</TableCell>
-              <TableCell>{weft.weftcount}</TableCell>
-              <TableCell>{weft.pick}</TableCell>
-              <TableCell>{weft.wastage}</TableCell>
-              <TableCell>{weft.totalquantity}</TableCell>
-              <TableCell>{weft.width}</TableCell>
-              <TableCell>{weft.totalthreads}</TableCell>
-              <TableCell>{weft.weftweight}</TableCell>
-              <TableCell>{weft.threadperrepeat}</TableCell>
-              <TableCell>{weft.ordertotalweight}</TableCell>
-              <TableCell>{weft.totalweightperrepeat}</TableCell>
-              <TableCell>
-                {weft.colors && weft.colors.length > 0 ? (
-                  <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
-                    {weft.colors.map((color) => (
-                      <li key={color.id}>
-                        <span
-                          style={{
-                            background: color.colorvalue,
-                            padding: "0 8px",
-                            borderRadius: 4,
-                            color: "#222",
-                            marginRight: 4,
-                          }}
-                        >
-                          {color.colorlabel}
-                        </span>
-                        (Legend: {color.legend}, Threads: {color.threads},
-                        Weight: {color.weight}, Total Weight:{" "}
-                        {color.totalweight})
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <span>-</span>
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  );
-
-  if (loading) return <Typography>Loading...</Typography>;
-  if (error) return <Typography color="error">{error}</Typography>;
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-[60vh] p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold text-red-600 mb-2">
+            Error Loading Data
+          </h2>
+          <p className="text-gray-700 mb-4">{error}</p>
+          <button
+            onClick={fetchDesigns}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h5" gutterBottom>
-        Cost Reports
-      </Typography>
+    <div className="p-4 sm:p-6">
+      <ReportsHeader
+        title="Design Reports"
+        onFilterToggle={() => setMobileFiltersOpen(!mobileFiltersOpen)}
+        showExport={false}
+        showNewReport={false}
+      />
 
-      {!selectedDesign ? (
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-            gap: 3,
-          }}
-        >
-          {designs.map((design) => (
-            <YarnCard
-              title={design.designname}
-              onViewMore={() => handleViewDesign(design)}
-            />
-            // <Card key={design.id}>
-            //   <CardContent>
-            //     <Typography variant="h6">{design.designname}</Typography>
-            //     <Typography color="text.secondary">
-            //       Warps: {design.warps.length}
-            //     </Typography>
-            //     <Typography color="text.secondary">
-            //       Wefts: {design.wefts.length}
-            //     </Typography>
-            //   </CardContent>
-            //   <CardActions>
-            //     <Button size="small" onClick={() => handleViewDesign(design)}>
-            //       View Details
-            //     </Button>
-            //   </CardActions>
-            // </Card>
-          ))}
-        </Box>
+      {/* Filter Controls Section */}
+      <div className="flex flex-col gap-4 mb-6">
+        {/* Search Bar */}
+        <div className="relative w-full max-w-lg">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <FaSearch className="text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search designs by name..."
+            className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+            >
+              <FaTimes className="text-gray-400 hover:text-gray-600" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Results Count */}
+      <div className="mb-4 text-sm text-gray-600">
+        Showing {filteredDesigns.length} of {designs.length} designs
+        {searchTerm && (
+          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+            {searchTerm}
+          </span>
+        )}
+      </div>
+
+      {/* Design Grid */}
+      {filteredDesigns.length === 0 ? (
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 text-center">
+          <h3 className="text-lg font-medium text-gray-600">
+            No designs found
+          </h3>
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="mt-2 text-indigo-600 hover:text-indigo-800"
+            >
+              Clear search
+            </button>
+          )}
+        </div>
       ) : (
-        <Box>
-          <Box
-            sx={{
-              mb: 2,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Typography variant="h6">{selectedDesign.designname}</Typography>
-            <Button onClick={() => setSelectedDesign(null)}>
-              Back to List
-            </Button>
-          </Box>
-
-          <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-            <Tabs value={tabValue} onChange={handleTabChange}>
-              <Tab label="Warps" />
-              <Tab label="Wefts" />
-            </Tabs>
-          </Box>
-
-          <TabPanel value={tabValue} index={0}>
-            <WarpDetails design={selectedDesign} warps={selectedDesign.warps} />
-          </TabPanel>
-          <TabPanel value={tabValue} index={1}>
-            <WeftDetails design={selectedDesign} wefts={selectedDesign.wefts} />
-          </TabPanel>
-        </Box>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredDesigns.map((design) => (
+            <YarnCard
+              key={design.id}
+              title={design.designname}
+              onViewMore={() => handleViewMore(design.id)}
+              stats={[
+                { label: "Warps", value: design.warps.length },
+                { label: "Wefts", value: design.wefts.length },
+              ]}
+            />
+          ))}
+        </div>
       )}
-    </Box>
+    </div>
   );
-}
+};
 
 export default CostReports;

@@ -8,6 +8,8 @@ const ReportsHeader = ({
   onNewReport,
   onFilterToggle,
   showMobileFilter = true,
+  showExport = true,
+  showNewReport = true,
 }) => {
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -20,22 +22,26 @@ const ReportsHeader = ({
 
       <div className="flex gap-3">
         {/* Excel Export Button */}
-        <button
-          onClick={onExportClick}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 shadow-sm cursor-pointer"
-        >
-          <FaFileExcel className="text-sm" />
-          <span className="text-sm font-medium">Export Excel</span>
-        </button>
+        {showExport && (
+          <button
+            onClick={onExportClick}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 shadow-sm cursor-pointer"
+          >
+            <FaFileExcel className="text-sm" />
+            <span className="text-sm font-medium">Export Excel</span>
+          </button>
+        )}
 
         {/* New Report Button */}
-        <button
-          onClick={onNewReport}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer"
-        >
-          <FaPlus className="text-sm" />
-          <span className="text-sm font-medium">New Report</span>
-        </button>
+        {showNewReport && (
+          <button
+            onClick={onNewReport}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm cursor-pointer"
+          >
+            <FaPlus className="text-sm" />
+            <span className="text-sm font-medium">New Report</span>
+          </button>
+        )}
 
         {/* Mobile Filter Toggle */}
         {showMobileFilter && (

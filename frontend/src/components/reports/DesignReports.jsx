@@ -71,7 +71,7 @@ function DesignReports({ designs, samplingDesigns, onDelete, onExport }) {
   }, [searchTerm, designs, samplingDesigns, statusFilter, sortOption]);
 
   const handleViewMore = (id) => {
-    navigate(`/designdetails/${id}`);
+    navigate(`/costdetails/${id}`, { state: { tab: "cost" } });
   };
 
   const handleDuplicate = (design_id) => {

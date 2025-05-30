@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import SelectDesignsDialog from "../components/common/SelectDesignsDialog";
-import DesignReports from "../components/reports/DesignReports";
 import CostReports from "../components/reports/CostReports";
+import DesignReports from "../components/reports/DesignReports";
 
 function Reports() {
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState("designs");
   const [design, setDesign] = useState([]);
   const [samplingdesign, setSamplingDesign] = useState([]);
@@ -39,6 +41,12 @@ function Reports() {
       console.error("Error fetching data:", error);
     }
   };
+
+  useEffect(() => {
+    if (location.state?.tab) {
+      setActiveTab(location.state.tab);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     fetchData();
