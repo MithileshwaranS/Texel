@@ -7,16 +7,9 @@ import {
   Button,
   Box,
   IconButton,
-  Chip,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import {
-  Favorite,
-  Share,
-  MoreVert,
-  ContentCopy,
-  Check,
-} from "@mui/icons-material";
+import { Favorite, Share, MoreVert, Check } from "@mui/icons-material";
 
 const StyledCard = styled(Card)(({ theme }) => ({
   maxWidth: 320,
@@ -76,31 +69,6 @@ const CardActions = styled(Box)(({ theme }) => ({
   opacity: 0,
   transition: "opacity 0.3s ease",
   zIndex: 2,
-}));
-
-const StatusBadge = styled(Chip)(({ theme, status }) => ({
-  position: "absolute",
-  top: "12px",
-  left: "12px",
-  zIndex: 2,
-  fontWeight: 600,
-  fontSize: "0.7rem",
-  textTransform: "uppercase",
-  letterSpacing: "0.5px",
-  padding: "4px 8px",
-  borderRadius: "12px",
-  ...(status === "pending" && {
-    backgroundColor: theme.palette.warning.light,
-    color: theme.palette.warning.dark,
-  }),
-  ...(status === "completed" && {
-    backgroundColor: theme.palette.success.light,
-    color: theme.palette.success.dark,
-  }),
-  ...(status === "sent" && {
-    backgroundColor: theme.palette.info.light,
-    color: theme.palette.info.dark,
-  }),
 }));
 
 const ActionIconButton = styled(IconButton)(({ theme }) => ({
@@ -194,14 +162,6 @@ const SecondaryButton = styled(StyledButton)(({ theme }) => ({
   },
 }));
 
-const TertiaryButton = styled(StyledButton)(({ theme }) => ({
-  backgroundColor: theme.palette.grey[100],
-  color: theme.palette.text.primary,
-  "&:hover": {
-    backgroundColor: theme.palette.grey[200],
-  },
-}));
-
 const CompleteButton = styled(StyledButton)(({ theme }) => ({
   background: `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.success.light} 100%)`,
   color: theme.palette.common.white,
@@ -247,16 +207,14 @@ const CompleteButton = styled(StyledButton)(({ theme }) => ({
   },
 }));
 
-const YarnCard = ({
+const DesignCard = ({
   title,
   description,
   date,
   onViewMore,
   onDelete,
-  onDuplicate,
   onComplete,
   imageURL,
-  status, // Default to pending if not provided
   onImageClick,
 }) => {
   return (
@@ -271,7 +229,6 @@ const YarnCard = ({
           }
           alt="Yarn sample"
         />
-        <StatusBadge label={status} status={status} size="small" />
         <CardActions className="card-actions">
           <ActionIconButton aria-label="add to favorites" size="small">
             <Favorite fontSize="small" />
@@ -305,15 +262,6 @@ const YarnCard = ({
               View
             </PrimaryButton>
           )}
-
-          {onDuplicate && (
-            <TertiaryButton
-              onClick={onDuplicate}
-              startIcon={<ContentCopy fontSize="small" />}
-            >
-              Duplicate
-            </TertiaryButton>
-          )}
           {onDelete && (
             <SecondaryButton onClick={onDelete} variant="outlined">
               Delete
@@ -325,4 +273,4 @@ const YarnCard = ({
   );
 };
 
-export default YarnCard;
+export default DesignCard;

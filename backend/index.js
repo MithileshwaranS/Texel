@@ -1410,12 +1410,15 @@ app.post("/api/save-weft-design", async (req, res) => {
     const request = req.body;
     console.log("request", request);
 
-    const queryDesigns = await queryDB(
-      "INSERT into designsheet(designname) values($1) RETURNING id",
-      [request.designName]
-    );
-
-    const designId = queryDesigns.rows[0].id;
+    // Use provided designId if present, otherwise create new
+    let designId = request.designId;
+    if (!designId) {
+      const queryDesigns = await queryDB(
+        "INSERT into designsheet(designname) values($1) RETURNING id",
+        [request.designName]
+      );
+      designId = queryDesigns.rows[0].id;
+    }
 
     const queryWefts = await queryDB(
       "INSERT into designsheetweft(designid) values($1) RETURNING id",
@@ -1497,6 +1500,74 @@ app.post("/api/save-weft-design", async (req, res) => {
     res
       .status(500)
       .json({ error: "Failed to save design", details: error.message });
+  }
+});
+
+// Get designs with warps and wefts
+app.get("/api/designswithdetails", async (req, res) => {
+  try {
+    // First get all designs
+    const designsQuery = `
+      SELECT id, designname 
+      FROM designsheet 
+      ORDER BY id DESC`;
+    const designs = (await queryDB(designsQuery)).rows;
+
+    // For each design, get warps and wefts
+    const designsWithDetails = await Promise.all(
+      designs.map(async (design) => {
+        // Get warps
+        const warpsQuery = `
+        SELECT wi.*, dsw.id as warp_id
+        FROM designsheetwarp dsw
+        JOIN warpinfo wi ON wi.warpid = dsw.id
+        WHERE dsw.designid = $1`;
+        const warps = (await queryDB(warpsQuery, [design.id])).rows;
+
+        // Get warp colors for each warp
+        const warpsWithColors = await Promise.all(
+          warps.map(async (warp) => {
+            const colorsQuery = `
+          SELECT *
+          FROM warpcolorsinfo
+          WHERE warpinfoid = $1`;
+            const colors = (await queryDB(colorsQuery, [warp.id])).rows;
+            return { ...warp, colors };
+          })
+        );
+
+        // Get wefts
+        const weftsQuery = `
+        SELECT wi.*, dsw.id as weft_id
+        FROM designsheetweft dsw
+        JOIN weftinfo wi ON wi.weftid = dsw.id
+        WHERE dsw.designid = $1`;
+        const wefts = (await queryDB(weftsQuery, [design.id])).rows;
+
+        // Get weft colors for each weft
+        const weftsWithColors = await Promise.all(
+          wefts.map(async (weft) => {
+            const colorsQuery = `
+          SELECT *
+          FROM weftcolorsinfo
+          WHERE weftinfoid = $1`;
+            const colors = (await queryDB(colorsQuery, [weft.id])).rows;
+            return { ...weft, colors };
+          })
+        );
+
+        return {
+          ...design,
+          warps: warpsWithColors,
+          wefts: weftsWithColors,
+        };
+      })
+    );
+
+    res.json(designsWithDetails);
+  } catch (error) {
+    console.error("Error fetching designs:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 

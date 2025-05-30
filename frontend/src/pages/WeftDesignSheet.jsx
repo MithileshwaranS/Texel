@@ -164,7 +164,7 @@ const ColorPicker = ({
   availableColors = [],
 }) => {
   const [customColor, setCustomColor] = useState("#000000");
-  const [customName, setCustomName] = useState("");
+  const [customName, setCustomColorName] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
   const [colors, setColors] = useState([]);
 
@@ -192,7 +192,7 @@ const ColorPicker = ({
     if (value) {
       setSelectedColor(value.color || "");
       setCustomColor(value.color || "#000000");
-      setCustomName(value.name || "");
+      setCustomColorName(value.name || "");
     }
   }, [value]);
 
@@ -452,7 +452,7 @@ const ColorLegendInput = ({ value, onChange, label, colorLegend, colors }) => {
   );
 };
 
-function WeftDesignSheet({ newDesignName, newColorName }) {
+function WeftDesignSheet({ newDesignName, newColorName, designId }) {
   const [colorLegend, setColorLegend] = useState([]);
   const [isPatternVisible, setIsPatternVisible] = useState(false);
   const [colors, setColors] = useState([]);
@@ -1013,8 +1013,19 @@ function WeftDesignSheet({ newDesignName, newColorName }) {
   const generatePattern = () => {
     if (!validatePatternInputs()) return;
 
+    const threadCounts = weftDesigns.map((d) => parseInt(d.threadCount) || 0);
+    const colors = weftDesigns.map((d) => d.colorName || getColorName(d.color));
+
+    // Calculate total yarn if not already set
+    if (!totalYarn) {
+      const newTotalYarn = threadCounts.reduce((sum, count) => sum + count, 0);
+      setTotalYarn(newTotalYarn);
+    }
+
     setIsPatternVisible(true);
     toast.success("Pattern generated successfully!");
+
+    return true;
   };
 
   // Update the downloadPattern function
@@ -1023,7 +1034,6 @@ function WeftDesignSheet({ newDesignName, newColorName }) {
       toast.error("No pattern to download");
       return;
     }
-
     try {
       toast.loading("Generating pattern image...", { id: "download-toast" });
 
@@ -1199,8 +1209,14 @@ function WeftDesignSheet({ newDesignName, newColorName }) {
 
   const saveData = async () => {
     try {
-      // First create the finalData object
+      // First generate pattern if it's not visible
+      if (!isPatternVisible) {
+        await generatePattern();
+      }
+
+      // Create the finalData object
       const finalDataObj = {
+        designId,
         designName: designName,
         colorName: getColorName(selectedColor),
         warps: warps.map((warp) => ({
@@ -1234,6 +1250,31 @@ function WeftDesignSheet({ newDesignName, newColorName }) {
         }),
       };
 
+      // Upload the pattern SVG if it exists
+      if (patternRef.current) {
+        const svgContent = createPatternSVG(weftDesigns, 1200, 800, totalYarn);
+        const uploadResponse = await fetch(
+          `${import.meta.env.VITE_API_BACKEND_URL}/api/uploadPattern`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              svgContent,
+              designName: designName || "weft-pattern",
+            }),
+          }
+        );
+
+        if (!uploadResponse.ok) {
+          throw new Error("Failed to upload pattern");
+        }
+
+        const uploadData = await uploadResponse.json();
+        finalDataObj.patternUrl = uploadData.url;
+      }
+
       // Set the final data state
       setFinalData(finalDataObj);
 
@@ -1246,12 +1287,17 @@ function WeftDesignSheet({ newDesignName, newColorName }) {
           body: JSON.stringify(finalDataObj),
         }
       );
+
+      if (!response.ok) {
+        throw new Error("Failed to save design");
+      }
+
       const data = await response.json();
-      console.log(data);
+      console.log("Save response:", data);
       toast.success("Design saved successfully!");
     } catch (error) {
       console.error("Error saving data:", error);
-      toast.error("Failed to save design");
+      toast.error(error.message || "Failed to save design");
     }
   };
 
