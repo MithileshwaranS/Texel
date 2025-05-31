@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 import Spinner from "./Spinner";
@@ -181,9 +181,11 @@ const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   },
 }));
 
-function DesignDetail() {
+function CostDetails() {
   const { designId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const tab = location.state?.fromTab; // default fallback
   const [design, setDesign] = useState(null);
   const [wefts, setWefts] = useState([]);
   const [warps, setWarps] = useState([]);
@@ -375,7 +377,7 @@ function DesignDetail() {
         <Button
           variant="contained"
           startIcon={<ArrowBack />}
-          onClick={() => navigate("/reports")}
+          onClick={() => navigate("/reports", { state: { tab } })}
           sx={{
             borderRadius: "8px",
             textTransform: "none",
@@ -422,7 +424,7 @@ function DesignDetail() {
             <Button
               variant="outlined"
               startIcon={<ArrowBack />}
-              onClick={() => navigate("/reports")}
+              onClick={() => navigate("/reports", { state: { tab } })}
               sx={{
                 borderRadius: "8px",
                 textTransform: "none",
@@ -442,9 +444,9 @@ function DesignDetail() {
                     borderRadius: "8px",
                     textTransform: "none",
                     boxShadow: "none",
-                    bgcolor: "#16a34a", 
+                    bgcolor: "#16a34a",
                     "&:hover": {
-                      bgcolor: "#15803d", 
+                      bgcolor: "#15803d",
                     },
                   }}
                 >
@@ -773,4 +775,4 @@ function DesignDetail() {
   );
 }
 
-export default DesignDetail;
+export default CostDetails;

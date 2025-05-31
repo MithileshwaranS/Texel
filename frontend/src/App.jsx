@@ -28,10 +28,11 @@ import Inventory from "./pages/Inventory";
 import Reports from "./pages/Reports";
 import Customers from "./pages/Customers";
 import Settings from "./pages/Settings";
-import DesignDetail from "./components/common/DesignDetail";
+import CostDetails from "./components/common/CostDetails";
 import NewDesign from "./pages/NewDesign";
 import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import DesignDetails from "./components/common/DesignDetails";
 
 function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -200,10 +201,18 @@ function App() {
             }
           />
           <Route
+            path="/costdetails/:designId"
+            element={
+              <ProtectedRoute>
+                <CostDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/designdetails/:designId"
             element={
               <ProtectedRoute>
-                <DesignDetail />
+                <DesignDetails />
               </ProtectedRoute>
             }
           />

@@ -6,6 +6,7 @@ const DesignSheet = () => {
   const [designType, setDesignType] = useState("warp");
   const [designName, setDesignName] = useState("");
   const [colorName, setColorName] = useState("");
+  const [designId, setDesignId] = useState(null); // <-- Add designId state
 
   return (
     <div className="container mx-auto p-4">
@@ -37,9 +38,14 @@ const DesignSheet = () => {
           onChangeDesignType={setDesignType}
           onChangeDesignName={setDesignName}
           onChangeColorName={setColorName}
+          onChangeDesignId={setDesignId} // <-- Pass setter
         />
       ) : (
-        <WeftDesignSheet newDesignName={designName} newColorName={colorName} />
+        <WeftDesignSheet
+          newDesignName={designName}
+          newColorName={colorName}
+          designId={designId} // <-- Pass designId to weft
+        />
       )}
     </div>
   );

@@ -308,7 +308,7 @@ const ColorPicker = ({
   availableColors = [],
 }) => {
   const [customColor, setCustomColor] = useState("#000000");
-  const [customName, setCustomName] = useState("");
+  const [customName, setCustomColorName] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
   const [colors, setColors] = useState([]);
 
@@ -336,7 +336,7 @@ const ColorPicker = ({
     if (value) {
       setSelectedColor(value.color || "");
       setCustomColor(value.color || "#000000");
-      setCustomName(value.name || "");
+      setCustomColorName(value.name || "");
     }
   }, [value]);
 
@@ -525,6 +525,7 @@ function WarpDesignSheet({
   onChangeDesignType,
   onChangeDesignName,
   onChangeColorName,
+  onChangeDesignId, // <-- Add this prop
 }) {
   const [colorLegend, setColorLegend] = useState([]);
   const [isPatternVisible, setIsPatternVisible] = useState(false);
@@ -580,11 +581,46 @@ function WarpDesignSheet({
 
   const saveData = async () => {
     try {
-      // First create the finalData object
+      // First generate pattern if it's not visible
+      if (!isPatternVisible && warpDesigns.length > 0) {
+        await generatePattern();
+      }
+
+      // Then upload the pattern SVG if it exists
+      let patternUrl = null;
+      if (patternRef.current && repeatInfo) {
+        const svgContent = createPatternSVG(
+          warpDesigns,
+          1200,
+          400,
+          repeatInfo,
+          totalYarn
+        );
+        const uploadResponse = await fetch(
+          `${import.meta.env.VITE_API_BACKEND_URL}/api/uploadPattern`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              svgContent,
+              designName: designName || "pattern",
+            }),
+          }
+        );
+
+        if (!uploadResponse.ok) {
+          throw new Error("Failed to upload pattern");
+        }
+
+        const uploadData = await uploadResponse.json();
+        patternUrl = uploadData.url;
+      }
+
+      // Create the finalData object
       const finalDataObj = {
-        totalThreadSum: totalThreadSum,
-        designName: designName,
-        partialThreads: partialThreads,
+        totalThreadSum,
+        designName,
+        partialThreads,
         colorName: getColorName(selectedColor),
         warps: warps.map((warp) => ({
           count: warp.count,
@@ -606,7 +642,6 @@ function WarpDesignSheet({
           totalThreadCount: thread.totalThreadCount,
         })),
         threadWeights: threadWeights.map((weight) => {
-          // Find corresponding thread in threadSummary for single repeat count
           const threadSummaryItem = threadSummary.find(
             (t) => t.color === weight.color
           );
@@ -620,6 +655,7 @@ function WarpDesignSheet({
             singleRepeatThread: threadSummaryItem?.totalThreadCount || 0,
           };
         }),
+        patternUrl,
       };
 
       // Set the final data state
@@ -634,8 +670,19 @@ function WarpDesignSheet({
           body: JSON.stringify(finalDataObj),
         }
       );
+
+      if (!response.ok) {
+        throw new Error("Failed to save design");
+      }
+
       const data = await response.json();
-      console.log(data);
+      console.log("Backend response from /api/save-design:", data);
+
+      if (data.designId) {
+        console.log("Passing designId to parent:", data.designId);
+        onChangeDesignId(data.designId);
+      }
+
       toast.success("Design saved successfully!");
       onChangeDesignName(designName);
       onChangeColorName(selectedColor);
@@ -643,7 +690,7 @@ function WarpDesignSheet({
       window.scrollTo(0, 0);
     } catch (error) {
       console.error("Error saving data:", error);
-      toast.error("Failed to save design");
+      toast.error(error.message || "Failed to save design");
     }
   };
 
