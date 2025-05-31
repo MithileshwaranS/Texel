@@ -321,7 +321,9 @@ function DesignDetails() {
   const fetchDesign = async () => {
     try {
       setLoading(true);
-      // Simulate API call
+      const response = await fetch(
+        `${import.meta.VITE_API_BACKEND_URL}/api/designs/${designId}`
+      );
       await new Promise((resolve) => setTimeout(resolve, 1000));
       setDesign(mockDesign);
     } catch (err) {

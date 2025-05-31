@@ -4,6 +4,30 @@ import { useNavigate } from "react-router-dom";
 import ReportsHeader from "./ReportsHeader";
 import YarnCard from "../common/CardComponent";
 
+const ImagePreview = ({ imageUrl, onClose }) => {
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xl bg-opacity-90 flex items-center justify-center"
+      onClick={onClose}
+    >
+      <div className="relative max-w-[90vw] max-h-[90vh]">
+        <button
+          className="absolute top-4 right-4 text-white hover:text-gray-300 text-xl cursor-pointer"
+          onClick={onClose}
+        >
+          <FaTimes />
+        </button>
+        <img
+          src={imageUrl}
+          alt="Preview"
+          className="max-w-full max-h-[90vh] object-contain rounded-2xl"
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+    </div>
+  );
+};
+
 const CostReports = () => {
   const navigate = useNavigate();
   const [designs, setDesigns] = useState([]);
@@ -12,6 +36,7 @@ const CostReports = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
     fetchDesigns();
@@ -167,6 +192,13 @@ const CostReports = () => {
             />
           ))}
         </div>
+      )}
+
+      {previewImage && (
+        <ImagePreview
+          imageUrl={previewImage}
+          onClose={() => setPreviewImage(null)}
+        />
       )}
     </div>
   );
