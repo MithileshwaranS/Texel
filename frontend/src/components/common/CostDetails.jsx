@@ -27,6 +27,8 @@ import {
   Tooltip,
   Zoom,
   Fade,
+  Switch,
+  FormControlLabel,
 } from "@mui/material";
 import {
   ArrowBack,
@@ -192,6 +194,7 @@ function CostDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [sent, setSent] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -205,6 +208,7 @@ function CostDetails() {
 
   const open = Boolean(anchorEl);
 
+  // Fetch design and design_status
   const fetchDesign = async () => {
     try {
       if (!parseInt(designId) || isNaN(designId)) {
@@ -219,11 +223,18 @@ function CostDetails() {
 
       const data = await response.json();
 
-      console.log("Fetched data:", data);
-
       setDesign(data.design?.[0] || null);
       setWefts(data.wefts || []);
       setWarps(data.warps || []);
+
+      // Fetch design_status
+      const statusRes = await fetch(
+        `${import.meta.env.VITE_API_BACKEND_URL}/api/design-status/${designId}`
+      );
+      if (statusRes.ok) {
+        const statusData = await statusRes.json();
+        setSent(statusData.design_status === "sent");
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -233,7 +244,36 @@ function CostDetails() {
 
   useEffect(() => {
     fetchDesign();
+    // eslint-disable-next-line
   }, [designId]);
+
+
+  // Update design_status when toggled
+const handleSentToggle = async (event) => {
+  const newSent = event.target.checked;
+  setSent(newSent);
+
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_API_BACKEND_URL}/api/design-status/${designId}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ design_status: newSent ? "sent" : "completed" }),
+      }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      setDesign((prev) => ({
+        ...prev,
+        created_date: data.created_date,
+      }));
+    }
+  } catch (error) {
+    setSent(!newSent);
+    alert("Failed to update sent status.");
+  }
+};
 
   const handleMenuClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -365,6 +405,10 @@ function CostDetails() {
       .replace("₹", "₹ ");
   };
 
+  const handleSentUIToggle = (event) => {
+    setSent(event.target.checked);
+  };
+
   if (error) {
     return (
       <Container maxWidth="lg" sx={{ py: 4, textAlign: "center" }}>
@@ -435,6 +479,22 @@ function CostDetails() {
             </Button>
 
             <Box sx={{ display: "flex", gap: 1 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={sent}
+                    onChange={handleSentToggle}
+                    color="primary"
+                  />
+                }
+                label="Sent"
+                sx={{
+                  ml: 1,
+                  userSelect: "none",
+                  ".MuiFormControlLabel-label": { fontWeight: 500 },
+                }}
+              />
+
               <Tooltip title="Export as Excel" TransitionComponent={Zoom}>
                 <Button
                   variant="contained"

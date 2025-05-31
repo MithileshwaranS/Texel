@@ -1356,16 +1356,20 @@ app.post("/api/save-design", async (req, res) => {
     for (let i = 0; i < request.threadWeights.length - 1; i++) {
       const threadWeight = request.threadWeights[i];
       await queryDB(
-        "INSERT INTO warpcolorsinfo(warpinfoid,colorvalue,colorlabel,legend,threads,weight,totalweight,totalweightthreads) values($1,$2,$3,$4,$5,$6,$7,$8)",
+        "INSERT INTO warpcolorsinfo(warpinfoid,colorname,warpcount,reed,wastage,totalquantity,width, totalthreads,warpweight,threadperrepeat,ordertotalweight,totalweightperrepeat) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
         [
           warpInfoId,
-          threadWeight.colorValue,
-          threadWeight.color,
-          threadWeight.legendNumber,
-          threadWeight.singleRepeatThread,
-          parseFloat(threadWeight.weight),
-          parseFloat(threadWeight.totalWeight),
-          threadWeight.threadCount,
+          request.colorName,
+          request.warps[i].count,
+          request.warps[i].reed,
+          request.warps[i].constant,
+          request.totalOrderWidth,
+          request.width,
+          request.totalThreads,
+          request.warpWeights[i],
+          request.totalThreadSum,
+          parseFloat(request.threadWeights[length].totalWeight),
+          parseFloat(request.threadWeights[length].weight),
         ]
       );
     }
@@ -1568,6 +1572,45 @@ app.get("/api/designswithdetails", async (req, res) => {
     res.json(designsWithDetails);
   } catch (error) {
     console.error("Error fetching designs:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get design_status for a design
+app.get("/api/design-status/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await queryDB(
+      "SELECT design_status FROM designs WHERE design_id = $1",
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Design not found" });
+    }
+    res.json({ design_status: result.rows[0].design_status });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update design_status for a design
+app.put("/api/design-status/:id", async (req, res) => {
+  const { id } = req.params;
+  const { design_status } = req.body;
+  const created_date = new Date().toISOString().split("T")[0];
+  try {
+    const result = await queryDB(
+      "UPDATE designs SET design_status = $1, created_date = $2 WHERE design_id = $3 RETURNING design_status, created_date",
+      [design_status, created_date, id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Design not found" });
+    }
+    res.json({
+      design_status: result.rows[0].design_status,
+      created_date: result.rows[0].created_date,
+    });
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
