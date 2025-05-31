@@ -1245,11 +1245,10 @@ function WeftDesignSheet({ newDesignName, newColorName, designId }) {
 
   const saveData = async () => {
     try {
-      const finalDataObj = {
-        totalThreadSum: totalThreadSum,
       // First generate pattern if it's not visible
       if (!isPatternVisible) {
-        await generatePattern();
+        const success = await generatePattern();
+        if (!success) return;
       }
 
       // Create the finalData object
@@ -1320,6 +1319,7 @@ function WeftDesignSheet({ newDesignName, newColorName, designId }) {
       // Set the final data state
       setFinalData(finalDataObj);
 
+      // Send to backend
       const response = await fetch(
         `${import.meta.env.VITE_API_BACKEND_URL}/api/save-weft-design`,
         {
