@@ -1590,6 +1590,74 @@ app.get("/api/designswithdetails", async (req, res) => {
   }
 });
 
+app.get("/api/getdesigndetails/:id", async (req, res) => {
+  try {
+    const designid = req.params.id;
+    console.log("req.params:", req.params);
+    console.log("typeof req.params.id:", typeof req.params.id);
+    console.log("designid:", req.params.id);
+
+    const designNameQuery = `
+        SELECT designname
+        FROM designsheet
+        WHERE id = $1`;
+    const designNameResult = await queryDB(designNameQuery, [designid]);
+    if (designNameResult.rows.length === 0) {
+      throw new Error(`Design with ID ${designid} not found`);
+    }
+
+    const WarpInfoQuery = await pool.query(
+      `
+      SELECT 
+        *
+      FROM designsheet d
+      JOIN designsheetwarp dw ON dw.designid = d.id
+      JOIN warpinfo wi ON wi.warpid = dw.id
+      WHERE d.id = $1
+    `,
+      [designid]
+    );
+    if (WarpInfoQuery.rows.length === 0) {
+      return res.status(404).json({ error: "No warp information found" });
+    }
+
+    const FinalValueQuery = await pool.query(
+      `
+      SELECT 
+        wci.id AS warpcolorsinfo_id,
+        wci.colorvalue,
+        wci.colorlabel,
+        wci.legend,
+        wci.threads,
+        wci.weight,
+        wci.totalweight,
+        wci.totalweightthreads,
+        wci.percentage
+      FROM designsheet d
+      JOIN designsheetwarp dw ON dw.designid = d.id
+      JOIN warpinfo w ON w.warpid = dw.id
+      JOIN warpcolorsinfo wci ON wci.warpinfoid = w.id
+      WHERE d.id = $1
+    `,
+      [designid]
+    );
+
+    if (FinalValueQuery.rows.length === 0) {
+      return res.status(404).json({ error: "No design details found" });
+    }
+
+    const result = {
+      finalvaluequery: FinalValueQuery.rows,
+      warpquery: WarpInfoQuery.rows,
+      designName: designNameResult.rows[0].designname,
+    };
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error fetching design details:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get design_status for a design
 app.get("/api/design-status/:id", async (req, res) => {
   const { id } = req.params;
