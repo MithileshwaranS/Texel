@@ -6,6 +6,7 @@ import fetch from "node-fetch";
 import { v2 as cloudinary } from "cloudinary";
 import ExcelJS from "exceljs";
 import bcrypt from "bcrypt";
+import sharp from "sharp";
 
 dotenv.config();
 
@@ -1284,20 +1285,23 @@ app.get("/api/colors/:id", async (req, res) => {
   }
 });
 
-// Add new endpoint for uploading SVG to Cloudinary
 app.post("/api/uploadPattern", async (req, res) => {
   try {
     const { svgContent, designName } = req.body;
 
-    // Convert SVG string to Base64
-    const base64Svg = Buffer.from(svgContent).toString("base64");
-    const dataUri = `data:image/svg+xml;base64,${base64Svg}`;
+    // Convert SVG string to PNG buffer using sharp
+    const pngBuffer = await sharp(Buffer.from(svgContent)).png().toBuffer();
 
-    // Upload to Cloudinary
+    // Convert PNG buffer to base64 Data URI
+    const base64Png = pngBuffer.toString("base64");
+    const dataUri = `data:image/png;base64,${base64Png}`;
+
+    // Upload to Cloudinary as PNG
     const uploadResponse = await cloudinary.uploader.upload(dataUri, {
       folder: "warp-patterns",
       public_id: `pattern-${designName}-${Date.now()}`,
       resource_type: "image",
+      format: "png", // or "jpg"
     });
 
     res.json({
@@ -1313,7 +1317,6 @@ app.post("/api/uploadPattern", async (req, res) => {
 app.post("/api/save-design", async (req, res) => {
   try {
     const request = req.body;
-    console.log("request", request);
 
     const queryDesigns = await queryDB(
       "INSERT into designsheet(designname) values($1) RETURNING id",
@@ -1322,9 +1325,16 @@ app.post("/api/save-design", async (req, res) => {
 
     const designId = queryDesigns.rows[0].id;
 
+    const designColorRelation = await queryDB(
+      "INSERT INTO designcolorrelation(designid,colorname) values($1,$2) RETURNING id",
+      [designId, request.colorName]
+    );
+
+    const designColorId = designColorRelation.rows[0].id;
+
     const queryWarps = await queryDB(
-      "INSERT into designsheetwarp(designid) values($1) RETURNING id",
-      [designId]
+      "INSERT into designsheetwarp(designid, designcolorid) values($1, $2) RETURNING id",
+      [designId, designColorId]
     );
     const length = request.threadWeights.length - 1;
 
@@ -1332,8 +1342,8 @@ app.post("/api/save-design", async (req, res) => {
 
     const queryWarpInfo = await queryDB(
       `INSERT INTO warpinfo(warpid,colorname,warpcount,reed,wastage,totalquantity,width,
-      totalthreads,warpweight,threadperrepeat,ordertotalweight,totalweightperrepeat) 
-      values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
+      totalthreads,warpweight,threadperrepeat,ordertotalweight,totalweightperrepeat, imageurl) 
+      values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id`,
       [
         warpId,
         request.colorName,
@@ -1347,6 +1357,7 @@ app.post("/api/save-design", async (req, res) => {
         request.totalThreadSum,
         parseFloat(request.threadWeights[length].totalWeight),
         parseFloat(request.threadWeights[length].weight),
+        request.patternUrl,
       ]
     );
 
@@ -1356,20 +1367,16 @@ app.post("/api/save-design", async (req, res) => {
     for (let i = 0; i < request.threadWeights.length - 1; i++) {
       const threadWeight = request.threadWeights[i];
       await queryDB(
-        "INSERT INTO warpcolorsinfo(warpinfoid,colorname,warpcount,reed,wastage,totalquantity,width, totalthreads,warpweight,threadperrepeat,ordertotalweight,totalweightperrepeat) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
+        "INSERT INTO warpcolorsinfo(warpinfoid,colorvalue,colorlabel,legend,threads,weight,totalweight,totalweightthreads) values($1,$2,$3,$4,$5,$6,$7,$8)",
         [
           warpInfoId,
-          request.colorName,
-          request.warps[i].count,
-          request.warps[i].reed,
-          request.warps[i].constant,
-          request.totalOrderWidth,
-          request.width,
-          request.totalThreads,
-          request.warpWeights[i],
-          request.totalThreadSum,
-          parseFloat(request.threadWeights[length].totalWeight),
-          parseFloat(request.threadWeights[length].weight),
+          threadWeight.colorValue,
+          threadWeight.color,
+          threadWeight.legendNumber,
+          threadWeight.singleRepeatThread,
+          parseFloat(threadWeight.weight),
+          parseFloat(threadWeight.totalWeight),
+          threadWeight.threadCount,
         ]
       );
     }
@@ -1403,6 +1410,7 @@ app.post("/api/save-design", async (req, res) => {
 
     res.status(201).json({ message: "Design saved successfully", designId });
   } catch (error) {
+    console.error("Error saving design:", error);
     res
       .status(500)
       .json({ error: "Failed to save design", details: error.message });
@@ -1424,9 +1432,15 @@ app.post("/api/save-weft-design", async (req, res) => {
       designId = queryDesigns.rows[0].id;
     }
 
+    const designColorRelation = await queryDB(
+      "INSERT INTO designcolorrelation(designid,colorname) values($1,$2) RETURNING id",
+      [designId, request.colorName]
+    );
+    const designColorId = designColorRelation.rows[0].id;
+
     const queryWefts = await queryDB(
-      "INSERT into designsheetweft(designid) values($1) RETURNING id",
-      [designId]
+      "INSERT into designsheetweft(designid, designcolorid) values($1,$2) RETURNING id",
+      [designId, designColorId]
     );
     const length = request.threadWeights.length - 1;
 
