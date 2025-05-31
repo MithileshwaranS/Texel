@@ -452,12 +452,42 @@ const ColorLegendInput = ({ value, onChange, label, colorLegend, colors }) => {
   );
 };
 
+function findRepeatInfo(target, threadCounts, colors) {
+  const totalSum = threadCounts.reduce((acc, val) => acc + val, 0);
+  const repeat = Math.floor(target / totalSum);
+  let cumulative = repeat * totalSum;
+
+  for (let i = 0; i < threadCounts.length; i++) {
+    if (cumulative + threadCounts[i] >= target) {
+      const difference = cumulative + threadCounts[i] - target;
+      return {
+        repeat,
+        stoppingIndex: i,
+        color: colors[i],
+        originalValue: threadCounts[i],
+        adjustedValue: threadCounts[i] - difference,
+        difference,
+      };
+    }
+    cumulative += threadCounts[i];
+  }
+
+  return null;
+}
+
 function WeftDesignSheet({ newDesignName, newColorName, designId }) {
   const [colorLegend, setColorLegend] = useState([]);
   const [isPatternVisible, setIsPatternVisible] = useState(false);
   const [colors, setColors] = useState([]);
   const [designName, setDesignName] = useState(newDesignName || "");
   const [selectedColor, setSelectedColor] = useState(newColorName || "#000000");
+
+  const [totalThreadSum, setTotalThreadSum] = useState(0);
+  const [threadSummary, setThreadSummary] = useState([]);
+  const [finalThreadSummary, setFinalThreadSummary] = useState([]);
+  const [totalThreads, setTotalThreads] = useState(0);
+  const [weftWeights, setWeftWeights] = useState([]);
+  const [threadWeights, setThreadWeights] = useState([]);
 
   const getColorName = (hex) => {
     const legendEntry = colorLegend.find((l) => l.color === hex);
@@ -501,7 +531,6 @@ function WeftDesignSheet({ newDesignName, newColorName, designId }) {
   }, []);
 
   // State management
-  //   const [designName, setDesignName] = useState("");
   const [partialThreads, setPartialThreads] = useState([]);
   const [width, setWidth] = useState("");
   const [yarnCount, setYarnCount] = useState([]);
@@ -519,7 +548,6 @@ function WeftDesignSheet({ newDesignName, newColorName, designId }) {
       colorName: getColorName(selectedColor),
     },
   ]);
-  const [totalThreadSum, setTotalThreadSum] = useState(0);
   const [totalOrderWidth, setTotalORderWidth] = useState(0);
   const [legendFormData, setLegendFormData] = useState({
     color: "",
@@ -528,12 +556,7 @@ function WeftDesignSheet({ newDesignName, newColorName, designId }) {
   });
 
   const [warpWeights, setWarpWeights] = useState([]);
-  const [threadSummary, setThreadSummary] = useState([]);
   const [repeatInfo, setRepeatInfo] = useState(null);
-  const [totalThreads, setTotalThreads] = useState(0);
-  const [finalThreadSummary, setFinalThreadSummary] = useState([]);
-  const [threadWeights, setThreadWeights] = useState([]);
-  const [TotalThreadWeights, setTotalThreadWeights] = useState([]);
   const [finalData, setFinalData] = useState(null);
 
   // Add new state for the pattern ref
@@ -584,113 +607,6 @@ function WeftDesignSheet({ newDesignName, newColorName, designId }) {
     }
   }, [repeatInfo, weftDesigns, colorLegend]);
 
-  // Then modify the useEffect that calculates weights:
-  useEffect(() => {
-    if (warpWeights.length > 0 && totalThreads > 0) {
-      const totalWarpWeight = warpWeights.reduce(
-        (sum, weight) => sum + parseFloat(weight || 0),
-        0
-      );
-
-      // Calculate individual weights
-      const weights = finalThreadSummary.map(
-        ({ color, legendNumber, finalCount }) => {
-          const threadPercentage = finalCount / totalThreads;
-          const weightForColor = totalWarpWeight * threadPercentage;
-          const totalWeightForColor = weightForColor * totalOrderWidth;
-
-          return {
-            color,
-            legendNumber,
-            threadCount: finalCount,
-            weight: weightForColor.toFixed(3),
-            totalWeight: totalWeightForColor.toFixed(3),
-          };
-        }
-      );
-
-      // Add total row data
-      const totalRow = {
-        color: null,
-        legendNumber: "total",
-        threadCount: totalThreads,
-        weight: totalWarpWeight.toFixed(3),
-        totalWeight: (
-          totalWarpWeight * parseFloat(totalOrderWidth || 0)
-        ).toFixed(3),
-      };
-
-      // Set threadWeights with both individual weights and total
-      setThreadWeights([...weights, totalRow]);
-    }
-  }, [warpWeights, totalThreads, finalThreadSummary, totalOrderWidth]);
-
-  //calculate total threads
-  useEffect(() => {
-    if (!repeatInfo) {
-      setTotalThreads(totalThreadSum);
-      setFinalThreadSummary(
-        threadSummary.map(({ color, legendNumber, totalThreadCount }) => ({
-          color,
-          legendNumber,
-          finalCount: totalThreadCount,
-        }))
-      );
-      return;
-    }
-
-    // Calculate total threads in full repeats
-    const fullRepeatThreads = totalThreadSum * repeatInfo.repeat;
-
-    // Calculate threads in partial section
-    let partialThreads = 0;
-    const colorThreadCounts = new Map(); // Use Map to track threads per color
-
-    // First, add threads from full repeats for each color
-    threadSummary.forEach(({ color, legendNumber, totalThreadCount }) => {
-      colorThreadCounts.set(color, totalThreadCount * repeatInfo.repeat);
-    });
-
-    // Then add threads from partial section
-    if (repeatInfo.stoppingIndex >= 0) {
-      // Add complete sections in partial repeat
-      for (let i = 0; i < repeatInfo.stoppingIndex; i++) {
-        const design = weftDesigns[i];
-        const threadCount = parseInt(design.threadCount) || 0;
-        const currentCount = colorThreadCounts.get(design.color) || 0;
-        colorThreadCounts.set(design.color, currentCount + threadCount);
-        partialThreads += threadCount;
-      }
-
-      // Add the partial section
-      if (repeatInfo.adjustedValue > 0) {
-        const stoppingDesign = weftDesigns[repeatInfo.stoppingIndex];
-        const currentCount = colorThreadCounts.get(stoppingDesign.color) || 0;
-        colorThreadCounts.set(
-          stoppingDesign.color,
-          currentCount + repeatInfo.adjustedValue
-        );
-        partialThreads += repeatInfo.adjustedValue;
-      }
-    }
-
-    // Set total threads
-    const total = fullRepeatThreads + partialThreads;
-    setTotalThreads(total);
-
-    // Create final summary
-    const updatedSummary = Array.from(colorThreadCounts.entries()).map(
-      ([color, count]) => ({
-        color,
-        legendNumber: getLegendNumberForColor(colorLegend, color),
-        finalCount: count,
-      })
-    );
-
-    setFinalThreadSummary(updatedSummary);
-  }, [repeatInfo, weftDesigns, totalThreadSum, threadSummary, colorLegend]);
-
-  // Calculate each color total thread
   useEffect(() => {
     const threadSummary = {};
     let sum = 0;
@@ -705,6 +621,7 @@ function WeftDesignSheet({ newDesignName, newColorName, designId }) {
           legendNumber,
           color,
           totalThreadCount: 0,
+          colorName: getColorName(color),
         };
       }
 
@@ -715,6 +632,72 @@ function WeftDesignSheet({ newDesignName, newColorName, designId }) {
     setThreadSummary(Object.values(threadSummary));
     setTotalThreadSum(sum);
   }, [weftDesigns, colorLegend]);
+
+  useEffect(() => {
+    if (weftWeights.length > 0 && totalThreads > 0) {
+      const totalWeftWeight = weftWeights.reduce(
+        (sum, weight) => sum + parseFloat(weight || 0),
+        0
+      );
+
+      // Calculate individual weights
+      const weights = finalThreadSummary.map(
+        ({ color, legendNumber, finalCount }) => {
+          const threadPercentage = finalCount / totalThreads;
+          const weightForColor = totalWeftWeight * threadPercentage;
+          const totalWeightForColor = weightForColor * totalOrderWidth;
+
+          return {
+            color,
+            legendNumber,
+            threadCount: finalCount,
+            weight: weightForColor.toFixed(3),
+            totalWeight: totalWeightForColor.toFixed(3),
+          };
+        }
+      );
+
+      // Add total row
+      const totalRow = {
+        color: null,
+        legendNumber: "total",
+        threadCount: totalThreads,
+        weight: totalWeftWeight.toFixed(3),
+        totalWeight: (
+          totalWeftWeight * parseFloat(totalOrderWidth || 0)
+        ).toFixed(3),
+      };
+
+      setThreadWeights([...weights, totalRow]);
+    }
+  }, [weftWeights, totalThreads, finalThreadSummary, totalOrderWidth]);
+
+  useEffect(() => {
+    if (width) {
+      const newWeftWeights = warps.map((warp) => {
+        if (warp.count && warp.reed) {
+          return (
+            ((toNum(width) * toNum(warp.reed) * toNum(warp.constant || 1.45)) /
+              840) *
+            getHanksWt(warp.count)
+          ).toFixed(3);
+        }
+        return "0.000";
+      });
+      setWeftWeights(newWeftWeights);
+    }
+  }, [width, warps]);
+
+  useEffect(() => {
+    setTotalThreads(totalThreadSum);
+    setFinalThreadSummary(
+      threadSummary.map(({ color, legendNumber, totalThreadCount }) => ({
+        color,
+        legendNumber,
+        finalCount: totalThreadCount,
+      }))
+    );
+  }, [threadSummary, totalThreadSum]);
 
   // Fetch yarn details
   useEffect(() => {
@@ -1015,6 +998,10 @@ function WeftDesignSheet({ newDesignName, newColorName, designId }) {
 
     const threadCounts = weftDesigns.map((d) => parseInt(d.threadCount) || 0);
     const colors = weftDesigns.map((d) => d.colorName || getColorName(d.color));
+    const target = totalYarn;
+
+    const info = findRepeatInfo(target, threadCounts, colors);
+    setRepeatInfo(info);
 
     // Calculate total yarn if not already set
     if (!totalYarn) {
@@ -1023,6 +1010,56 @@ function WeftDesignSheet({ newDesignName, newColorName, designId }) {
     }
 
     setIsPatternVisible(true);
+
+    // Calculate total threads in full repeats
+    const fullRepeatThreads = totalThreadSum * (info?.repeat || 1);
+
+    // Calculate threads in partial section
+    let partialThreadCount = 0;
+    const colorThreadCounts = new Map();
+
+    // First, add threads from full repeats for each color
+    threadSummary.forEach(({ color, legendNumber, totalThreadCount }) => {
+      colorThreadCounts.set(color, totalThreadCount * (info?.repeat || 1));
+    });
+
+    // Then add threads from partial section
+    if (info?.stoppingIndex >= 0) {
+      // Add complete sections in partial repeat
+      for (let i = 0; i < info.stoppingIndex; i++) {
+        const design = weftDesigns[i];
+        const threadCount = parseInt(design.threadCount) || 0;
+        const currentCount = colorThreadCounts.get(design.color) || 0;
+        colorThreadCounts.set(design.color, currentCount + threadCount);
+        partialThreadCount += threadCount;
+      }
+
+      // Add the partial section
+      if (info.adjustedValue > 0) {
+        const stoppingDesign = weftDesigns[info.stoppingIndex];
+        const currentCount = colorThreadCounts.get(stoppingDesign.color) || 0;
+        colorThreadCounts.set(
+          stoppingDesign.color,
+          currentCount + info.adjustedValue
+        );
+        partialThreadCount += info.adjustedValue;
+      }
+    }
+
+    // Set total threads
+    const total = fullRepeatThreads + partialThreadCount;
+    setTotalThreads(total);
+
+    // Create final summary
+    const updatedSummary = Array.from(colorThreadCounts.entries()).map(
+      ([color, count]) => ({
+        color,
+        legendNumber: getLegendNumberForColor(colorLegend, color),
+        finalCount: count,
+      })
+    );
+
+    setFinalThreadSummary(updatedSummary);
     toast.success("Pattern generated successfully!");
 
     return true;
@@ -1193,7 +1230,6 @@ function WeftDesignSheet({ newDesignName, newColorName, designId }) {
       totalThreads,
       finalThreadSummary,
       threadWeights,
-      TotalThreadWeights,
       colorLegend,
     };
 
@@ -1209,6 +1245,8 @@ function WeftDesignSheet({ newDesignName, newColorName, designId }) {
 
   const saveData = async () => {
     try {
+      const finalDataObj = {
+        totalThreadSum: totalThreadSum,
       // First generate pattern if it's not visible
       if (!isPatternVisible) {
         await generatePattern();
@@ -1219,18 +1257,22 @@ function WeftDesignSheet({ newDesignName, newColorName, designId }) {
         designId,
         designName: designName,
         colorName: getColorName(selectedColor),
-        warps: warps.map((warp) => ({
-          count: warp.count,
-          reed: warp.reed,
-          constant: warp.constant,
+        wefts: warps.map((weft) => ({
+          count: weft.count,
+          picks: weft.reed,
+          constant: weft.constant,
         })),
         totalOrderWidth,
+        WeftOrder: weftDesigns.map((weft) => ({
+          color: weft.color,
+          threadCount: weft.threadCount,
+          colorName: getColorName(weft.color),
+        })),
         width,
         totalThreads,
-        warpWeights,
-        totalThreadSum: totalThreadSum,
+        weftWeights,
         threadSummary: threadSummary.map((thread) => ({
-          color: getColorName(thread.color),
+          color: thread.color,
           legendNumber: thread.legendNumber,
           totalThreadCount: thread.totalThreadCount,
         })),
@@ -1278,7 +1320,6 @@ function WeftDesignSheet({ newDesignName, newColorName, designId }) {
       // Set the final data state
       setFinalData(finalDataObj);
 
-      // Send to backend
       const response = await fetch(
         `${import.meta.env.VITE_API_BACKEND_URL}/api/save-weft-design`,
         {
@@ -1821,34 +1862,6 @@ function WeftDesignSheet({ newDesignName, newColorName, designId }) {
                 />
               </div>
             </SectionCard>
-            {/* <SectionCard
-              title="Total Threads Per Color"
-              icon={FaCalculator}
-              color="text-indigo-600"
-            >
-              {repeatInfo && (
-                <div className="mt-4">
-                  <ResultCard
-                    title="Repeat Info"
-                    value={
-                      <>
-                        Repeat: <b>{repeatInfo.repeat}</b>
-                        <br />
-                        Stop at Color: <b>{repeatInfo.color}</b> (Index{" "}
-                        {repeatInfo.stoppingIndex + 1})
-                        <br />
-                        Original: <b>{repeatInfo.originalValue}</b>, Adjusted:{" "}
-                        <b>{repeatInfo.adjustedValue}</b>
-                        <br />
-                        Difference: <b>{repeatInfo.difference}</b>
-                      </>
-                    }
-                    icon={FaCalculator}
-                    color="bg-yellow-50"
-                  />
-                </div>
-              )}
-            </SectionCard> */}
           </div>
         </div>
         <div className="mt-6">
@@ -1998,33 +2011,7 @@ function WeftDesignSheet({ newDesignName, newColorName, designId }) {
                       </tr>
                     )
                   )}
-                  <tr className="bg-gray-50 font-medium">
-                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                      Total
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-900">
-                      {totalThreads.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-900">
-                      {warpWeights
-                        .reduce(
-                          (sum, weight) => sum + parseFloat(weight || 0),
-                          0
-                        )
-                        .toFixed(3)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-900">
-                      {(
-                        warpWeights.reduce(
-                          (sum, weight) => sum + parseFloat(weight || 0),
-                          0
-                        ) * parseFloat(totalOrderWidth || 0)
-                      ).toFixed(3)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-900">
-                      100%
-                    </td> */}
-                  </tr>
+                  <tr className="bg-gray-50 font-medium"></tr>
                 </tbody>
               </table>
             </div>

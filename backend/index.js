@@ -1435,13 +1435,13 @@ app.post("/api/save-weft-design", async (req, res) => {
       [
         weftId,
         request.colorName,
-        request.warps[0].count,
-        request.warps[0].reed,
-        request.warps[0].constant,
+        request.wefts[0].count,
+        request.wefts[0].picks,
+        request.wefts[0].constant,
         request.totalOrderWidth,
         request.width,
         request.totalThreads,
-        request.warpWeights[0],
+        request.weftWeights[0],
         parseFloat(request.totalThreadSum),
         parseFloat(request.threadWeights[length].totalWeight),
         parseFloat(request.threadWeights[length].weight),
@@ -1497,6 +1497,7 @@ app.post("/api/save-weft-design", async (req, res) => {
 
     res.status(201).json({ message: "Design saved successfully", designId });
   } catch (error) {
+    console.error("Error saving weft design:", error);
     res
       .status(500)
       .json({ error: "Failed to save design", details: error.message });
