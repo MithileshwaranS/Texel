@@ -46,7 +46,7 @@ function DesignReports({ designs, samplingDesigns, onDelete, onExport }) {
 
   const getDesignStatus = (design) => {
     if (design.status === "pending") return "pending";
-    if (design.status === "sent") return "sent";
+    if (design.design_status === "sent") return "sent";
     if (design.design_status === "completed") return "completed";
     else return "";
   };
@@ -122,6 +122,8 @@ function DesignReports({ designs, samplingDesigns, onDelete, onExport }) {
     { value: "newest", label: "Newest" },
     { value: "oldest", label: "Oldest" },
   ];
+
+  console.log(filteredDesigns, samplingfilteredDesigns);
 
   return (
     <div>
