@@ -217,7 +217,9 @@ function CostDetails() {
 
       setLoading(true);
       const response = await fetch(
-        `${import.meta.env.VITE_API_BACKEND_URL}/api/designdetails/${designId}`
+        `${
+          import.meta.env.VITE_API_BACKEND_URL
+        }/api/cost/costingDetails/${designId}`
       );
       if (!response.ok) throw new Error("Design not found");
 
@@ -247,33 +249,34 @@ function CostDetails() {
     // eslint-disable-next-line
   }, [designId]);
 
-
   // Update design_status when toggled
-const handleSentToggle = async (event) => {
-  const newSent = event.target.checked;
-  setSent(newSent);
+  const handleSentToggle = async (event) => {
+    const newSent = event.target.checked;
+    setSent(newSent);
 
-  try {
-    const res = await fetch(
-      `${import.meta.env.VITE_API_BACKEND_URL}/api/design-status/${designId}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ design_status: newSent ? "sent" : "completed" }),
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BACKEND_URL}/api/design-status/${designId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            design_status: newSent ? "sent" : "completed",
+          }),
+        }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setDesign((prev) => ({
+          ...prev,
+          created_date: data.created_date,
+        }));
       }
-    );
-    if (res.ok) {
-      const data = await res.json();
-      setDesign((prev) => ({
-        ...prev,
-        created_date: data.created_date,
-      }));
+    } catch (error) {
+      setSent(!newSent);
+      alert("Failed to update sent status.");
     }
-  } catch (error) {
-    setSent(!newSent);
-    alert("Failed to update sent status.");
-  }
-};
+  };
 
   const handleMenuClick = (event) => {
     setAnchorEl(event.currentTarget);

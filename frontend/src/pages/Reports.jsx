@@ -44,7 +44,7 @@ function Reports() {
     try {
       setIsLoading(true);
       const response = await fetch(
-        `${import.meta.env.VITE_API_BACKEND_URL}/api/designdetails`
+        `${import.meta.env.VITE_API_BACKEND_URL}/api/cost/costingDetails`
       );
       const data = await response.json();
       setDesign(data);

@@ -238,7 +238,7 @@ function CostingPage() {
           ? `${import.meta.env.VITE_API_BACKEND_URL}/api/samplingdetails/${
               stateValues.designid
             }`
-          : `${import.meta.env.VITE_API_BACKEND_URL}/api/designdetails/${
+          : `${import.meta.env.VITE_API_BACKEND_URL}/api/cost/costingDetails/${
               stateValues.design_id
             }`;
 
@@ -260,7 +260,7 @@ function CostingPage() {
   }, []);
 
   useEffect(() => {
-    console.log(prefillData);
+    // console.log(prefillData);
     if (prefillData?.design && prefillData.design[0]) {
       console.log("Prefill Data");
       console.log(prefillData);
@@ -991,7 +991,7 @@ function CostingPage() {
       .then((data) => setYarnCount(data))
       .catch((error) => console.error("Error fetching data:", error));
 
-    fetch(`${import.meta.env.VITE_API_BACKEND_URL}/api/yarnPrice`)
+    fetch(`${import.meta.env.VITE_API_BACKEND_URL}/api/yarn/yarnPrice`)
       .then((response) => response.json())
       .then((data) => setYarnPrice(data))
       .catch((error) => console.error("Error fetching data", error));

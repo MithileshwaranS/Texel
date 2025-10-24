@@ -900,7 +900,7 @@ function WarpDesignSheet({
       try {
         const [countsResponse, priceResponse] = await Promise.all([
           fetch(`${import.meta.env.VITE_API_BACKEND_URL}/api/yarnCounts`),
-          fetch(`${import.meta.env.VITE_API_BACKEND_URL}/api/yarnPrice`),
+          fetch(`${import.meta.env.VITE_API_BACKEND_URL}/api/yarn/yarnPrice`),
         ]);
 
         const countsData = await countsResponse.json();

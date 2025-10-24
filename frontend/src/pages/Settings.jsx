@@ -223,7 +223,7 @@ const YarnSettings = (
       const response = await fetch(
         `${
           import.meta.env.VITE_API_BACKEND_URL
-        }/api/yarnPriceHistory/${encodedYarnCount}`
+        }/api/yarn/yarnPriceHistory/${encodedYarnCount}`
       );
 
       if (!response.ok) {
