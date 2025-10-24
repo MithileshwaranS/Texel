@@ -1,43 +1,24 @@
 import express from "express";
+import costRoutes from "./routes/costRoutes.js";
+import yarnRoutes from "./routes/yarnRoutes.js";
 import cors from "cors";
 import dotenv from "dotenv";
-import { Pool } from "pg";
+import pool from "./config/db.js";
+import cloudinary from "./config/cloudinaryConfig.js";
 import fetch from "node-fetch";
-import { v2 as cloudinary } from "cloudinary";
 import ExcelJS from "exceljs";
 import bcrypt from "bcrypt";
 import sharp from "sharp";
-
+import { queryDB } from "./config/db.js";
 dotenv.config();
-
-// Cloudinary config
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-const pool = new Pool({
-  user: process.env.PG_USER,
-  host: process.env.PG_HOST,
-  database: process.env.PG_DATABASE,
-  password: process.env.PG_PASSWORD,
-  port: process.env.PG_PORT,
-});
-
-pool
-  .query("SELECT NOW()")
-  .then((res) => {
-    console.log("✅ DB Connected at:", res.rows[0].now);
-  })
-  .catch((err) => {
-    console.error("❌ DB Connection Error:", err);
-  });
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+app.use("/api/cost", costRoutes);
+app.use("/api/yarn", yarnRoutes);
 
 const port = process.env.PORT || 3000;
 
@@ -46,58 +27,6 @@ setInterval(() => {
     .then((res) => console.log(`Self-ping status: ${res.status}`))
     .catch((err) => console.error("Ping failed:", err));
 }, 1000 * 60 * 14); // every 14 minutes
-
-// Helper function to query
-async function queryDB(text, params) {
-  const client = await pool.connect();
-  try {
-    const res = await client.query(text, params);
-    return res;
-  } finally {
-    client.release();
-  }
-}
-
-// 1. Get all design details
-app.get("/api/designdetails", async (req, res) => {
-  try {
-    const result = await queryDB("SELECT * FROM designs");
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// 2. Get design detail by ID (including wefts and warps)
-app.get("/api/designdetails/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const designRes = await queryDB(
-      "SELECT * FROM designs WHERE design_id = $1",
-      [id]
-    );
-    const weftsRes = await queryDB(
-      "SELECT * FROM wefts WHERE design_id = $1 ORDER BY weft_id ASC",
-      [id]
-    );
-    const warpsRes = await queryDB(
-      "SELECT * FROM warps WHERE design_id = $1 ORDER BY warp_id ASC",
-      [id]
-    );
-
-    if (designRes.rows.length === 0) {
-      return res.status(404).json({ message: "Design not found" });
-    }
-
-    res.json({
-      design: designRes.rows,
-      wefts: weftsRes.rows,
-      warps: warpsRes.rows,
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
 // 3. Get yarn counts
 app.get("/api/yarnCounts", async (req, res) => {
@@ -112,16 +41,16 @@ app.get("/api/yarnCounts", async (req, res) => {
 });
 
 // 4. Get yarn prices
-app.get("/api/yarnPrice", async (req, res) => {
-  try {
-    const result = await queryDB(
-      "SELECT yarn_count, yarnprice FROM yarndetails"
-    );
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// app.get("/api/yarnPrice", async (req, res) => {
+//   try {
+//     const result = await queryDB(
+//       "SELECT yarn_count, yarnprice FROM yarndetails"
+//     );
+//     res.json(result.rows);
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
 
 // Update the edit yarn endpoint
 app.put("/api/editYarn/:id", async (req, res) => {
