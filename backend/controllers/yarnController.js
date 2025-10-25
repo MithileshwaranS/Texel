@@ -55,3 +55,43 @@ export const getYarnPrice = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+export const addYarn = async (req, res) => {
+  try {
+    const { yarnCount, hanksWt, yarnPrice } = req.body;
+
+    const newYarn = await YarnModel.addNewYarn(yarnCount, hanksWt, yarnPrice);
+
+    res.status(201).json({
+      message: "New yarn added successfully",
+      newYarn,
+    });
+  } catch (err) {
+    console.error("Error adding new yarn:", err);
+    res
+      .status(500)
+      .json({ message: "Error adding new yarn", error: err.message });
+  }
+};
+
+export const deleteYarn = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedYarn = await YarnModel.deleteYarnById(id);
+
+    if (deletedYarn.length === 0) {
+      return res.status(404).json({ message: "Yarn not found" });
+    }
+
+    res.json({
+      message: "Yarn deleted successfully",
+      deletedYarn: deletedYarn[0],
+    });
+  } catch (err) {
+    console.error("Error deleting yarn:", err);
+    res
+      .status(500)
+      .json({ message: "Error deleting yarn", error: err.message });
+  }
+};

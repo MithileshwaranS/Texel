@@ -1,7 +1,9 @@
 import { queryDB, pool } from "../config/db.js";
 
 export const getAllYarn = async () => {
-  const res = await queryDB("SELECT yarn_count, hanks_wt FROM yarndetails");
+  const res = await queryDB(
+    "SELECT yarn_count, hanks_wt,yarnprice,id FROM yarndetails"
+  );
   return res.rows;
 };
 
@@ -60,5 +62,23 @@ export const getYarnPriceHistory = async (yarnCount) => {
 
 export const getYarnPrice = async () => {
   const res = await queryDB("SELECT yarn_count, yarnprice FROM yarndetails");
+  return res.rows;
+};
+
+export const addNewYarn = async (yarnCount, hanksWt, yarnPrice) => {
+  const res = await queryDB(
+    `INSERT INTO yarndetails (yarn_count, hanks_wt, yarnprice) 
+     VALUES ($1, $2, $3) 
+     RETURNING *`,
+    [yarnCount, hanksWt, yarnPrice]
+  );
+  return res.rows[0];
+};
+
+export const deleteYarnById = async (id) => {
+  const res = await queryDB(
+    "DELETE FROM yarndetails WHERE id = $1 RETURNING *",
+    [id]
+  );
   return res.rows;
 };

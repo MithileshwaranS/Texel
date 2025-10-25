@@ -140,31 +140,31 @@ app.delete("/api/deleteYarn/:id", async (req, res) => {
 });
 
 // 7. Add new yarn
-app.post("/api/addYarn", async (req, res) => {
-  const { yarnCount, hanksWt, yarnPrice } = req.body;
-  try {
-    const result = await queryDB(
-      `INSERT INTO yarndetails (yarn_count, hanks_wt, yarnprice) VALUES ($1, $2, $3) RETURNING *`,
-      [yarnCount, hanksWt, yarnPrice]
-    );
+// app.post("/api/addYarn", async (req, res) => {
+//   const { yarnCount, hanksWt, yarnPrice } = req.body;
+//   try {
+//     const result = await queryDB(
+//       `INSERT INTO yarndetails (yarn_count, hanks_wt, yarnprice) VALUES ($1, $2, $3) RETURNING *`,
+//       [yarnCount, hanksWt, yarnPrice]
+//     );
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    res.status(500).json({ error: "Insertion failed", details: error.message });
-  }
-});
+//     res.status(201).json(result.rows[0]);
+//   } catch (error) {
+//     res.status(500).json({ error: "Insertion failed", details: error.message });
+//   }
+// });
 
 // 8. Get all yarn details
-app.get("/api/yarnDetails", async (req, res) => {
-  try {
-    const result = await queryDB(
-      "SELECT yarn_count, hanks_wt, yarnprice, id FROM yarndetails"
-    );
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// app.get("/api/yarnDetails", async (req, res) => {
+//   try {
+//     const result = await queryDB(
+//       "SELECT yarn_count, hanks_wt, yarnprice, id FROM yarndetails"
+//     );
+//     res.json(result.rows);
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
 
 // 9. Submit costing form
 app.post("/api/submit", async (req, res) => {
