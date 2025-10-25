@@ -986,7 +986,7 @@ function CostingPage() {
 
   // Fetch yarn data
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_BACKEND_URL}/api/yarnCounts`)
+    fetch(`${import.meta.env.VITE_API_BACKEND_URL}/api/yarn/yarnCounts`)
       .then((response) => response.json())
       .then((data) => setYarnCount(data))
       .catch((error) => console.error("Error fetching data:", error));

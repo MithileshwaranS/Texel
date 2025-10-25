@@ -705,7 +705,7 @@ function WeftDesignSheet({ newDesignName, newColorName, designId }) {
       setIsLoading(true);
       try {
         const [countsResponse, priceResponse] = await Promise.all([
-          fetch(`${import.meta.env.VITE_API_BACKEND_URL}/api/yarnCounts`),
+          fetch(`${import.meta.env.VITE_API_BACKEND_URL}/api/yarn/yarnCounts`),
           fetch(`${import.meta.env.VITE_API_BACKEND_URL}/api/yarn/yarnPrice`),
         ]);
 

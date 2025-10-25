@@ -133,8 +133,10 @@ const YarnSettings = (
 
     try {
       const endpoint = isEditing
-        ? `${import.meta.env.VITE_API_BACKEND_URL}/api/editYarn/${currentId}`
-        : `${import.meta.env.VITE_API_BACKEND_URL}/api/addYarn`;
+        ? `${
+            import.meta.env.VITE_API_BACKEND_URL
+          }/api/yarn/editYarn/${currentId}`
+        : `${import.meta.env.VITE_API_BACKEND_URL}/api/yarn/addYarn`;
 
       const method = isEditing ? "PUT" : "POST";
 
@@ -171,7 +173,7 @@ const YarnSettings = (
     if (window.confirm("Are you sure you want to delete this yarn?")) {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_API_BACKEND_URL}/api/deleteYarn/${id}`,
+          `${import.meta.env.VITE_API_BACKEND_URL}/api/yarn/deleteYarn/${id}`,
           {
             method: "DELETE",
           }
@@ -192,7 +194,7 @@ const YarnSettings = (
     setIsLoading(true);
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_BACKEND_URL}/api/yarnDetails`
+        `${import.meta.env.VITE_API_BACKEND_URL}/api/yarn/yarnCounts`
       );
       const data = await res.json();
       setRows(data);
