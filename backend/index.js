@@ -28,19 +28,19 @@ setInterval(() => {
     .catch((err) => console.error("Ping failed:", err));
 }, 1000 * 60 * 14); // every 14 minutes
 
-// 3. Get yarn counts
-app.get("/api/yarnCounts", async (req, res) => {
-  try {
-    const result = await queryDB(
-      "SELECT yarn_count, hanks_wt FROM yarndetails"
-    );
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// // 3. Get yarn counts // converted to router in yarnRoutes.js
+// app.get("/api/yarnCounts", async (req, res) => {
+//   try {
+//     const result = await queryDB(
+//       "SELECT yarn_count, hanks_wt FROM yarndetails"
+//     );
+//     res.json(result.rows);
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
 
-// 4. Get yarn prices
+// 4. Get yarn prices converted to router in yarnRoutes.js
 // app.get("/api/yarnPrice", async (req, res) => {
 //   try {
 //     const result = await queryDB(
@@ -53,73 +53,73 @@ app.get("/api/yarnCounts", async (req, res) => {
 // });
 
 // Update the edit yarn endpoint
-app.put("/api/editYarn/:id", async (req, res) => {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    const { id } = req.params;
-    const { yarnCount, hanksWt, yarnPrice } = req.body;
+// app.put("/api/editYarn/:id", async (req, res) => {
+//   const client = await pool.connect();
+//   try {
+//     await client.query("BEGIN");
+//     const { id } = req.params; // if it comes from URL then it should be req.params
+//     const { yarnCount, hanksWt, yarnPrice } = req.body;
 
-    // Get the current yarn details to compare price
-    const currentYarn = await client.query(
-      "SELECT yarn_count, yarnprice FROM yarndetails WHERE id = $1",
-      [id]
-    );
+//     // Get the current yarn details to compare price
+//     const currentYarn = await client.query(
+//       "SELECT yarn_count, yarnprice FROM yarndetails WHERE id = $1",
+//       [id]
+//     );
 
-    // Update the yarn details
-    const result = await client.query(
-      `UPDATE yarndetails 
-       SET yarn_count=$1, hanks_wt=$2, yarnprice=$3 
-       WHERE id=$4 
-       RETURNING *`,
-      [yarnCount, hanksWt, yarnPrice, id]
-    );
+//     // Update the yarn details
+//     const result = await client.query(
+//       `UPDATE yarndetails
+//        SET yarn_count=$1, hanks_wt=$2, yarnprice=$3
+//        WHERE id=$4
+//        RETURNING *`,
+//       [yarnCount, hanksWt, yarnPrice, id]
+//     );
 
-    // If price has changed, add to history
-    if (currentYarn.rows[0].yarnprice !== yarnPrice) {
-      await client.query(
-        `INSERT INTO yarn_price_history (yarn_count, price, updated_by)
-         VALUES ($1, $2, $3)`,
-        [yarnCount, yarnPrice, "system"] // Replace 'system' with actual user if available
-      );
-    }
+//     // If price has changed, add to history
+//     if (currentYarn.rows[0].yarnprice !== yarnPrice) {
+//       await client.query(
+//         `INSERT INTO yarn_price_history (yarn_count, price, updated_by)
+//          VALUES ($1, $2, $3)`,
+//         [yarnCount, yarnPrice, "system"] // Replace 'system' with actual user if available
+//       );
+//     }
 
-    await client.query("COMMIT");
+//     await client.query("COMMIT");
 
-    res.json({
-      message: "Yarn updated successfully",
-      updatedYarn: result.rows[0],
-    });
-  } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("Update failed:", error);
-    res.status(500).json({ message: "Update failed", error: error.message });
-  } finally {
-    client.release();
-  }
-});
+//     res.json({
+//       message: "Yarn updated successfully",
+//       updatedYarn: result.rows[0],
+//     });
+//   } catch (error) {
+//     await client.query("ROLLBACK");
+//     console.error("Update failed:", error);
+//     res.status(500).json({ message: "Update failed", error: error.message });
+//   } finally {
+//     client.release();
+//   }
+// });
 
 // Add new endpoint to get price history
-app.get("/api/yarnPriceHistory/:yarnCount", async (req, res) => {
-  try {
-    const yarnCount = decodeURIComponent(req.params.yarnCount);
-    console.log("Fetching history for yarn count:", yarnCount); // Debug log
+// app.get("/api/yarnPriceHistory/:yarnCount", async (req, res) => {
+//   try {
+//     const yarnCount = decodeURIComponent(req.params.yarnCount);
+//     console.log("Fetching history for yarn count:", yarnCount); // Debug log
 
-    const result = await pool.query(
-      `SELECT price, created_at, updated_by 
-       FROM yarn_price_history 
-       WHERE yarn_count = $1 
-       ORDER BY created_at DESC`,
-      [yarnCount]
-    );
+//     const result = await pool.query(
+//       `SELECT price, created_at, updated_by
+//        FROM yarn_price_history
+//        WHERE yarn_count = $1
+//        ORDER BY created_at DESC`,
+//       [yarnCount]
+//     );
 
-    console.log("Found records:", result.rows.length); // Debug log
-    res.json(result.rows);
-  } catch (error) {
-    console.error("Error fetching price history:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
+//     console.log("Found records:", result.rows.length); // Debug log
+//     res.json(result.rows);
+//   } catch (error) {
+//     console.error("Error fetching price history:", error);
+//     res.status(500).json({ error: error.message });
+//   }
+// });
 
 // 6. Delete Yarn
 app.delete("/api/deleteYarn/:id", async (req, res) => {
