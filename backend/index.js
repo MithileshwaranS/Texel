@@ -793,67 +793,72 @@ app.get("/api/excel/:designId", async (req, res) => {
       {
         header: "Design ID",
         key: "design_id",
-        width: 10,
+        width: 12.5,
         style: { numFmt: "0" },
       },
-      { header: "Design Name", key: "designname", width: 15 },
-      { header: "Width", key: "width", width: 10, style: { numFmt: "0.00" } },
+      { header: "Design Name", key: "designname", width: 26.5 },
+      {
+        header: "Width",
+        key: "width",
+        width: 10.17,
+        style: { numFmt: "0.00" },
+      },
       {
         header: "Warp Count",
         key: "warpcount",
-        width: 12,
+        width: 14.5,
       },
       {
         header: "Weft Count",
         key: "weftcount",
-        width: 12,
+        width: 14.5,
       },
       { header: "Reed", key: "reed", width: 10, style: { numFmt: "0.00" } },
       { header: "Pick", key: "pick", width: 10, style: { numFmt: "0.00" } },
       {
-        header: "initWarpCost",
+        header: "Cost",
         key: "initwarpcost",
-        width: 12,
+        width: 15.5,
         style: { numFmt: "0.00" },
       },
       {
-        header: "initWeftCost",
+        header: "Cost",
         key: "initweftcost",
-        width: 12,
+        width: 15.5,
         style: { numFmt: "0.00" },
       },
       {
         header: "Warp Dyeing",
         key: "warpdyeing",
-        width: 12,
+        width: 16,
         style: { numFmt: "0.00" },
       },
       {
         header: "Weft Dyeing",
         key: "weftdyeing",
-        width: 12,
+        width: 16,
         style: { numFmt: "0.00" },
       },
       {
         header: "Warp Wt",
         key: "warpweight",
-        width: 10,
+        width: 12.17,
         style: { numFmt: "0.000" },
       },
       {
         header: "Weft Wt",
         key: "weftweight",
-        width: 10,
+        width: 12.17,
         style: { numFmt: "0.000" },
       },
       {
-        header: "Individual Warp Cost",
+        header: "Warp Cost",
         key: "individualwarpcost",
         width: 18,
         style: { numFmt: "0.00" },
       },
       {
-        header: "Individual Weft Cost",
+        header: "Weft Cost",
         key: "individualweftcost",
         width: 18,
         style: { numFmt: "0.00" },
@@ -861,25 +866,25 @@ app.get("/api/excel/:designId", async (req, res) => {
       {
         header: "Weaving",
         key: "weavingcost",
-        width: 10,
+        width: 12,
         style: { numFmt: "0.00" },
       },
       {
         header: "Mending",
         key: "mendingcost",
-        width: 10,
+        width: 13,
         style: { numFmt: "0.00" },
       },
       {
         header: "Washing",
         key: "washingcost",
-        width: 10,
+        width: 12,
         style: { numFmt: "0.00" },
       },
       {
         header: "Transport",
         key: "transportcost",
-        width: 10,
+        width: 13,
         style: { numFmt: "0.00" },
       },
       {
@@ -891,7 +896,7 @@ app.get("/api/excel/:designId", async (req, res) => {
       {
         header: "Subtotal",
         key: "individualtotalcost",
-        width: 10,
+        width: 12,
         style: { numFmt: "0.00" },
       },
       {
@@ -909,13 +914,13 @@ app.get("/api/excel/:designId", async (req, res) => {
     ];
 
     worksheet.getRow(1).eachCell((cell) => {
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "000080" },
-      };
+      // cell.fill = {
+      //   type: "pattern",
+      //   pattern: "solid",
+      //   fgColor: { argb: "000080" },
+      // };
       cell.font = {
-        color: { argb: "FFFFFF" },
+        color: { argb: "000000" },
         bold: true,
       };
       cell.alignment = {
