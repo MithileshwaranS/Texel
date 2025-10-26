@@ -622,7 +622,7 @@ function CostingPage() {
       console.log(body);
 
       const response = await fetch(
-        `${import.meta.env.VITE_API_BACKEND_URL}/api/submit`,
+        `${import.meta.env.VITE_API_BACKEND_URL}/api/submit/submit`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
