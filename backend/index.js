@@ -1,6 +1,7 @@
 import express from "express";
 import costRoutes from "./routes/costRoutes.js";
 import yarnRoutes from "./routes/yarnRoutes.js";
+import designRoutes from "./routes/designRoutes.js";
 import cors from "cors";
 import dotenv from "dotenv";
 import pool from "./config/db.js";
@@ -19,6 +20,7 @@ app.use(express.json());
 
 app.use("/api/cost", costRoutes);
 app.use("/api/yarn", yarnRoutes);
+app.use("/api/submit", designRoutes);
 
 const port = process.env.PORT || 3000;
 
@@ -167,104 +169,104 @@ setInterval(() => {
 // });
 
 // 9. Submit costing form
-app.post("/api/submit", async (req, res) => {
-  const body = req.body;
+// app.post("/api/submit", async (req, res) => {
+//   const body = req.body;
 
-  try {
-    const existingRes = await queryDB(
-      "SELECT * FROM designs WHERE designname = $1",
-      [body.designName]
-    );
-    if (existingRes.rows.length > 0) {
-      return res.status(409).json({ message: "Design name already exists!" });
-    }
+//   try {
+//     const existingRes = await queryDB(
+//       "SELECT * FROM designs WHERE designname = $1",
+//       [body.designName]
+//     );
+//     if (existingRes.rows.length > 0) {
+//       return res.status(409).json({ message: "Design name already exists!" });
+//     }
 
-    const designDate = new Date(body.designDate.split("/").reverse().join("-"))
-      .toISOString()
-      .split("T")[0];
+//     const designDate = new Date(body.designDate.split("/").reverse().join("-"))
+//       .toISOString()
+//       .split("T")[0];
 
-    const insertDesignRes = await queryDB(
-      `INSERT INTO designs (
-        designname, created_date, profitpercent, weavingcost, washingcost, mendingcost,
-        transportcost, gst, width, warpcost, weftcost, designimage, designImagePublicId, subtotal, finaltotal, profit,design_status
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16 ,$17) RETURNING design_id`,
-      [
-        body.designName,
-        designDate,
-        body.profitPercent,
-        body.weaving,
-        body.washing,
-        body.mending,
-        body.transport,
-        body.gst,
-        body.width,
-        parseFloat(body.warpCost),
-        parseFloat(body.weftCost),
-        body.designImage,
-        body.designImagePublicId,
-        body.totalCost,
-        body.finaltotal,
-        body.profit,
-        body.designStatus,
-      ]
-    );
+//     const insertDesignRes = await queryDB(
+//       `INSERT INTO designs (
+//         designname, created_date, profitpercent, weavingcost, washingcost, mendingcost,
+//         transportcost, gst, width, warpcost, weftcost, designimage, designImagePublicId, subtotal, finaltotal, profit,design_status
+//       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16 ,$17) RETURNING design_id`,
+//       [
+//         body.designName,
+//         designDate,
+//         body.profitPercent,
+//         body.weaving,
+//         body.washing,
+//         body.mending,
+//         body.transport,
+//         body.gst,
+//         body.width,
+//         parseFloat(body.warpCost),
+//         parseFloat(body.weftCost),
+//         body.designImage,
+//         body.designImagePublicId,
+//         body.totalCost,
+//         body.finaltotal,
+//         body.profit,
+//         body.designStatus,
+//       ]
+//     );
 
-    const designId = insertDesignRes.rows[0].design_id;
+//     const designId = insertDesignRes.rows[0].design_id;
 
-    // Insert warps
-    for (let i = 0; i < body.warps.length; i++) {
-      const warp = body.warps[i];
-      const warpWeight = parseFloat(body.warpWeights[i]);
+//     // Insert warps
+//     for (let i = 0; i < body.warps.length; i++) {
+//       const warp = body.warps[i];
+//       const warpWeight = parseFloat(body.warpWeights[i]);
 
-      await queryDB(
-        `INSERT INTO warps (design_id, warpcount, warpweight, initwarpcost, warpdyeing, reed, individualwarpcost, individualprofit, individualtotalcost, individualgst, individualfinalcost)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-        [
-          designId,
-          warp.count,
-          warpWeight,
-          warp.cost,
-          warp.dyeing,
-          parseFloat(warp.reed),
-          body.individualWarpCosts[i],
-          body.individualProfits[i],
-          body.individualTotalCosts[i],
-          body.individualGsts[i],
-          body.individualFinalTotals[i],
-        ]
-      );
-    }
+//       await queryDB(
+//         `INSERT INTO warps (design_id, warpcount, warpweight, initwarpcost, warpdyeing, reed, individualwarpcost, individualprofit, individualtotalcost, individualgst, individualfinalcost)
+//          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+//         [
+//           designId,
+//           warp.count,
+//           warpWeight,
+//           warp.cost,
+//           warp.dyeing,
+//           parseFloat(warp.reed),
+//           body.individualWarpCosts[i],
+//           body.individualProfits[i],
+//           body.individualTotalCosts[i],
+//           body.individualGsts[i],
+//           body.individualFinalTotals[i],
+//         ]
+//       );
+//     }
 
-    // Insert wefts
-    for (let i = 0; i < body.wefts.length; i++) {
-      const weft = body.wefts[i];
-      const weftWeight = parseFloat(body.weftWeights[i]);
+//     // Insert wefts
+//     for (let i = 0; i < body.wefts.length; i++) {
+//       const weft = body.wefts[i];
+//       const weftWeight = parseFloat(body.weftWeights[i]);
 
-      await queryDB(
-        `INSERT INTO wefts (design_id, weftcount, weftweight, initweftcost, weftdyeing, pick, individualweftcost, individualprofit, individualtotalcost, individualgst, individualfinalcost)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-        [
-          designId,
-          weft.count,
-          weftWeight,
-          weft.cost,
-          weft.dyeing,
-          parseFloat(weft.pick),
-          body.individualWeftCosts[i],
-          body.individualProfits[i],
-          body.individualTotalCosts[i],
-          body.individualGsts[i],
-          body.individualFinalTotals[i],
-        ]
-      );
-    }
+//       await queryDB(
+//         `INSERT INTO wefts (design_id, weftcount, weftweight, initweftcost, weftdyeing, pick, individualweftcost, individualprofit, individualtotalcost, individualgst, individualfinalcost)
+//          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+//         [
+//           designId,
+//           weft.count,
+//           weftWeight,
+//           weft.cost,
+//           weft.dyeing,
+//           parseFloat(weft.pick),
+//           body.individualWeftCosts[i],
+//           body.individualProfits[i],
+//           body.individualTotalCosts[i],
+//           body.individualGsts[i],
+//           body.individualFinalTotals[i],
+//         ]
+//       );
+//     }
 
-    res.status(200).json({ message: "Design inserted successfully" });
-  } catch (err) {
-    console.error("Server Error:", err);
-    res.status(500).json({ message: "Insert failed", error: err.message });
-  }
-});
+//     res.status(200).json({ message: "Design inserted successfully" });
+//   } catch (err) {
+//     console.error("Server Error:", err);
+//     res.status(500).json({ message: "Insert failed", error: err.message });
+//   }
+// });
 
 // 10. Delete the report using Postgres
 app.delete("/api/deleteDesign/:id", async (req, res) => {
