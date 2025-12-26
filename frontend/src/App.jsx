@@ -49,10 +49,10 @@ function App() {
       path: "/design",
     },
     {
-      id: "inventory",
+      id: "courier",
       icon: FaBoxOpen,
-      label: "Inventory",
-      path: "/inventory",
+      label: "In & Out",
+      path: "/courier",
     },
     { id: "reports", icon: FaChartLine, label: "Reports", path: "/reports" },
     { id: "customers", icon: FaUsers, label: "Customers", path: "/customers" },
@@ -177,7 +177,7 @@ function App() {
             }
           />
           <Route
-            path="/inventory"
+            path="/courier"
             element={
               <ProtectedRoute>
                 <Inventory />

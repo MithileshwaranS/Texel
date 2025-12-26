@@ -474,7 +474,7 @@ app.get("/api/excel", async (req, res) => {
         header: "Width",
         key: "width",
         width: 10.17,
-        style: { numFmt: "0.00" },
+        style: { numFmt: "0" },
       },
       {
         header: "Warp Count",
@@ -486,8 +486,8 @@ app.get("/api/excel", async (req, res) => {
         key: "weftcount",
         width: 14.5,
       },
-      { header: "Reed", key: "reed", width: 10, style: { numFmt: "0.00" } },
-      { header: "Pick", key: "pick", width: 10, style: { numFmt: "0.00" } },
+      { header: "Reed", key: "reed", width: 10, style: { numFmt: "0" } },
+      { header: "Pick", key: "pick", width: 10, style: { numFmt: "0" } },
       {
         header: "Cost",
         key: "initwarpcost",
