@@ -1,9 +1,10 @@
 // routes/designRoutes.js
 import express from "express";
-import { submitDesign } from "../controllers/designController.js";
+import { submitDesign, deleteDesign } from "../controllers/designController.js";
 
 const router = express.Router();
 
-router.post("/submit", submitDesign);
+router.post("/", submitDesign);
+router.delete("/:id", deleteDesign);
 
 export default router;

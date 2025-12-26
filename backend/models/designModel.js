@@ -91,3 +91,19 @@ export const insertWeft = async (
 
   return queryDB(q, params);
 };
+
+export const getDesignPublicIdById = async (id) => {
+  const result = await queryDB(
+    "SELECT designImagePublicId FROM designs WHERE design_id = $1",
+    [id]
+  );
+  return result.rows[0];
+};
+
+export const deleteDesignById = async (id) => {
+  const result = await queryDB(
+    "DELETE FROM designs WHERE design_id = $1 RETURNING *",
+    [id]
+  );
+  return result.rows[0];
+};

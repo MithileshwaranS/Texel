@@ -20,7 +20,7 @@ app.use(express.json());
 
 app.use("/api/cost", costRoutes);
 app.use("/api/yarn", yarnRoutes);
-app.use("/api/submit", designRoutes);
+app.use("/api/designs/", designRoutes);
 
 const port = process.env.PORT || 3000;
 

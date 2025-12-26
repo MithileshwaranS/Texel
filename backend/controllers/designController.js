@@ -4,7 +4,11 @@ import {
   insertDesign,
   insertWarp,
   insertWeft,
+  getDesignPublicIdById,
+  deleteDesignById,
 } from "../models/designModel.js";
+
+import cloudinary from "../config/cloudinaryConfig.js";
 
 function parseDateToISO(dateStrDDMMYYYY) {
   if (!dateStrDDMMYYYY) return null;
@@ -70,5 +74,33 @@ export const submitDesign = async (req, res) => {
     return res
       .status(500)
       .json({ message: "Insert failed", error: err.message });
+  }
+};
+
+export const deleteDesign = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const design = await getDesignPublicIdById(id);
+
+    if (!design) {
+      return res.status(404).json({ message: "Design not found" });
+    }
+
+    const publicId = design.designimagepublicid;
+
+    if (publicId) {
+      await cloudinary.uploader.destroy(publicId);
+    }
+
+    await deleteDesignById(id);
+
+    res.json({ message: "Design deleted successfully" });
+  } catch (error) {
+    console.error("Delete Error:", error);
+    res.status(500).json({
+      message: "Delete failed",
+      error: error.message,
+    });
   }
 };
