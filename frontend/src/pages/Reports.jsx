@@ -85,7 +85,7 @@ function Reports() {
       const response = await fetch(
         `${
           import.meta.env.VITE_API_BACKEND_URL
-        }/api/deleteDesign/${selectedDesignId}`,
+        }/api/designs/${selectedDesignId}`,
         { method: "DELETE" }
       );
 
