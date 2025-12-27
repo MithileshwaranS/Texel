@@ -2,6 +2,7 @@ import express from "express";
 import costRoutes from "./routes/costRoutes.js";
 import yarnRoutes from "./routes/yarnRoutes.js";
 import designRoutes from "./routes/designRoutes.js";
+import designReqRoutes from "./routes/designReqRoutes.js";
 import cors from "cors";
 import dotenv from "dotenv";
 import pool from "./config/db.js";
@@ -21,6 +22,7 @@ app.use(express.json());
 app.use("/api/cost", costRoutes);
 app.use("/api/yarn", yarnRoutes);
 app.use("/api/designs/", designRoutes);
+app.use("/api/design-requests", designReqRoutes);
 
 const port = process.env.PORT || 3000;
 
@@ -269,36 +271,36 @@ setInterval(() => {
 // });
 
 // 10. Delete the report using Postgres
-app.delete("/api/deleteDesign/:id", async (req, res) => {
-  const { id } = req.params;
+// app.delete("/api/deleteDesign/:id", async (req, res) => {
+//   const { id } = req.params;
 
-  try {
-    const designRes = await queryDB(
-      "SELECT designImagePublicId FROM designs WHERE design_id=$1",
-      [id]
-    );
+//   try {
+//     const designRes = await queryDB(
+//       "SELECT designImagePublicId FROM designs WHERE design_id=$1",
+//       [id]
+//     );
 
-    if (designRes.rows.length === 0) {
-      return res.status(404).json({ message: "Design not found" });
-    }
+//     if (designRes.rows.length === 0) {
+//       return res.status(404).json({ message: "Design not found" });
+//     }
 
-    const publicId = designRes.rows[0].designimagepublicid;
+//     const publicId = designRes.rows[0].designimagepublicid;
 
-    if (publicId) {
-      await cloudinary.uploader.destroy(publicId);
-    }
+//     if (publicId) {
+//       await cloudinary.uploader.destroy(publicId);
+//     }
 
-    const result = await queryDB(
-      "DELETE FROM designs WHERE design_id=$1 RETURNING *",
-      [id]
-    );
+//     const result = await queryDB(
+//       "DELETE FROM designs WHERE design_id=$1 RETURNING *",
+//       [id]
+//     );
 
-    res.json({ message: "Design deleted successfully" });
-  } catch (error) {
-    console.error("Delete Error:", error);
-    res.status(500).json({ message: "Delete failed", error: error.message });
-  }
-});
+//     res.json({ message: "Design deleted successfully" });
+//   } catch (error) {
+//     console.error("Delete Error:", error);
+//     res.status(500).json({ message: "Delete failed", error: error.message });
+//   }
+// });
 
 // API to keep the server alive
 app.get("/ping", async (req, res) => {
@@ -306,33 +308,33 @@ app.get("/ping", async (req, res) => {
 });
 
 //New Costing API
-app.post("/api/newDesign", async (req, res) => {
-  try {
-    const { designName, designImage, designImagePublicId, designDate } =
-      req.body;
-    console.log(req.body);
+// app.post("/api/newDesign", async (req, res) => {
+//   try {
+//     const { designName, designImage, designImagePublicId, designDate } =
+//       req.body;
+//     console.log(req.body);
 
-    const existingRes = await queryDB(
-      "SELECT * FROM design_sampling WHERE design_name = $1",
-      [designName]
-    );
-    if (existingRes.rows.length > 0) {
-      return res.status(409).json({ message: "Design name already exists!" });
-    }
+//     const existingRes = await queryDB(
+//       "SELECT * FROM design_sampling WHERE design_name = $1",
+//       [designName]
+//     );
+//     if (existingRes.rows.length > 0) {
+//       return res.status(409).json({ message: "Design name already exists!" });
+//     }
 
-    const status = "pending";
+//     const status = "pending";
 
-    await pool.query(
-      "INSERT INTO design_sampling (design_name,designimage_url, status,designImagePublicId,created_at) VALUES ($1, $2,$3,$4,$5)",
-      [designName, designImage, status, designImagePublicId, designDate] // Corrected order
-    );
+//     await pool.query(
+//       "INSERT INTO design_sampling (design_name,designimage_url, status,designImagePublicId,created_at) VALUES ($1, $2,$3,$4,$5)",
+//       [designName, designImage, status, designImagePublicId, designDate] // Corrected order
+//     );
 
-    res.status(200).send({ message: "Design added successfully" }); // Send success response
-  } catch (error) {
-    console.error(error.message);
-    res.status(500).send({ message: "Server error" }); // Send error response
-  }
-});
+//     res.status(200).send({ message: "Design added successfully" }); // Send success response
+//   } catch (error) {
+//     console.error(error.message);
+//     res.status(500).send({ message: "Server error" }); // Send error response
+//   }
+// });
 
 //getting all the sampling to costing details
 app.get("/api/samplingdetails", async (req, res) => {
