@@ -58,7 +58,7 @@ function Reports() {
   const fetchSamplingData = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_BACKEND_URL}/api/samplingdetails`
+        `${import.meta.env.VITE_API_BACKEND_URL}/api/design-requests`
       );
       const data = await response.json();
       setSamplingDesign(data);

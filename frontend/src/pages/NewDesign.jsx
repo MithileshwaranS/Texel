@@ -111,7 +111,7 @@ function NewDesign() {
       };
 
       const response = await fetch(
-        `${import.meta.env.VITE_API_BACKEND_URL}/api/newDesign`,
+        `${import.meta.env.VITE_API_BACKEND_URL}/api/design-requests`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
