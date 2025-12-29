@@ -2,6 +2,7 @@ import {
   findDesignReqByName,
   insertDesign,
   getAllDesignReqs,
+  getDesignbyId,
 } from "../models/designReqModel.js";
 
 export const createDesignReq = async (req, res) => {
@@ -38,6 +39,18 @@ export const getDesignReqs = async (req, res) => {
     return res.status(200).json(designReqsRes.rows);
   } catch (error) {
     console.error("Error fetching design requests:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getDesignReqById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const designRes = await getDesignbyId(id);
+
+    return res.status(200).json(designRes.rows);
+  } catch (error) {
+    console.error("Error fetching design request by ID:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };

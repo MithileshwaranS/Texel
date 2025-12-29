@@ -337,14 +337,14 @@ app.get("/ping", async (req, res) => {
 // });
 
 //getting all the sampling to costing details
-app.get("/api/samplingdetails", async (req, res) => {
-  try {
-    const result = await queryDB("SELECT * from design_sampling");
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// app.get("/api/samplingdetails", async (req, res) => {
+//   try {
+//     const result = await queryDB("SELECT * from design_sampling");
+//     res.json(result.rows);
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
 
 app.get("/api/samplingdetails/:id", async (req, res) => {
   try {

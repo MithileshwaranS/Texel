@@ -24,3 +24,9 @@ export const insertDesign = async ({
 export const getAllDesignReqs = async () => {
   return await queryDB("SELECT * FROM design_sampling");
 };
+
+export const getDesignbyId = async (designId) => {
+  return await queryDB("SELECT * FROM design_sampling WHERE designid = $1", [
+    designId,
+  ]);
+};
