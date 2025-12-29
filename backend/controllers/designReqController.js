@@ -3,6 +3,7 @@ import {
   insertDesign,
   getAllDesignReqs,
   getDesignbyId,
+  deleteSampling,
 } from "../models/designReqModel.js";
 
 export const createDesignReq = async (req, res) => {
@@ -51,6 +52,22 @@ export const getDesignReqById = async (req, res) => {
     return res.status(200).json(designRes.rows);
   } catch (error) {
     console.error("Error fetching design request by ID:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const deleteSamplingReq = async (req, res) => {
+  try {
+    const { designid } = req.body;
+    if (!designid) {
+      return res.status(400).json({ message: "designid is required" });
+    }
+    await deleteSampling(designid);
+    return res
+      .status(200)
+      .json({ message: "Design sampling deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting design sampling by ID:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };

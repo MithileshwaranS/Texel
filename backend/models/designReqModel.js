@@ -30,3 +30,9 @@ export const getDesignbyId = async (designId) => {
     designId,
   ]);
 };
+
+export const deleteSampling = async (designId) => {
+  return await queryDB("DELETE FROM design_sampling WHERE designid = $1", [
+    designId,
+  ]);
+};

@@ -346,18 +346,18 @@ app.get("/ping", async (req, res) => {
 //   }
 // });
 
-app.get("/api/samplingdetails/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const result = await queryDB(
-      "SELECT * from design_sampling where designid = $1",
-      [id]
-    );
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// app.get("/api/samplingdetails/:id", async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const result = await queryDB(
+//       "SELECT * from design_sampling where designid = $1",
+//       [id]
+//     );
+//     res.json(result.rows);
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
 
 //delete sampling_details
 app.delete("/api/deleteDesign", async (req, res) => {
