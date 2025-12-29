@@ -676,7 +676,7 @@ function CostingPage() {
 
         const body = { designid: stateValues.designid };
         const response = await fetch(
-          `${import.meta.env.VITE_API_BACKEND_URL}/api/deleteDesign`,
+          `${import.meta.env.VITE_API_BACKEND_URL}/api/design-requests/`,
           {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
