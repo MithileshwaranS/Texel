@@ -235,7 +235,7 @@ function CostingPage() {
         // }
 
         const apiUrl = stateValues.useAlternate
-          ? `${import.meta.env.VITE_API_BACKEND_URL}/api/samplingdetails/${
+          ? `${import.meta.env.VITE_API_BACKEND_URL}/api/design-requests/${
               stateValues.designid
             }`
           : `${import.meta.env.VITE_API_BACKEND_URL}/api/cost/costingDetails/${
